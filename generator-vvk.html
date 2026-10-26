@@ -230,6 +230,7 @@
             document.getElementById('dobMonth').value = MONTHS_GENITIVE[parseInt(month) - 1];
             document.getElementById('dobYear').value = year.slice(-2);
         }
+        document.getElementById('pob').value = patient.pob || ''; // ДОБАВИТЬ ЭТО
         document.getElementById('address').value = patient.address || '';
         document.getElementById('passSeries').value = patient.pass_series || '';
         document.getElementById('passNumber').value = patient.pass_number || '';
