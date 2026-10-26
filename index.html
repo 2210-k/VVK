@@ -6,7 +6,7 @@
     <title>ЕСС | Служебный портал</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; }
+        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; }
         body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); }
         
         /* Вход */
@@ -14,30 +14,36 @@
         .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
         .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         .btn-login { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; }
-        .error-msg { color: var(--danger); display: none; margin-bottom: 15px; }
+        .error-msg { color: var(--danger); display: none; margin-bottom: 15px; font-size: 14px; }
 
         /* Кабинет */
         #dashboard-screen { display: none; height: 100vh; }
         .sidebar { width: 250px; background: var(--primary); color: white; position: fixed; height: 100%; }
-        .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; }
+        .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
+        .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; }
         .main-content { margin-left: 250px; padding: 30px; }
         .header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
         
-        /* Таблицы */
+        /* Таблицы и кнопки */
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
         th { background: #f8fafc; color: #64748b; font-weight: bold; font-size: 14px; }
-        .btn-edit { background: #eab308; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .btn-download { background: var(--primary); color: white; padding: 5px 10px; text-decoration: none; border-radius: 4px; font-size: 13px; }
-        
-        /* Модалка редактирования */
-        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; }
-        .modal-content input { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .btn-save { background: #10b981; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        .btn-close { background: #ccc; color: #333; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; margin-top: 5px; }
+        .btn-action { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; text-decoration: none; display: inline-block; }
+        .btn-edit { background: #eab308; }
+        .btn-delete { background: var(--danger); }
+        .btn-download { background: var(--primary); }
+        .btn-add { background: var(--success); padding: 10px 20px; font-size: 14px; }
+
+        /* Модалки */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; max-height: 90vh; overflow-y: auto; }
+        .modal-content label { display: block; margin-top: 10px; font-weight: bold; font-size: 13px; }
+        .modal-content input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .modal-actions { margin-top: 20px; display: flex; gap: 10px; }
+        .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-save { background: var(--success); color: white; }
+        .btn-cancel { background: #ccc; color: #333; }
     </style>
 </head>
 <body>
@@ -45,14 +51,14 @@
     <!-- Вход -->
     <div id="auth-screen">
         <div class="auth-box">
-            <h2>Служебный портал</h2>
+            <h2>Служебный портал ЕСС</h2>
             <div id="auth-error" class="error-msg"></div>
             <form id="login-form">
-                <input type="email" id="email" placeholder="Email" required>
+                <input type="email" id="email" placeholder="Служебный Email" required>
                 <input type="password" id="password" placeholder="Пароль" required>
                 <button type="submit" class="btn-login">Войти</button>
             </form>
-            <a href="citizen.html" style="display:block; margin-top:15px; color:#666;">Я пациент</a>
+            <a href="citizen.html" style="display:block; margin-top:15px; color:#666; font-size:14px;">Я пациент</a>
         </div>
     </div>
 
@@ -68,19 +74,24 @@
         <div class="main-content">
             <div class="header">
                 <h2 id="page-title">Все документы</h2>
-                <button class="btn-logout" id="logout-btn" style="padding:8px 15px; cursor:pointer;">Выйти</button>
+                <div>
+                    <button class="btn-login" id="logout-btn" style="padding:8px 15px; width:auto; cursor:pointer; background:#ef4444;">Выйти</button>
+                </div>
             </div>
 
             <!-- Вкладка документов -->
             <div id="docs-tab">
                 <table>
-                    <thead><tr><th>Номер</th><th>Тип</th><th>Пациент</th><th>Дата</th><th>Файл</th></tr></thead>
+                    <thead><tr><th>Номер</th><th>Тип</th><th>Пациент</th><th>Дата</th><th>Действия</th></tr></thead>
                     <tbody id="docs-table-body"></tbody>
                 </table>
             </div>
 
             <!-- Вкладка пациентов -->
             <div id="patients-tab" style="display:none;">
+                <div style="margin-bottom: 15px; text-align: right;">
+                    <button class="btn-action btn-add" onclick="openAddPatientModal()">+ Добавить пациента</button>
+                </div>
                 <table>
                     <thead><tr><th>ФИО</th><th>Дата рождения</th><th>Паспорт</th><th>Действия</th></tr></thead>
                     <tbody id="patients-table-body"></tbody>
@@ -90,7 +101,7 @@
     </div>
 
     <!-- Модалка редактирования -->
-    <div id="edit-modal">
+    <div id="edit-modal" class="modal">
         <div class="modal-content">
             <h3>Редактировать пациента</h3>
             <input type="hidden" id="edit-id">
@@ -98,16 +109,39 @@
             <label>Имя</label><input type="text" id="edit-first-name">
             <label>Отчество</label><input type="text" id="edit-patronymic">
             <label>Дата рождения</label><input type="date" id="edit-dob">
+            <label>Место рождения</label><input type="text" id="edit-pob">
             <label>Адрес</label><input type="text" id="edit-address">
             <label>Серия паспорта</label><input type="text" id="edit-pass-series">
             <label>Номер паспорта</label><input type="text" id="edit-pass-number">
-            <button class="btn-save" onclick="savePatient()">Сохранить</button>
-            <button class="btn-close" onclick="document.getElementById('edit-modal').style.display='none'">Отмена</button>
+            <div class="modal-actions">
+                <button class="btn-save" onclick="savePatient()">Сохранить</button>
+                <button class="btn-cancel" onclick="closeModal('edit-modal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка добавления пациента -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <h3>Новый пациент</h3>
+            <label>Email (будет логином)</label><input type="email" id="add-email">
+            <label>Пароль</label><input type="text" id="add-password" value="123456">
+            <label>Фамилия</label><input type="text" id="add-last-name">
+            <label>Имя</label><input type="text" id="add-first-name">
+            <label>Отчество</label><input type="text" id="add-patronymic">
+            <label>Дата рождения</label><input type="date" id="add-dob">
+            <label>Место рождения</label><input type="text" id="add-pob">
+            <div class="modal-actions">
+                <button class="btn-save" onclick="addPatient()">Создать</button>
+                <button class="btn-cancel" onclick="closeModal('add-modal')">Отмена</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+        const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // Логин
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -124,18 +158,15 @@
 
         document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
 
-        // Проверка входа и роли
+        // Проверка входа
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (session) {
-                // Проверяем роль
                 const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
-                
                 if (!profile || profile.role !== 'admin') {
                     alert("У вас нет прав администратора!");
                     await supabaseClient.auth.signOut();
                     return;
                 }
-
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
                 loadDocs();
@@ -146,7 +177,9 @@
             }
         });
 
-        // Переключение вкладок
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // Вкладки
         function switchTab(tab, element) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
@@ -170,6 +203,8 @@
             
             if (error) return console.error(error);
             tbody.innerHTML = '';
+            if(data.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет документов</td></tr>';
+
             data.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 const p = doc.profiles;
@@ -179,10 +214,27 @@
                         <td>${doc.document_type}</td>
                         <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
-                        <td><a href="${publicUrl}" target="_blank" class="btn-download">Скачать</a></td>
+                        <td>
+                            <a href="${publicUrl}" target="_blank" class="btn-action btn-download">Скачать</a>
+                            <button class="btn-action btn-delete" onclick="deleteDoc(${doc.id}, '${doc.file_path}')">Удалить</button>
+                        </td>
                     </tr>
                 `;
             });
+        }
+
+        // Удаление документа
+        async function deleteDoc(docId, filePath) {
+            if (!confirm("Вы уверены, что хотите удалить этот документ? Файл будет удален навсегда.")) return;
+
+            // 1. Удаляем файл из Storage
+            await supabaseClient.storage.from('documents').remove([filePath]);
+            
+            // 2. Удаляем запись из БД
+            const { error } = await supabaseClient.from('documents').delete().eq('id', docId);
+            
+            if (error) alert("Ошибка при удалении: " + error.message);
+            else loadDocs();
         }
 
         // Загрузка пациентов
@@ -194,19 +246,21 @@
             
             if (error) return console.error(error);
             tbody.innerHTML = '';
+            if(data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет пациентов</td></tr>';
+
             data.forEach(p => {
                 tbody.innerHTML += `
                     <tr>
                         <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
                         <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
                         <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
-                        <td><button class="btn-edit" onclick="openEdit('${p.id}')">Ред.</button></td>
+                        <td><button class="btn-action btn-edit" onclick="openEdit('${p.id}')">Ред.</button></td>
                     </tr>
                 `;
             });
         }
 
-        // Открытие модалки
+        // Редактирование
         async function openEdit(id) {
             const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
             if (!p) return;
@@ -216,6 +270,7 @@
             document.getElementById('edit-first-name').value = p.first_name || '';
             document.getElementById('edit-patronymic').value = p.patronymic || '';
             document.getElementById('edit-dob').value = p.dob || '';
+            document.getElementById('edit-pob').value = p.pob || ''; // Новое поле
             document.getElementById('edit-address').value = p.address || '';
             document.getElementById('edit-pass-series').value = p.pass_series || '';
             document.getElementById('edit-pass-number').value = p.pass_number || '';
@@ -223,7 +278,6 @@
             document.getElementById('edit-modal').style.display = 'flex';
         }
 
-        // Сохранение
         async function savePatient() {
             const id = document.getElementById('edit-id').value;
             const updates = {
@@ -231,6 +285,7 @@
                 first_name: document.getElementById('edit-first-name').value,
                 patronymic: document.getElementById('edit-patronymic').value,
                 dob: document.getElementById('edit-dob').value || null,
+                pob: document.getElementById('edit-pob').value, // Новое поле
                 address: document.getElementById('edit-address').value,
                 pass_series: document.getElementById('edit-pass-series').value,
                 pass_number: document.getElementById('edit-pass-number').value
@@ -238,11 +293,54 @@
 
             const { error } = await supabaseClient.from('profiles').update(updates).eq('id', id);
             if (error) {
-                alert("Ошибка сохранения: " + error.message);
+                alert("Ошибка: " + error.message);
             } else {
-                document.getElementById('edit-modal').style.display = 'none';
+                closeModal('edit-modal');
                 loadPatients();
-                alert("Данные обновлены!");
+            }
+        }
+
+        // Добавление пациента
+        function openAddPatientModal() {
+            document.getElementById('add-email').value = '';
+            document.getElementById('add-last-name').value = '';
+            document.getElementById('add-first-name').value = '';
+            document.getElementById('add-patronymic').value = '';
+            document.getElementById('add-dob').value = '';
+            document.getElementById('add-pob').value = '';
+            document.getElementById('add-modal').style.display = 'flex';
+        }
+
+        async function addPatient() {
+            const email = document.getElementById('add-email').value;
+            const password = document.getElementById('add-password').value;
+            
+            // ВАЖНО: Создаем временный клиент, чтобы регистрация нового юзера не выкинула НАС (админа) из системы
+            const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
+            if (authError) return alert("Ошибка создания пользователя: " + authError.message);
+
+            const newUserId = authData.user.id;
+
+            // Заполняем профиль
+            const updates = {
+                last_name: document.getElementById('add-last-name').value,
+                first_name: document.getElementById('add-first-name').value,
+                patronymic: document.getElementById('add-patronymic').value,
+                dob: document.getElementById('add-dob').value || null,
+                pob: document.getElementById('add-pob').value,
+                role: 'patient'
+            };
+
+            const { error: profileError } = await supabaseClient.from('profiles').update(updates).eq('id', newUserId);
+
+            if (profileError) {
+                alert("Пользователь создан, но данные не сохранились: " + profileError.message);
+            } else {
+                alert("Пациент успешно добавлен!");
+                closeModal('add-modal');
+                loadPatients();
             }
         }
     </script>
