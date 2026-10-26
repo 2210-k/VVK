@@ -2,85 +2,217 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Портал ЕСС | Рабочая область</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЕСС | Портал документов</title>
+    
+    <!-- Подключаем Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         :root {
             --primary: #1e3a8a; /* Строгий синий */
+            --primary-hover: #1e40af;
             --bg: #f3f4f6;
             --text: #333;
+            --danger: #ef4444;
+            --success: #10b981;
         }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); display: flex; height: 100vh; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
+        
+        /* ================= ЭКРАН ВХОДА ================= */
+        #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .auth-box h2 { color: var(--primary); margin-top: 0; margin-bottom: 25px; }
+        .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        .auth-box button { width: 100%; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.2s; }
+        .btn-login { background: var(--primary); color: white; }
+        .btn-login:hover { background: var(--primary-hover); }
+        .btn-register { background: #e5e7eb; color: #333; }
+        .btn-register:hover { background: #d1d5db; }
+        .error-msg { color: var(--danger); font-size: 14px; margin-bottom: 10px; display: none; }
+
+        /* ================= ЭКРАН КАБИНЕТА (DASHBOARD) ================= */
+        #dashboard-screen { display: none; height: 100vh; }
         
         /* Боковое меню */
-        .sidebar { width: 250px; background: var(--primary); color: white; display: flex; flex-direction: column; }
+        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; position: fixed; height: 100%; }
         .sidebar h2 { padding: 20px; margin: 0; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
         .menu-item { padding: 15px 20px; cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left: 4px solid #60a5fa; }
-        .menu-item a { color: white; text-decoration: none; display: block; }
+        .menu-item a { color: white; text-decoration: none; display: block; font-size: 15px; }
 
         /* Основная область */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .main-content { margin-left: 260px; display: flex; flex-direction: column; min-height: 100vh; }
         
         /* Шапка */
-        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .user-profile { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--text); }
-        
+        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
+        .user-profile { display: flex; align-items: center; gap: 15px; font-weight: bold; color: var(--text); font-size: 14px; }
+        .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-logout:hover { background: var(--danger); color: white; }
+
         /* Контент */
         .content { padding: 30px; }
-        .btn-create { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-create:hover { background: #059669; }
         
-        /* Список документов */
-        .documents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        /* Карточки типов документов */
+        .doc-types-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .type-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+        .type-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .type-card h3 { margin: 10px 0; color: var(--primary); }
+        .type-card p { color: #666; font-size: 13px; margin: 0; }
+
+        /* Список созданных документов */
+        .documents-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .doc-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
-        .doc-card h3 { margin-top: 0; color: var(--primary); }
-        .doc-card p { color: #666; font-size: 14px; }
-        .doc-card .btn-open { display: inline-block; margin-top: 15px; padding: 8px 16px; background: var(--primary); color: white; text-decoration: none; border-radius: 4px; }
+        .doc-card h3 { margin-top: 0; color: var(--text); font-size: 16px; }
+        .doc-card .doc-number { color: var(--primary); font-weight: bold; margin-bottom: 5px; }
+        .doc-card .doc-date { color: #888; font-size: 12px; margin-bottom: 15px; }
+        .doc-card .btn-open { display: inline-block; padding: 8px 16px; background: var(--primary); color: white; text-decoration: none; border-radius: 4px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <!-- Боковое меню -->
-    <div class="sidebar">
-        <h2>ЕСС | Портал</h2>
-        <div class="menu-item active"><a href="#">📄 Документы</a></div>
-        <div class="menu-item"><a href="#">👥 Сотрудники</a></div>
-        <div class="menu-item"><a href="#">⚙️ Настройки</a></div>
-    </div>
-
-    <!-- Основная область -->
-    <div class="main-content">
-        <div class="header">
-            <h3>Рабочая область</h3>
-            <div class="user-profile">
-                <span>Иванов И.И.</span>
-                <!-- Здесь можно вывести аватарку -->
-            </div>
-        </div>
-
-        <div class="content">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1 style="margin: 0; color: #333;">Мои документы</h1>
-                <button class="btn-create" onclick="window.location.href='index.html'">+ Создать документ</button>
-            </div>
-
-            <div class="documents-grid">
-                <!-- Карточка документа -->
-                <div class="doc-card">
-                    <h3>Заключение экспертизы</h3>
-                    <p>№ 0433001 от 24.05.2024</p>
-                    <p><strong>Статус:</strong> Подписано</p>
-                    <a href="#" class="btn-open">Скачать PDF</a>
-                </div>
-                <div class="doc-card">
-                    <h3>Заключение экспертизы</h3>
-                    <p>№ 0433002 от 24.05.2024</p>
-                    <p><strong>Статус:</strong> Подписано</p>
-                    <a href="#" class="btn-open">Скачать PDF</a>
-                </div>
-            </div>
+    <!-- ================= ЭКРАН ВХОДА ================= -->
+    <div id="auth-screen">
+        <div class="auth-box">
+            <h2>Вход в портал ЕСС</h2>
+            <div id="auth-error" class="error-msg"></div>
+            <form id="login-form">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Пароль" required>
+                <button type="submit" class="btn-login">Войти</button>
+            </form>
+            <button type="button" class="btn-register" id="register-btn">Зарегистрироваться</button>
         </div>
     </div>
 
+    <!-- ================= ЭКРАН КАБИНЕТА ================= -->
+    <div id="dashboard-screen">
+        <!-- Боковое меню -->
+        <div class="sidebar">
+            <h2>ЕСС | Портал</h2>
+            <div class="menu-item active"><a href="#">📄 Документы</a></div>
+            <div class="menu-item"><a href="#">⚙️ Настройки (скоро)</a></div>
+        </div>
+
+        <!-- Основная область -->
+        <div class="main-content">
+            <!-- Шапка -->
+            <div class="header">
+                <h3>Рабочая область</h3>
+                <div class="user-profile">
+                    <span id="user-email">Загрузка...</span>
+                    <button class="btn-logout" id="logout-btn">Выйти</button>
+                </div>
+            </div>
+
+            <!-- Контент -->
+            <div class="content">
+                <h2>Создать новый документ</h2>
+                <div class="doc-types-grid">
+                    <!-- Карточка типа документа ведет на ваш index.html -->
+                    <div class="type-card" onclick="window.location.href='index.html'">
+                        <h3>Заключение ВВК</h3>
+                        <p>Медицинское заключение</p>
+                    </div>
+                    <!-- Заглушки для будущих документов -->
+                    <div class="type-card" onclick="alert('В разработке...')">
+                        <h3>Судебно-медицинская экспертиза</h3>
+                        <p>Тип 33</p>
+                    </div>
+                </div>
+
+                <h2>Мои последние документы</h2>
+                <div class="documents-list" id="documents-list">
+                    <!-- Сюда будут подгружаться документы из БД -->
+                    <p style="color: #888;">У вас пока нет созданных документов.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ЛОГИКА ================= -->
+    <script>
+        // 1. ИНИЦИАЛИЗАЦИЯ SUPABASE
+        // ⚠️ ВСТАВЬТЕ СЮДА ВАШИ ДАННЫЕ ИЗ SUPABASE (Project Settings -> API)
+        const SUPABASE_URL = 'ВАШ_PROJECT_URL';
+        const SUPABASE_ANON_KEY = 'ВАШ_ANON_PUBLIC_KEY';
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // DOM Элементы
+        const authScreen = document.getElementById('auth-screen');
+        const dashboardScreen = document.getElementById('dashboard-screen');
+        const loginForm = document.getElementById('login-form');
+        const registerBtn = document.getElementById('register-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const authError = document.getElementById('auth-error');
+        const userEmailSpan = document.getElementById('user-email');
+
+        // 2. ФУНКЦИЯ ОТОБРАЖЕНИЯ ОШИБОК
+        function showError(msg) {
+            authError.textContent = msg;
+            authError.style.display = 'block';
+        }
+
+        // 3. ОБРАБОТКА ВХОДА
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.style.display = 'none';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                showError('Ошибка входа: ' + error.message);
+            } else {
+                console.log('Успешный вход!');
+                // Смена экрана произойдет автоматически через onAuthStateChange
+            }
+        });
+
+        // 4. ОБРАБОТКА РЕГИСТРАЦИИ
+        registerBtn.addEventListener('click', async () => {
+            authError.style.display = 'none';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('Введите Email и пароль для регистрации');
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+
+            if (error) {
+                showError('Ошибка регистрации: ' + error.message);
+            } else {
+                alert('Регистрация успешна! Проверьте почту (если включено подтверждение) или войдите.');
+            }
+        });
+
+        // 5. ВЫХОД
+        logoutBtn.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+        });
+
+        // 6. МАГИЯ SUPABASE: СЛЕДИМ ЗА СТАТУСОМ ПОЛЬЗОВАТЕЛЯ
+        // Эта функция срабатывает при загрузке и при каждом входе/выходе
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                // Пользователь ВОШЕЛ
+                authScreen.style.display = 'none';
+                dashboardScreen.style.display = 'block';
+                userEmailSpan.textContent = session.user.email;
+                
+                // Здесь потом можно вызвать функцию загрузки документов из БД
+                // loadUserDocuments(session.user.id); 
+            } else {
+                // Пользователь НЕ ВОШЕЛ
+                authScreen.style.display = 'flex';
+                dashboardScreen.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
