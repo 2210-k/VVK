@@ -21,14 +21,16 @@
         /* ЭКРАН ВХОДА */
         #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
         .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .auth-box h2 { color: var(--primary); margin-top: 0; margin-bottom: 25px; }
+        .auth-box h2 { color: var(--primary); margin-top: 0; margin-bottom: 25px; font-size: 24px; }
+        .auth-box p.subtitle { color: #666; font-size: 14px; margin-top: -15px; margin-bottom: 25px; }
+        
         .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        .auth-box button { width: 100%; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.2s; }
-        .btn-login { background: var(--primary); color: white; }
+        .auth-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.2); }
+        
+        .btn-login { width: 100%; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; background: var(--primary); color: white; transition: 0.2s; }
         .btn-login:hover { background: var(--primary-hover); }
-        .btn-register { background: #e5e7eb; color: #333; }
-        .btn-register:hover { background: #d1d5db; }
-        .error-msg { color: var(--danger); font-size: 14px; margin-bottom: 10px; display: none; }
+        
+        .error-msg { color: var(--danger); font-size: 14px; margin-bottom: 15px; display: none; background: #fee2e2; padding: 10px; border-radius: 4px; text-align: left; }
 
         /* ЭКРАН КАБИНЕТА */
         #dashboard-screen { display: none; height: 100vh; }
@@ -63,19 +65,21 @@
 </head>
 <body>
 
+    <!-- ЭКРАН ВХОДА -->
     <div id="auth-screen">
         <div class="auth-box">
-            <h2>Вход в портал ЕСС</h2>
+            <h2>Портал ЕСС</h2>
+            <p class="subtitle">Вход для сотрудников</p>
             <div id="auth-error" class="error-msg"></div>
             <form id="login-form">
-                <input type="email" id="email" placeholder="Email" required>
+                <input type="email" id="email" placeholder="Служебный Email" required>
                 <input type="password" id="password" placeholder="Пароль" required>
-                <button type="submit" class="btn-login">Войти</button>
+                <button type="submit" class="btn-login">Войти в систему</button>
             </form>
-            <button type="button" class="btn-register" id="register-btn">Зарегистрироваться</button>
         </div>
     </div>
 
+    <!-- ЭКРАН КАБИНЕТА -->
     <div id="dashboard-screen">
         <div class="sidebar">
             <h2>ЕСС | Портал</h2>
@@ -95,7 +99,6 @@
             <div class="content">
                 <h2>Создать новый документ</h2>
                 <div class="doc-types-grid">
-                    <!-- Кнопка ведет на generator-vvk.html -->
                     <div class="type-card" onclick="window.location.href='generator-vvk.html'">
                         <h3>Заключение ВВК</h3>
                         <p>Медицинское заключение</p>
@@ -114,6 +117,7 @@
         </div>
     </div>
 
+    <!-- ЛОГИКА -->
     <script>
         // ВСТАВЬТЕ ВАШИ ПУБЛИЧНЫЕ КЛЮЧИ
         const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
@@ -124,60 +128,54 @@
         const authScreen = document.getElementById('auth-screen');
         const dashboardScreen = document.getElementById('dashboard-screen');
         const loginForm = document.getElementById('login-form');
-        const registerBtn = document.getElementById('register-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const authError = document.getElementById('auth-error');
         const userEmailSpan = document.getElementById('user-email');
 
-        function showError(msg) {
-            authError.textContent = msg;
-            authError.style.display = 'block';
-        }
-
+        // Обработка входа
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             authError.style.display = 'none';
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
+            // Блокируем кнопку на время запроса
+            const submitBtn = loginForm.querySelector('button');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Проверка...';
+
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
             if (error) {
-                showError('Ошибка входа: ' + error.message);
+                authError.textContent = 'Ошибка входа: Неверный email или пароль.';
+                authError.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Войти в систему';
             }
         });
 
-        registerBtn.addEventListener('click', async () => {
-            authError.style.display = 'none';
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            if (!email || !password) {
-                showError('Введите Email и пароль для регистрации');
-                return;
-            }
-
-            const { data, error } = await supabase.auth.signUp({ email, password });
-
-            if (error) {
-                showError('Ошибка регистрации: ' + error.message);
-            } else {
-                alert('Регистрация успешна! Теперь нажмите "Войти".');
-            }
-        });
-
+        // Выход
         logoutBtn.addEventListener('click', async () => {
             await supabase.auth.signOut();
         });
 
+        // Следим за состоянием авторизации (магия Supabase)
         supabase.auth.onAuthStateChange((event, session) => {
             if (session) {
+                // Если вошли — показываем кабинет
                 authScreen.style.display = 'none';
                 dashboardScreen.style.display = 'block';
                 userEmailSpan.textContent = session.user.email;
             } else {
+                // Если вышли — показываем вход
                 authScreen.style.display = 'flex';
                 dashboardScreen.style.display = 'none';
+                // Очищаем поля
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
+                const submitBtn = loginForm.querySelector('button');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Войти в систему';
             }
         });
     </script>
