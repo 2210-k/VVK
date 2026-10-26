@@ -11,7 +11,7 @@
         label { display: block; font-weight: bold; margin-bottom: 5px; }
         input[type="text"], textarea, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         textarea { resize: vertical; height: 80px; }
-        select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+        .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
         .radio-group { display: flex; gap: 15px; margin-top: 5px; }
         .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
         button[type="submit"] { background: #0056b3; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; }
@@ -20,9 +20,9 @@
         .row { display: flex; gap: 15px; }
         .row > .form-group { flex: 1; }
         .date-group { display: flex; gap: 5px; }
-        .date-group input, .center-input { text-align: center; }
+        .date-group input, .date-group select, .center-input { text-align: center; }
         .date-group .day { width: 60px; }
-        .date-group .month { width: 80px; }
+        .date-group .month { width: 110px; } /* Немного расширил для слов */
         .date-group .year { width: 80px; }
     </style>
 </head>
@@ -37,7 +37,9 @@
                 <label>Дата заключения (Авто-заполнение)</label>
                 <div class="date-group">
                     <input type="text" id="dateDay" class="day" maxlength="2" required>
-                    <input type="text" id="dateMonth" class="month" maxlength="2" required>
+                    <select id="dateMonth" class="month" required>
+                        <!-- Опции добавятся через JS -->
+                    </select>
                     <input type="text" id="dateYear" class="year" maxlength="4" required>
                 </div>
             </div>
@@ -68,7 +70,9 @@
                 <label>Дата рождения</label>
                 <div class="date-group">
                     <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2" required>
-                    <input type="text" id="dobMonth" class="month" placeholder="ММ" maxlength="2" required>
+                    <select id="dobMonth" class="month" required>
+                        <!-- Опции добавятся через JS -->
+                    </select>
                     <input type="text" id="dobYear" class="year" placeholder="ГГ" maxlength="2" required>
                 </div>
             </div>
@@ -100,25 +104,25 @@
 
         <div class="form-group">
             <label>Жалобы</label>
-            <select id="template-complaints"><option value="">-- Выбрать шаблон --</option></select>
+            <select id="template-complaints" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="complaints"></textarea>
         </div>
 
         <div class="form-group">
             <label>Анамнез</label>
-            <select id="template-anamnesis"><option value="">-- Выбрать шаблон --</option></select>
+            <select id="template-anamnesis" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="anamnesis"></textarea>
         </div>
 
         <div class="form-group">
             <label>Данные объективного обследования</label>
-            <select id="template-objectiveData"><option value="">-- Выбрать шаблон --</option></select>
+            <select id="template-objectiveData" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="objectiveData"></textarea>
         </div>
 
         <div class="form-group">
             <label>Диагноз</label>
-            <select id="template-diagnosis"><option value="">-- Выбрать шаблон --</option></select>
+            <select id="template-diagnosis" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="diagnosis"></textarea>
         </div>
 
@@ -135,7 +139,7 @@
 
         <div class="form-group">
             <label>Рекомендации комиссии</label>
-            <select id="template-recommendations"><option value="">-- Выбрать шаблон --</option></select>
+            <select id="template-recommendations" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="recommendations"></textarea>
         </div>
 
@@ -148,10 +152,9 @@
 
 <script>
     // =====================================================================
-    // ⚙️ ВАШИ КООРДИНАТЫ (Добавлен параметр lineHeight - отступ между строками) ⚙️
+    // ⚙️ ВАШИ КООРДИНАТЫ (Без изменений) ⚙️
     // =====================================================================
     const COORDS = {
-        // Для центрируемых полей пишем xStart (начало) и xEnd (конец поля)
         date: { 
             day: { xStart: 50, xEnd: 65, y: 665 }, 
             month: { xStart: 77, xEnd: 163, y: 665 }, 
@@ -159,12 +162,10 @@
         },
         docNumber: { xStart: 510, xEnd: 546, y: 665 },
         
-        // Обычные поля (только x - левый край)
         chairman: { x: 172, y: 632.5 },
         firstName: { x: 74, y: 561 },
         patronymic: { x: 354, y: 561 },
         
-        // Центрируемые поля (Дата рождения)
         dob: { 
             day: { xStart: 138, xEnd: 153, y: 547 }, 
             month: { xStart: 161, xEnd: 235, y: 547 }, 
@@ -174,12 +175,10 @@
         pob: { x: 387, y: 548 },
         address: { x: 147, y: 533 },
         
-        // Центрируемые поля (Паспорт и повестка)
         passSeries: { xStart: 128, xEnd: 155, y: 520 },
         passNumber: { xStart: 178, xEnd: 227, y: 520 },
         summons: { xStart: 363, xEnd: 404, y: 520 },
         
-        // МНОГОСТРОЧНЫЕ ПОЛЯ (lineHeight — расстояние между строками, подберите под ваш шрифт)
         complaints: { x: 50, y: 506, maxWidth: 492, indent: 43, lineHeight: 14 }, 
         anamnesis: { x: 50, y: 494, maxWidth: 492, indent: 46, lineHeight: 13 },
         objectiveData: { x: 50, y: 453, maxWidth: 492, indent: 181, lineHeight: 13 },
@@ -203,6 +202,12 @@
         recommendations: ["Годен к военной службе без ограничений.", "Годен с незначительными ограничениями. Рекомендовано: служба в частях, не связанных с повышенными физическими нагрузками.", "Временно не годен. Рекомендована отсрочка на [срок]. Повторное освидетельствование через [срок].", "Не годен к военной службе. Освобождается от воинской обязанности."]
     };
 
+    // Массив месяцев в родительном падеже
+    const MONTHS_GENITIVE = [
+        "января", "февраля", "марта", "апреля", "мая", "июня", 
+        "июля", "августа", "сентября", "октября", "ноября", "декабря"
+    ];
+
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
@@ -217,15 +222,35 @@
         }
     }
 
+    // Инициализация выпадающих списков месяцев
+    function initMonths() {
+        const dateMonthSelect = document.getElementById('dateMonth');
+        const dobMonthSelect = document.getElementById('dobMonth');
+        
+        // Очищаем на случай повторного вызова
+        dateMonthSelect.innerHTML = '';
+        dobMonthSelect.innerHTML = '';
+
+        MONTHS_GENITIVE.forEach((month) => {
+            const option1 = new Option(month, month);
+            const option2 = new Option(month, month);
+            dateMonthSelect.add(option1);
+            dobMonthSelect.add(option2);
+        });
+    }
+
     function initAutoDate() {
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
-        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+        // Устанавливаем текущий месяц из массива слов
+        document.getElementById('dateMonth').value = MONTHS_GENITIVE[today.getMonth()];
         document.getElementById('dateYear').value = today.getFullYear();
         document.getElementById('docNumber').value = Math.floor(1000 + Math.random() * 9000);
     }
 
+    // Запускаем инициализацию
     initTemplates();
+    initMonths();
     initAutoDate();
 
     // =====================================================================
@@ -265,7 +290,7 @@
         for (let line of lines) {
             const currentX = line.isFirst ? x + indent : x;
             page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
-            currentY -= lineHeight; // Используем lineHeight из COORDS
+            currentY -= lineHeight;
         }
     }
 
@@ -296,7 +321,6 @@
             const fontSize = 10;
             const black = PDFLib.rgb(0, 0, 0);
             const textOptions = { size: fontSize, font: customFont, color: black };
-            // Убрали lineHeight отсюда, теперь он берется из COORDS для каждого поля отдельно
             const paraOptions = { ...textOptions }; 
 
             // --- ЦЕНТРИРУЕМЫЕ ПОЛЯ ---
