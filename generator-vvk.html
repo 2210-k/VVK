@@ -6,7 +6,7 @@
     <title>Генератор ВВК</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; margin: 0; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; }
@@ -27,6 +27,26 @@
         .date-group .year { width: 80px; }
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
+
+        /* Стили для окна предпросмотра */
+        #preview-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .preview-container {
+            width: 90%; height: 90%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .preview-header {
+            padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd;
+        }
+        .preview-header h3 { margin: 0; color: #333; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-dl:hover { background: #059669; }
+        .btn-close { background: #ef4444; color: white; margin-left: 10px; }
+        .btn-close:hover { background: #dc2626; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -154,13 +174,26 @@
     </form>
 </div>
 
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ПРЕДПРОСМОТРА -->
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Предпросмотр документа</h3>
+            <div>
+                <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-preview btn-close" id="close-preview-btn">Закрыть</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 
 <script>
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
 
-    // ВАШИ КООРДИНАТЫ
     const COORDS = {
         date: { day: { xStart: 50, xEnd: 65, y: 665 }, month: { xStart: 77, xEnd: 163, y: 665 }, year: { xStart: 177, xEnd: 213, y: 665 } },
         docNumber: { xStart: 510, xEnd: 546, y: 665 },
@@ -191,21 +224,13 @@
 
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
-    // Загрузка пациентов (ТОЛЬКО роль 'patient')
+    let currentPdfBlob = null; // Переменная для хранения файла перед скачиванием
+
     async function loadPatients() {
         const select = document.getElementById('patientSelect');
-        const { data: patients, error } = await supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('role', 'patient')
-            .order('last_name');
-
-        if (error) {
-            console.error(error);
-            select.innerHTML = '<option value="">Ошибка загрузки</option>';
-            return;
-        }
-
+        const { data: patients, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (error) { select.innerHTML = '<option value="">Ошибка загрузки</option>'; return; }
+        
         select.innerHTML = '<option value="">-- Выберите пациента --</option>';
         patients.forEach(p => {
             const opt = document.createElement('option');
@@ -230,7 +255,7 @@
             document.getElementById('dobMonth').value = MONTHS_GENITIVE[parseInt(month) - 1];
             document.getElementById('dobYear').value = year.slice(-2);
         }
-        document.getElementById('pob').value = patient.pob || ''; // ДОБАВИТЬ ЭТО
+        document.getElementById('pob').value = patient.pob || '';
         document.getElementById('address').value = patient.address || '';
         document.getElementById('passSeries').value = patient.pass_series || '';
         document.getElementById('passNumber').value = patient.pass_number || '';
@@ -304,6 +329,23 @@
         page.drawLine({ start: { x: x + 4, y: y }, end: { x: x + 10, y: y + 8 }, thickness: 1.5, color: color });
     }
 
+    // --- ОБРАБОТЧИКИ ОКНА ПРЕДПРОСМОТРА ---
+    document.getElementById('close-preview-btn').addEventListener('click', () => {
+        document.getElementById('preview-modal').style.display = 'none';
+        document.getElementById('pdf-preview-frame').src = ''; // Очищаем память
+        window.location.href = 'index.html'; // Возвращаемся на портал
+    });
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+        if (!currentPdfBlob) return;
+        const docNumber = document.getElementById('docNumber').value;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(currentPdfBlob);
+        link.download = `Заключение_ВВК_${docNumber}.pdf`;
+        link.click();
+    });
+
+    // --- ОТПРАВКА ФОРМЫ ---
     document.getElementById('vvkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -315,7 +357,7 @@
         }
 
         btn.disabled = true;
-        btn.textContent = 'Генерация и сохранение...';
+        btn.textContent = 'Генерация...';
 
         try {
             const url = './template.pdf'; 
@@ -360,12 +402,12 @@
             }
 
             const pdfBytes = await pdfDoc.save();
-            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
             
             const docNumber = getVal('docNumber');
             const fileName = `${Date.now()}_VVK_${docNumber}.pdf`;
 
-            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('documents').upload(fileName, pdfBlob, { contentType: 'application/pdf' });
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
             if (uploadError) throw new Error("Ошибка загрузки: " + uploadError.message);
 
             const { error: dbError } = await supabaseClient.from('documents').insert({
@@ -376,13 +418,10 @@
             });
             if (dbError) throw new Error("Ошибка БД: " + dbError.message);
 
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(pdfBlob);
-            link.download = `Заключение_ВВК_${docNumber}.pdf`;
-            link.click();
-
-            alert("Документ создан и отправлен пациенту!");
-            window.location.href = 'index.html';
+            // ВМЕСТО АВТОСКАЧИВАНИЯ ПОКАЗЫВАЕМ ПРЕДПРОСМОТР
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl;
+            document.getElementById('preview-modal').style.display = 'flex';
 
         } catch (error) {
             console.error(error);
