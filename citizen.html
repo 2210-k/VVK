@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет пациента</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #10b981; --bg: #f0fdf4; --text: #333; }
+        body { font-family: sans-serif; background: var(--bg); padding: 20px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        /* Экран входа */
+        #auth-screen { display: flex; justify-content: center; align-items: center; height: 90vh; }
+        .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .auth-box h2 { color: var(--primary); margin-top: 0; }
+        .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-login { width: 100%; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; background: var(--primary); color: white; }
+        .error-msg { color: #ef4444; font-size: 14px; margin-bottom: 10px; display: none; }
+
+        /* Экран кабинета */
+        #dashboard-screen { display: none; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
+        .header h2 { color: #047857; margin: 0; }
+        .btn-logout { background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        .doc-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .doc-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2); }
+        .doc-info h4 { margin: 0 0 5px 0; color: #333; }
+        .doc-info p { margin: 0; color: #666; font-size: 14px; }
+        .btn-download { background: var(--primary); color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- ЭКРАН ВХОДА -->
+    <div id="auth-screen">
+        <div class="auth-box">
+            <h2>Кабинет пациента</h2>
+            <div id="auth-error" class="error-msg"></div>
+            <form id="login-form">
+                <input type="email" id="email" placeholder="Ваш Email" required>
+                <input type="password" id="password" placeholder="Пароль" required>
+                <button type="submit" class="btn-login">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ДОКУМЕНТОВ -->
+    <div id="dashboard-screen" class="container">
+        <div class="header">
+            <h2>Мои медицинские документы</h2>
+            <button class="btn-logout" id="logout-btn">Выйти</button>
+        </div>
+        
+        <div id="docs-list">
+            <p>Загрузка документов...</p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const authScreen = document.getElementById('auth-screen');
+        const dashboardScreen = document.getElementById('dashboard-screen');
+        const loginForm = document.getElementById('login-form');
+        const authError = document.getElementById('auth-error');
+
+        // Вход
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.style.display = 'none';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                authError.textContent = 'Неверный email или пароль.';
+                authError.style.display = 'block';
+            }
+        });
+
+        // Выход
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+        });
+
+        // Загрузка документов (только для текущего пациента)
+        async function loadDocuments(userId) {
+            const list = document.getElementById('docs-list');
+            list.innerHTML = '<p>Загрузка...</p>';
+
+            // Ищем документы, которые принадлежат профилю пациента, привязанному к этому user_id
+            const { data: docs, error } = await supabaseClient
+                .from('documents')
+                .select(`*, patients!inner(user_id)`)
+                .eq('patients.user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error(error);
+                list.innerHTML = '<p style="color:red">Ошибка загрузки: ' + error.message + '</p>';
+                return;
+            }
+
+            if (docs.length === 0) {
+                list.innerHTML = '<p>У вас пока нет документов.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            docs.forEach(doc => {
+                // Получаем публичную ссылку на файл
+                const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                
+                const div = document.createElement('div');
+                div.className = 'doc-card';
+                div.innerHTML = `
+                    <div class="doc-info">
+                        <h4>${doc.document_type}</h4>
+                        <p>Номер: <b>${doc.doc_number}</b> | Дата: ${new Date(doc.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <a href="${publicUrl}" target="_blank" class="btn-download">Скачать PDF</a>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Магия отслеживания состояния
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                authScreen.style.display = 'none';
+                dashboardScreen.style.display = 'block';
+                loadDocuments(session.user.id);
+            } else {
+                authScreen.style.display = 'flex';
+                dashboardScreen.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
