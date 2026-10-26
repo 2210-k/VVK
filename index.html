@@ -9,18 +9,20 @@
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"], textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        textarea { resize: vertical; height: 60px; }
+        input[type="text"], textarea, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        textarea { resize: vertical; height: 80px; }
+        select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
         .radio-group { display: flex; gap: 15px; margin-top: 5px; }
         .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
-        button { background: #0056b3; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; }
-        button:hover { background: #004494; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; }
+        button[type="submit"]:hover { background: #004494; }
+        button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
         .row { display: flex; gap: 15px; }
         .row > .form-group { flex: 1; }
-        /* Стили для полей даты */
+        
+        /* Стили для центрирования коротких полей */
         .date-group { display: flex; gap: 5px; }
-        .date-group input { text-align: center; }
+        .date-group input, .center-input { text-align: center; }
         .date-group .day { width: 60px; }
         .date-group .month { width: 80px; }
         .date-group .year { width: 80px; }
@@ -35,16 +37,16 @@
         <!-- ДАТА ЗАКЛЮЧЕНИЯ -->
         <div class="row">
             <div class="form-group">
-                <label>Дата заключения</label>
+                <label>Дата заключения (Авто-заполнение)</label>
                 <div class="date-group">
-                    <input type="text" id="dateDay" class="day" placeholder="ДД" maxlength="2" required>
-                    <input type="text" id="dateMonth" class="month" placeholder="ММ" maxlength="2" required>
-                    <input type="text" id="dateYear" class="year" placeholder="ГГГГ" maxlength="4" required>
+                    <input type="text" id="dateDay" class="day" maxlength="2" required>
+                    <input type="text" id="dateMonth" class="month" maxlength="2" required>
+                    <input type="text" id="dateYear" class="year" maxlength="4" required>
                 </div>
             </div>
             <div class="form-group">
-                <label>№ документа (сгенерируется)</label>
-                <input type="text" id="docNumber" readonly>
+                <label>№ документа (редактируемый)</label>
+                <input type="text" id="docNumber" class="center-input" required>
             </div>
         </div>
 
@@ -67,7 +69,7 @@
         <!-- ДАТА РОЖДЕНИЯ -->
         <div class="row">
             <div class="form-group">
-                <label>Дата рождения</label>
+                <label>Дата рождения (20__ уже в бланке)</label>
                 <div class="date-group">
                     <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2" required>
                     <input type="text" id="dobMonth" class="month" placeholder="ММ" maxlength="2" required>
@@ -88,35 +90,40 @@
         <div class="row">
             <div class="form-group">
                 <label>Паспорт (Серия)</label>
-                <input type="text" id="passSeries" maxlength="4" required>
+                <input type="text" id="passSeries" class="center-input" maxlength="4" required>
             </div>
             <div class="form-group">
                 <label>Паспорт (Номер)</label>
-                <input type="text" id="passNumber" maxlength="6" required>
+                <input type="text" id="passNumber" class="center-input" maxlength="6" required>
             </div>
             <div class="form-group">
                 <label>№ повестки</label>
-                <input type="text" id="summons" required>
+                <input type="text" id="summons" class="center-input" required>
             </div>
         </div>
 
+        <!-- ШАБЛОНЫ И ТЕКСТОВЫЕ ПОЛЯ -->
         <div class="form-group">
             <label>Жалобы</label>
+            <select id="template-complaints"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="complaints"></textarea>
         </div>
 
         <div class="form-group">
             <label>Анамнез</label>
+            <select id="template-anamnesis"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="anamnesis"></textarea>
         </div>
 
         <div class="form-group">
             <label>Данные объективного обследования</label>
+            <select id="template-objectiveData"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="objectiveData"></textarea>
         </div>
 
         <div class="form-group">
             <label>Диагноз</label>
+            <select id="template-diagnosis"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="diagnosis"></textarea>
         </div>
 
@@ -133,6 +140,7 @@
 
         <div class="form-group">
             <label>Рекомендации комиссии</label>
+            <select id="template-recommendations"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="recommendations"></textarea>
         </div>
 
@@ -145,8 +153,7 @@
 
 <script>
     // =====================================================================
-    // ⚙️ НАСТРОЙКА КООРДИНАТ (МЕНЯЙТЕ ТОЛЬКО ЦИФРЫ ЗДЕСЬ) ⚙️
-    // x - отступ слева, y - отступ снизу.
+    // ⚙️ ВАШИ КООРДИНАТЫ (Я оставил их как вы прислали, замените Х на числа) ⚙️
     // =====================================================================
     const COORDS = {
         date: { day: {x: 50, y: 665}, month: {x: 78, y: 665}, year: {x: 178, y: 665} },
@@ -161,12 +168,12 @@
         passNumber: { x: 178, y: 520 },
         summons: { x: 363, y: 520 },
         
-        // Многострочные поля (y — это координата ПЕРВОЙ строки)
-        complaints: { x: 50, y: 513, maxWidth: 492, indent: 43 }, // indent = отступ первой строки (в пунктах)
-        anamnesis: { x: 50, y: 500, maxWidth: 492, indent: 46 },
-        objectiveData: { x: 50, y: 486, maxWidth: 492, indent: 181 },
-        diagnosis: { x: 50, y: 442, maxWidth: 492, indent: 43 },
-        recommendations: { x: 50, y: 300, maxWidth: 492, indent: 120 },
+        // Многострочные поля (ВМЕСТО Х ПОСТАВЬТЕ РЕАЛЬНЫЕ ЦИФРЫ Y)
+        complaints: { x: 50, y: 490, maxWidth: 492, indent: 43 }, 
+        anamnesis: { x: 50, y: 430, maxWidth: 492, indent: 46 },
+        objectiveData: { x: 50, y: 370, maxWidth: 492, indent: 181 },
+        diagnosis: { x: 50, y: 310, maxWidth: 492, indent: 43 },
+        recommendations: { x: 50, y: 220, maxWidth: 492, indent: 120 },
 
         categories: {
             'A': { x: 50, y: 332 },
@@ -176,23 +183,98 @@
             'D': { x: 50, y: 277.5 }
         }
     };
-    // =====================================================================
 
-    document.getElementById('docNumber').value = Math.floor(1000 + Math.random() * 9000);
+    // =====================================================================
+    // 📝 ШАБЛОНЫ ТЕКСТА
+    // =====================================================================
+    const TEMPLATES = {
+        complaints: [
+            "Жалоб не предъявляет.",
+            "Жалобы на головные боли, быструю утомляемость, боли в области сердца, одышку.",
+            "Жалобы на периодические боли в пояснице, ограничение подвижности."
+        ],
+        anamnesis: [
+            "Ранее перенесённые заболевания: не переносил. Хронических заболеваний не выявлено. Травм, операций не было. На учёте у врачей не состоит.",
+            "Ранее перенесённые заболевания: ОРВИ, ангина, пневмония. Хронических заболеваний не выявлено. Травм, операций не было. На учёте у врачей не состоит.",
+            "Ранее перенесённые заболевания: ОРВИ. Хронические заболевания: [название]. Состоит на учёте у [специалист] с [год]. Регулярно наблюдается.",
+            "Ранее перенесённые заболевания: ОРВИ. Травмы: перелом левой голени в 2026 г. Операции: [перечислить]. Хронических заболеваний не выявлено."
+        ],
+        objectiveData: [
+            "Общее состояние удовлетворительное. Кожные покровы чистые, обычной окраски. Дыхание везикулярное, хрипов нет. Тоны сердца ясные, ритмичные. АД 120/80 мм рт.ст., пульс 72 уд/мин. Живот мягкий, безболезненный. Физическое развитие соответствует возрасту.",
+            "Общее состояние удовлетворительное. Кожные покровы чистые. Дыхание везикулярное, хрипов нет. Тоны сердца ясные, ритмичные. АД [указать] мм рт.ст., пульс [указать] уд/мин. Живот мягкий, безболезненный. [Указать отклонения: например, повышенное АД, ограничение движения в суставе]."
+        ],
+        diagnosis: [
+            "Практически здоров.",
+            "Гипертоническая болезнь I стадии.",
+            "Последствия перенесённой травмы [название]. Без нарушения функций."
+        ],
+        recommendations: [
+            "Годен к военной службе без ограничений.",
+            "Годен с незначительными ограничениями. Рекомендовано: служба в частях, не связанных с повышенными физическими нагрузками.",
+            "Временно не годен. Рекомендована отсрочка на [срок]. Повторное освидетельствование через [срок].",
+            "Не годен к военной службе. Освобождается от воинской обязанности."
+        ]
+    };
+
+    // Инициализация шаблонов в выпадающих списках
+    function initTemplates() {
+        for (const [fieldId, options] of Object.entries(TEMPLATES)) {
+            const select = document.getElementById(`template-${fieldId}`);
+            const textarea = document.getElementById(fieldId);
+            
+            options.forEach((text, index) => {
+                const opt = document.createElement('option');
+                opt.value = text;
+                opt.textContent = `Вариант ${index + 1}`;
+                select.appendChild(opt);
+            });
+
+            select.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    textarea.value = e.target.value;
+                }
+            });
+        }
+    }
+
+    // Инициализация авто-даты
+    function initAutoDate() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('dateYear').value = today.getFullYear();
+        
+        // Генерируем номер документа, но оставляем возможность редактирования
+        document.getElementById('docNumber').value = Math.floor(1000 + Math.random() * 9000);
+    }
+
+    // Вызов инициализаций при загрузке страницы
+    initTemplates();
+    initAutoDate();
+
+    // =====================================================================
+    // 🎨 ФУНКЦИИ РИСОВАНИЯ
+    // =====================================================================
+    
+    // Функция для рисования текста строго по центру (x - это центр)
+    function drawCenteredText(page, text, x, y, options) {
+        if (!text) return;
+        const textWidth = options.font.widthOfTextAtSize(text, options.size);
+        // Сдвигаем x влево на половину ширины текста
+        page.drawText(text, { ...options, x: x - (textWidth / 2), y });
+    }
 
     // Функция для рисования абзаца с красной строкой
     function drawParagraph(page, text, x, y, options) {
         if (!text) return;
         const { font, size, color, maxWidth, lineHeight, indent } = options;
         
-        // Разбиваем текст на слова для переноса
         const words = text.split(' ');
         let lines = [];
         let currentLine = '';
         let isFirstLine = true;
 
         for (let word of words) {
-            // Считаем ширину с учетом отступа для первой строки
             const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
             const testLine = currentLine === '' ? word : currentLine + ' ' + word;
             const testWidth = font.widthOfTextAtSize(testLine, size);
@@ -209,7 +291,6 @@
             lines.push({ text: currentLine, isFirst: isFirstLine });
         }
 
-        // Рисуем строки
         let currentY = y;
         for (let line of lines) {
             const currentX = line.isFirst ? x + indent : x;
@@ -218,13 +299,17 @@
         }
     }
 
-    // Функция для рисования галочки линиями
+    // Функция для рисования галочки
     function drawCheckmark(page, x, y, color) {
-        const size = 8;
-        page.drawLine({ start: { x: x, y: y + size/2 }, end: { x: x + size/3, y: y }, thickness: 1.5, color: color });
-        page.drawLine({ start: { x: x + size/3, y: y }, end: { x: x + size, y: y + size }, thickness: 1.5, color: color });
+        page.drawLine({ start: { x: x, y: y + 4 }, end: { x: x + 4, y: y }, thickness: 1.5, color: color });
+        page.drawLine({ start: { x: x + 4, y: y }, end: { x: x + 10, y: y + 8 }, thickness: 1.5, color: color });
+        // Раскомментируйте строку ниже, чтобы видеть, куда указывают координаты при настройке:
+        // page.drawCircle({ x: x, y: y, size: 1, color: PDFLib.rgb(1, 0, 0) });
     }
 
+    // =====================================================================
+    // 🚀 ОТПРАВКА ФОРМЫ И ГЕНЕРАЦИЯ PDF
+    // =====================================================================
     document.getElementById('vvkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -275,34 +360,33 @@
             const textOptions = { size: fontSize, font: customFont, color: black };
             const paraOptions = { ...textOptions, lineHeight: 12, maxWidth: 450 };
 
-            // --- ОДНОСТРОЧНЫЕ ПОЛЯ ---
-            firstPage.drawText(formData.dateDay, { x: COORDS.date.day.x, y: COORDS.date.day.y, ...textOptions });
-            firstPage.drawText(formData.dateMonth, { x: COORDS.date.month.x, y: COORDS.date.month.y, ...textOptions });
-            firstPage.drawText(formData.dateYear, { x: COORDS.date.year.x, y: COORDS.date.year.y, ...textOptions });
+            // --- ДАТЫ И ЦЕНТРИРОВАННЫЕ ПОЛЯ ---
+            drawCenteredText(firstPage, formData.dateDay, COORDS.date.day.x, COORDS.date.day.y, textOptions);
+            drawCenteredText(firstPage, formData.dateMonth, COORDS.date.month.x, COORDS.date.month.y, textOptions);
+            drawCenteredText(firstPage, formData.dateYear, COORDS.date.year.x, COORDS.date.year.y, textOptions);
             
-            firstPage.drawText(`${formData.docNumber}`, { x: COORDS.docNumber.x, y: COORDS.docNumber.y, ...textOptions });
+            drawCenteredText(firstPage, `№ ${formData.docNumber}`, COORDS.docNumber.x, COORDS.docNumber.y, textOptions);
+            drawCenteredText(firstPage, formData.passSeries, COORDS.passSeries.x, COORDS.passSeries.y, textOptions);
+            drawCenteredText(firstPage, formData.passNumber, COORDS.passNumber.x, COORDS.passNumber.y, textOptions);
+            drawCenteredText(firstPage, formData.summons, COORDS.summons.x, COORDS.summons.y, textOptions);
+            
+            drawCenteredText(firstPage, formData.dobDay, COORDS.dob.day.x, COORDS.dob.day.y, textOptions);
+            drawCenteredText(firstPage, formData.dobMonth, COORDS.dob.month.x, COORDS.dob.month.y, textOptions);
+            drawCenteredText(firstPage, formData.dobYear, COORDS.dob.year.x, COORDS.dob.year.y, textOptions);
+
+            // --- ОСТАЛЬНЫЕ ОДНОСТРОЧНЫЕ ---
             firstPage.drawText(formData.chairman, { x: COORDS.chairman.x, y: COORDS.chairman.y, ...textOptions });
-            
             firstPage.drawText(formData.firstName, { x: COORDS.firstName.x, y: COORDS.firstName.y, ...textOptions });
             firstPage.drawText(formData.patronymic, { x: COORDS.patronymic.x, y: COORDS.patronymic.y, ...textOptions });
-            
-            firstPage.drawText(formData.dobDay, { x: COORDS.dob.day.x, y: COORDS.dob.day.y, ...textOptions });
-            firstPage.drawText(formData.dobMonth, { x: COORDS.dob.month.x, y: COORDS.dob.month.y, ...textOptions });
-            firstPage.drawText(formData.dobYear, { x: COORDS.dob.year.x, y: COORDS.dob.year.y, ...textOptions });
-            
             firstPage.drawText(formData.pob, { x: COORDS.pob.x, y: COORDS.pob.y, ...textOptions });
             firstPage.drawText(formData.address, { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
-            
-            firstPage.drawText(formData.passSeries, { x: COORDS.passSeries.x, y: COORDS.passSeries.y, ...textOptions });
-            firstPage.drawText(formData.passNumber, { x: COORDS.passNumber.x, y: COORDS.passNumber.y, ...textOptions });
-            firstPage.drawText(formData.summons, { x: COORDS.summons.x, y: COORDS.summons.y, ...textOptions });
 
-            // --- МНОГОСТРОЧНЫЕ ПОЛЯ (С КРАСНОЙ СТРОКОЙ) ---
-            drawParagraph(firstPage, formData.complaints, COORDS.complaints.x, COORDS.complaints.y, { ...paraOptions, indent: COORDS.complaints.indent });
-            drawParagraph(firstPage, formData.anamnesis, COORDS.anamnesis.x, COORDS.anamnesis.y, { ...paraOptions, indent: COORDS.anamnesis.indent });
-            drawParagraph(firstPage, formData.objectiveData, COORDS.objectiveData.x, COORDS.objectiveData.y, { ...paraOptions, indent: COORDS.objectiveData.indent });
-            drawParagraph(firstPage, formData.diagnosis, COORDS.diagnosis.x, COORDS.diagnosis.y, { ...paraOptions, indent: COORDS.diagnosis.indent });
-            drawParagraph(firstPage, formData.recommendations, COORDS.recommendations.x, COORDS.recommendations.y, { ...paraOptions, indent: COORDS.recommendations.indent });
+            // --- МНОГОСТРОЧНЫЕ ПОЛЯ ---
+            drawParagraph(firstPage, formData.complaints, COORDS.complaints.x, COORDS.complaints.y, { ...paraOptions, maxWidth: COORDS.complaints.maxWidth, indent: COORDS.complaints.indent });
+            drawParagraph(firstPage, formData.anamnesis, COORDS.anamnesis.x, COORDS.anamnesis.y, { ...paraOptions, maxWidth: COORDS.anamnesis.maxWidth, indent: COORDS.anamnesis.indent });
+            drawParagraph(firstPage, formData.objectiveData, COORDS.objectiveData.x, COORDS.objectiveData.y, { ...paraOptions, maxWidth: COORDS.objectiveData.maxWidth, indent: COORDS.objectiveData.indent });
+            drawParagraph(firstPage, formData.diagnosis, COORDS.diagnosis.x, COORDS.diagnosis.y, { ...paraOptions, maxWidth: COORDS.diagnosis.maxWidth, indent: COORDS.diagnosis.indent });
+            drawParagraph(firstPage, formData.recommendations, COORDS.recommendations.x, COORDS.recommendations.y, { ...paraOptions, maxWidth: COORDS.recommendations.maxWidth, indent: COORDS.recommendations.indent });
 
             // --- ГАЛОЧКА ---
             if (formData.category) {
