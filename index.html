@@ -10,16 +10,15 @@
     
     <style>
         :root {
-            --primary: #1e3a8a; /* Строгий синий */
+            --primary: #1e3a8a;
             --primary-hover: #1e40af;
             --bg: #f3f4f6;
             --text: #333;
             --danger: #ef4444;
-            --success: #10b981;
         }
         body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
         
-        /* ================= ЭКРАН ВХОДА ================= */
+        /* ЭКРАН ВХОДА */
         #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
         .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
         .auth-box h2 { color: var(--primary); margin-top: 0; margin-bottom: 25px; }
@@ -31,36 +30,29 @@
         .btn-register:hover { background: #d1d5db; }
         .error-msg { color: var(--danger); font-size: 14px; margin-bottom: 10px; display: none; }
 
-        /* ================= ЭКРАН КАБИНЕТА (DASHBOARD) ================= */
+        /* ЭКРАН КАБИНЕТА */
         #dashboard-screen { display: none; height: 100vh; }
         
-        /* Боковое меню */
         .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; position: fixed; height: 100%; }
         .sidebar h2 { padding: 20px; margin: 0; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
         .menu-item { padding: 15px 20px; cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left: 4px solid #60a5fa; }
         .menu-item a { color: white; text-decoration: none; display: block; font-size: 15px; }
 
-        /* Основная область */
         .main-content { margin-left: 260px; display: flex; flex-direction: column; min-height: 100vh; }
-        
-        /* Шапка */
         .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
         .user-profile { display: flex; align-items: center; gap: 15px; font-weight: bold; color: var(--text); font-size: 14px; }
         .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-logout:hover { background: var(--danger); color: white; }
 
-        /* Контент */
         .content { padding: 30px; }
         
-        /* Карточки типов документов */
         .doc-types-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
         .type-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
         .type-card:hover { border-color: var(--primary); transform: translateY(-2px); }
         .type-card h3 { margin: 10px 0; color: var(--primary); }
         .type-card p { color: #666; font-size: 13px; margin: 0; }
 
-        /* Список созданных документов */
         .documents-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .doc-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
         .doc-card h3 { margin-top: 0; color: var(--text); font-size: 16px; }
@@ -71,7 +63,6 @@
 </head>
 <body>
 
-    <!-- ================= ЭКРАН ВХОДА ================= -->
     <div id="auth-screen">
         <div class="auth-box">
             <h2>Вход в портал ЕСС</h2>
@@ -85,18 +76,14 @@
         </div>
     </div>
 
-    <!-- ================= ЭКРАН КАБИНЕТА ================= -->
     <div id="dashboard-screen">
-        <!-- Боковое меню -->
         <div class="sidebar">
             <h2>ЕСС | Портал</h2>
             <div class="menu-item active"><a href="#">📄 Документы</a></div>
             <div class="menu-item"><a href="#">⚙️ Настройки (скоро)</a></div>
         </div>
 
-        <!-- Основная область -->
         <div class="main-content">
-            <!-- Шапка -->
             <div class="header">
                 <h3>Рабочая область</h3>
                 <div class="user-profile">
@@ -105,16 +92,14 @@
                 </div>
             </div>
 
-            <!-- Контент -->
             <div class="content">
                 <h2>Создать новый документ</h2>
                 <div class="doc-types-grid">
-                    <!-- Карточка типа документа ведет на ваш index.html -->
-                    <div class="type-card" onclick="window.location.href='index.html'">
+                    <!-- Кнопка ведет на generator-vvk.html -->
+                    <div class="type-card" onclick="window.location.href='generator-vvk.html'">
                         <h3>Заключение ВВК</h3>
                         <p>Медицинское заключение</p>
                     </div>
-                    <!-- Заглушки для будущих документов -->
                     <div class="type-card" onclick="alert('В разработке...')">
                         <h3>Судебно-медицинская экспертиза</h3>
                         <p>Тип 33</p>
@@ -123,23 +108,19 @@
 
                 <h2>Мои последние документы</h2>
                 <div class="documents-list" id="documents-list">
-                    <!-- Сюда будут подгружаться документы из БД -->
                     <p style="color: #888;">У вас пока нет созданных документов.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ================= ЛОГИКА ================= -->
     <script>
-        // 1. ИНИЦИАЛИЗАЦИЯ SUPABASE
-        // ⚠️ ВСТАВЬТЕ СЮДА ВАШИ ДАННЫЕ ИЗ SUPABASE (Project Settings -> API)
+        // ВСТАВЬТЕ ВАШИ ПУБЛИЧНЫЕ КЛЮЧИ
         const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // DOM Элементы
         const authScreen = document.getElementById('auth-screen');
         const dashboardScreen = document.getElementById('dashboard-screen');
         const loginForm = document.getElementById('login-form');
@@ -148,13 +129,11 @@
         const authError = document.getElementById('auth-error');
         const userEmailSpan = document.getElementById('user-email');
 
-        // 2. ФУНКЦИЯ ОТОБРАЖЕНИЯ ОШИБОК
         function showError(msg) {
             authError.textContent = msg;
             authError.style.display = 'block';
         }
 
-        // 3. ОБРАБОТКА ВХОДА
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             authError.style.display = 'none';
@@ -165,13 +144,9 @@
 
             if (error) {
                 showError('Ошибка входа: ' + error.message);
-            } else {
-                console.log('Успешный вход!');
-                // Смена экрана произойдет автоматически через onAuthStateChange
             }
         });
 
-        // 4. ОБРАБОТКА РЕГИСТРАЦИИ
         registerBtn.addEventListener('click', async () => {
             authError.style.display = 'none';
             const email = document.getElementById('email').value;
@@ -187,28 +162,20 @@
             if (error) {
                 showError('Ошибка регистрации: ' + error.message);
             } else {
-                alert('Регистрация успешна! Проверьте почту (если включено подтверждение) или войдите.');
+                alert('Регистрация успешна! Теперь нажмите "Войти".');
             }
         });
 
-        // 5. ВЫХОД
         logoutBtn.addEventListener('click', async () => {
             await supabase.auth.signOut();
         });
 
-        // 6. МАГИЯ SUPABASE: СЛЕДИМ ЗА СТАТУСОМ ПОЛЬЗОВАТЕЛЯ
-        // Эта функция срабатывает при загрузке и при каждом входе/выходе
         supabase.auth.onAuthStateChange((event, session) => {
             if (session) {
-                // Пользователь ВОШЕЛ
                 authScreen.style.display = 'none';
                 dashboardScreen.style.display = 'block';
                 userEmailSpan.textContent = session.user.email;
-                
-                // Здесь потом можно вызвать функцию загрузки документов из БД
-                // loadUserDocuments(session.user.id); 
             } else {
-                // Пользователь НЕ ВОШЕЛ
                 authScreen.style.display = 'flex';
                 dashboardScreen.style.display = 'none';
             }
