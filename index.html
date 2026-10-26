@@ -123,7 +123,8 @@
         const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ИСПРАВЛЕНО: Называем клиент supabaseClient, чтобы не конфликтовать с библиотекой
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const authScreen = document.getElementById('auth-screen');
         const dashboardScreen = document.getElementById('dashboard-screen');
@@ -139,12 +140,12 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            // Блокируем кнопку на время запроса
             const submitBtn = loginForm.querySelector('button');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Проверка...';
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            // ИСПРАВЛЕНО: используем supabaseClient
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
             if (error) {
                 authError.textContent = 'Ошибка входа: Неверный email или пароль.';
@@ -156,21 +157,20 @@
 
         // Выход
         logoutBtn.addEventListener('click', async () => {
-            await supabase.auth.signOut();
+            // ИСПРАВЛЕНО: используем supabaseClient
+            await supabaseClient.auth.signOut();
         });
 
-        // Следим за состоянием авторизации (магия Supabase)
-        supabase.auth.onAuthStateChange((event, session) => {
+        // Следим за состоянием авторизации
+        // ИСПРАВЛЕНО: используем supabaseClient
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
-                // Если вошли — показываем кабинет
                 authScreen.style.display = 'none';
                 dashboardScreen.style.display = 'block';
                 userEmailSpan.textContent = session.user.email;
             } else {
-                // Если вышли — показываем вход
                 authScreen.style.display = 'flex';
                 dashboardScreen.style.display = 'none';
-                // Очищаем поля
                 document.getElementById('email').value = '';
                 document.getElementById('password').value = '';
                 const submitBtn = loginForm.querySelector('button');
