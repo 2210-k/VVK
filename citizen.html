@@ -3,46 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мои документы</title>
+    <title>Мои документы | ЕСС</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f0fdf4; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        :root { --primary: #10b981; --primary-dark: #047857; --bg: #f0fdf4; --text: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
+        
+        /* Экран входа */
         #auth-screen { display: flex; justify-content: center; align-items: center; height: 90vh; }
-        .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; background: #10b981; color: white; cursor: pointer; }
-        #dashboard-screen { display: none; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #10b981; padding-bottom: 15px; margin-bottom: 20px; }
-        .doc-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-dl { background: #10b981; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; }
-        .error-msg { color: red; display: none; margin-bottom: 10px; }
+        .auth-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15); width: 100%; max-width: 400px; text-align: center; }
+        .auth-box h2 { color: var(--primary-dark); margin-top: 0; margin-bottom: 20px; }
+        .auth-box input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        .auth-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .btn:hover { background: var(--primary-dark); }
+        .error-msg { color: #dc2626; font-size: 14px; margin-bottom: 15px; display: none; }
+
+        /* Экран кабинета */
+        #dashboard-screen { display: none; max-width: 900px; margin: 0 auto; }
+        
+        .header { background: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .header-info h1 { margin: 0; font-size: 22px; color: var(--primary-dark); }
+        .header-info p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
+        .btn-logout { background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-logout:hover { background: #ef4444; color: white; }
+
+        .section-title { color: var(--text); margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+
+        .docs-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .doc-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); transition: 0.2s; }
+        .doc-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .doc-info h4 { margin: 0 0 5px 0; font-size: 16px; color: #333; }
+        .doc-info p { margin: 0; color: #666; font-size: 14px; }
+        .btn-dl { background: var(--primary); color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .btn-dl:hover { background: var(--primary-dark); }
+        
+        .empty-state { text-align: center; padding: 40px; background: white; border-radius: 10px; color: #888; }
     </style>
 </head>
 <body>
+    <!-- Вход -->
     <div id="auth-screen">
         <div class="auth-box">
             <h2>Кабинет пациента</h2>
+            <p style="color:#666; margin-bottom:20px;">Портал Единой Службы Спасения</p>
             <div id="auth-error" class="error-msg"></div>
             <form id="login-form">
-                <input type="email" id="email" placeholder="Email" required>
+                <input type="email" id="email" placeholder="Ваш Email" required>
                 <input type="password" id="password" placeholder="Пароль" required>
-                <button type="submit" class="btn">Войти</button>
+                <button type="submit" class="btn">Войти в кабинет</button>
             </form>
-            <a href="index.html" style="display:block; margin-top:15px; color:#666;">Вход для врачей</a>
+            <a href="index.html" style="display:block; margin-top:20px; color:#888; text-decoration:none; font-size:14px;">Вход для сотрудников</a>
         </div>
     </div>
 
-    <div id="dashboard-screen" class="container">
+    <!-- Кабинет -->
+    <div id="dashboard-screen">
         <div class="header">
-            <h2>Мои документы</h2>
-            <button id="logout-btn" style="background:none; border:1px solid red; color:red; padding:5px 10px; cursor:pointer;">Выйти</button>
+            <div class="header-info">
+                <h1 id="welcome-text">Здравствуйте!</h1>
+                <p>Личный кабинет пациента</p>
+            </div>
+            <button id="logout-btn" class="btn-logout">Выйти</button>
         </div>
-        <div id="docs-list">Загрузка...</div>
+
+        <h3 class="section-title">Ваши медицинские документы</h3>
+        <div id="docs-list" class="docs-grid">
+            <!-- Сюда грузятся карточки -->
+        </div>
     </div>
 
     <script>
-        const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+        const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -51,7 +85,7 @@
                 password: document.getElementById('password').value
             });
             if (error) {
-                document.getElementById('auth-error').textContent = error.message;
+                document.getElementById('auth-error').textContent = 'Неверный email или пароль.';
                 document.getElementById('auth-error').style.display = 'block';
             }
         });
@@ -60,11 +94,17 @@
 
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (session) {
-                // Если это админ, не пускаем сюда
-                const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
+                // Если это админ, перенаправляем на служебный портал
+                const { data: profile } = await supabaseClient.from('profiles').select('role, first_name, last_name').eq('id', session.user.id).single();
+                
                 if (profile && profile.role === 'admin') {
                     window.location.href = 'index.html';
                     return;
+                }
+
+                // Приветствие по имени
+                if (profile && profile.first_name) {
+                    document.getElementById('welcome-text').textContent = `Здравствуйте, ${profile.first_name} ${profile.patronymic || ''}!`;
                 }
 
                 document.getElementById('auth-screen').style.display = 'none';
@@ -80,7 +120,6 @@
             const list = document.getElementById('docs-list');
             list.innerHTML = '<p>Загрузка...</p>';
 
-            // Ищем документы, где patient_id равен ID текущего пользователя
             const { data: docs, error } = await supabaseClient
                 .from('documents')
                 .select('*')
@@ -88,24 +127,30 @@
                 .order('created_at', { ascending: false });
 
             if (error) {
-                list.innerHTML = '<p style="color:red">Ошибка: ' + error.message + '</p>';
+                list.innerHTML = `<p style="color:red">Ошибка: ${error.message}</p>`;
                 return;
             }
             if (docs.length === 0) {
-                list.innerHTML = '<p>У вас пока нет документов.</p>';
+                list.innerHTML = '<div class="empty-state">У вас пока нет загруженных документов.</div>';
                 return;
             }
 
             list.innerHTML = '';
             docs.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                
+                // Форматируем дату красиво
+                const dateStr = new Date(doc.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+
                 list.innerHTML += `
                     <div class="doc-card">
-                        <div>
+                        <div class="doc-info">
                             <h4>${doc.document_type}</h4>
-                            <p>Номер: <b>${doc.doc_number}</b> | Дата: ${new Date(doc.created_at).toLocaleDateString()}</p>
+                            <p>Номер: <b>${doc.doc_number}</b> &nbsp;|&nbsp; Дата: ${dateStr}</p>
                         </div>
-                        <a href="${publicUrl}" target="_blank" class="btn-dl">Скачать PDF</a>
+                        <a href="${publicUrl}" target="_blank" class="btn-dl">
+                            <span>⬇️</span> Скачать PDF
+                        </a>
                     </div>
                 `;
             });
