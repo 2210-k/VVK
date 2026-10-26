@@ -9,7 +9,7 @@
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"], input[type="date"], textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input[type="text"], textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         textarea { resize: vertical; height: 60px; }
         .radio-group { display: flex; gap: 15px; margin-top: 5px; }
         .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
@@ -18,6 +18,12 @@
         button:disabled { background: #ccc; cursor: not-allowed; }
         .row { display: flex; gap: 15px; }
         .row > .form-group { flex: 1; }
+        /* Стили для полей даты */
+        .date-group { display: flex; gap: 5px; }
+        .date-group input { text-align: center; }
+        .date-group .day { width: 60px; }
+        .date-group .month { width: 80px; }
+        .date-group .year { width: 80px; }
     </style>
 </head>
 <body>
@@ -25,10 +31,16 @@
 <div class="container">
     <h2>Заполнение заключения ВВК</h2>
     <form id="vvkForm">
+        
+        <!-- ДАТА ЗАКЛЮЧЕНИЯ -->
         <div class="row">
             <div class="form-group">
-                <label>Дата (ДД.ММ.ГГГГ)</label>
-                <input type="date" id="date" required>
+                <label>Дата заключения</label>
+                <div class="date-group">
+                    <input type="text" id="dateDay" class="day" placeholder="ДД" maxlength="2" required>
+                    <input type="text" id="dateMonth" class="month" placeholder="ММ" maxlength="2" required>
+                    <input type="text" id="dateYear" class="year" placeholder="ГГГГ" maxlength="4" required>
+                </div>
             </div>
             <div class="form-group">
                 <label>№ документа (сгенерируется)</label>
@@ -38,7 +50,7 @@
 
         <div class="form-group">
             <label>Председатель комиссии (должность, звание, инициалы)</label>
-            <input type="text" id="chairman" placeholder="Например: Врач-терапевт, майор м/с Иванов И.И." required>
+            <input type="text" id="chairman" required>
         </div>
 
         <div class="row">
@@ -52,10 +64,15 @@
             </div>
         </div>
 
+        <!-- ДАТА РОЖДЕНИЯ -->
         <div class="row">
             <div class="form-group">
-                <label>Дата рождения</label>
-                <input type="date" id="dob" required>
+                <label>Дата рождения (20__ уже в бланке)</label>
+                <div class="date-group">
+                    <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2" required>
+                    <input type="text" id="dobMonth" class="month" placeholder="ММ" maxlength="2" required>
+                    <input type="text" id="dobYear" class="year" placeholder="ГГ" maxlength="2" required>
+                </div>
             </div>
             <div class="form-group">
                 <label>Место рождения</label>
@@ -123,13 +140,90 @@
     </form>
 </div>
 
-<!-- Подключение библиотек -->
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 
 <script>
-    // Генерация номера документа при загрузке
+    // =====================================================================
+    // ⚙️ НАСТРОЙКА КООРДИНАТ (МЕНЯЙТЕ ТОЛЬКО ЦИФРЫ ЗДЕСЬ) ⚙️
+    // x - отступ слева, y - отступ снизу.
+    // =====================================================================
+    const COORDS = {
+        date: { day: {x: 280, y: 740}, month: {x: 320, y: 740}, year: {x: 360, y: 740} },
+        docNumber: { x: 520, y: 740 },
+        chairman: { x: 180, y: 690 },
+        firstName: { x: 80, y: 610 },
+        patronymic: { x: 320, y: 610 },
+        dob: { day: {x: 160, y: 590}, month: {x: 190, y: 590}, year: {x: 220, y: 590} },
+        pob: { x: 450, y: 590 },
+        address: { x: 150, y: 570 },
+        passSeries: { x: 140, y: 550 },
+        passNumber: { x: 230, y: 550 },
+        summons: { x: 420, y: 550 },
+        
+        // Многострочные поля (y — это координата ПЕРВОЙ строки)
+        complaints: { x: 100, y: 520, maxWidth: 450, indent: 40 }, // indent = отступ первой строки (в пунктах)
+        anamnesis: { x: 100, y: 480, maxWidth: 450, indent: 40 },
+        objectiveData: { x: 100, y: 440, maxWidth: 450, indent: 40 },
+        diagnosis: { x: 100, y: 400, maxWidth: 450, indent: 40 },
+        recommendations: { x: 100, y: 220, maxWidth: 450, indent: 40 },
+
+        categories: {
+            'A': { x: 80, y: 330 },
+            'B': { x: 80, y: 310 },
+            'V': { x: 80, y: 290 },
+            'G': { x: 80, y: 270 },
+            'D': { x: 80, y: 250 }
+        }
+    };
+    // =====================================================================
+
     document.getElementById('docNumber').value = Math.floor(1000 + Math.random() * 9000);
+
+    // Функция для рисования абзаца с красной строкой
+    function drawParagraph(page, text, x, y, options) {
+        if (!text) return;
+        const { font, size, color, maxWidth, lineHeight, indent } = options;
+        
+        // Разбиваем текст на слова для переноса
+        const words = text.split(' ');
+        let lines = [];
+        let currentLine = '';
+        let isFirstLine = true;
+
+        for (let word of words) {
+            // Считаем ширину с учетом отступа для первой строки
+            const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
+            const testLine = currentLine === '' ? word : currentLine + ' ' + word;
+            const testWidth = font.widthOfTextAtSize(testLine, size);
+
+            if (testWidth <= availableWidth) {
+                currentLine = testLine;
+            } else {
+                lines.push({ text: currentLine, isFirst: isFirstLine });
+                currentLine = word;
+                isFirstLine = false;
+            }
+        }
+        if (currentLine !== '') {
+            lines.push({ text: currentLine, isFirst: isFirstLine });
+        }
+
+        // Рисуем строки
+        let currentY = y;
+        for (let line of lines) {
+            const currentX = line.isFirst ? x + indent : x;
+            page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
+            currentY -= lineHeight;
+        }
+    }
+
+    // Функция для рисования галочки линиями
+    function drawCheckmark(page, x, y, color) {
+        const size = 8;
+        page.drawLine({ start: { x: x, y: y + size/2 }, end: { x: x + size/3, y: y }, thickness: 1.5, color: color });
+        page.drawLine({ start: { x: x + size/3, y: y }, end: { x: x + size, y: y + size }, thickness: 1.5, color: color });
+    }
 
     document.getElementById('vvkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -138,41 +232,31 @@
         btn.textContent = 'Генерация PDF...';
 
         try {
-            // 1. Загружаем шаблон PDF
-            // ВАЖНО: Файл template.pdf должен лежать в той же папке, что и index.html!
             const url = './template.pdf'; 
             const existingPdfBytes = await fetch(url).then(res => {
-                if (!res.ok) throw new Error(`Не удалось загрузить ${url}. Убедитесь, что файл существует.`);
+                if (!res.ok) throw new Error(`Не удалось загрузить ${url}.`);
                 return res.arrayBuffer();
             });
 
-            // 2. Загружаем документ и шрифт
-            // ИСПОЛЬЗУЕМ PDFLib, а не PDFDocument!
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
 
-            // Загружаем шрифт с поддержкой кириллицы (Roboto)
             const fontBytes = await fetch('https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf').then(res => res.arrayBuffer());
             const customFont = await pdfDoc.embedFont(fontBytes);
 
-            const pages = pdfDoc.getPages();
-            const firstPage = pages[0];
+            const firstPage = pdfDoc.getPages()[0];
 
-            // Функция для форматирования даты из YYYY-MM-DD в DD.MM.YYYY
-            const formatDate = (dateString) => {
-                if (!dateString) return '';
-                const [year, month, day] = dateString.split('-');
-                return `${day}.${month}.${year}`;
-            };
-
-            // Собираем данные из формы
             const formData = {
-                date: formatDate(document.getElementById('date').value),
+                dateDay: document.getElementById('dateDay').value,
+                dateMonth: document.getElementById('dateMonth').value,
+                dateYear: document.getElementById('dateYear').value,
                 docNumber: document.getElementById('docNumber').value,
                 chairman: document.getElementById('chairman').value,
                 firstName: document.getElementById('firstName').value,
                 patronymic: document.getElementById('patronymic').value,
-                dob: formatDate(document.getElementById('dob').value),
+                dobDay: document.getElementById('dobDay').value,
+                dobMonth: document.getElementById('dobMonth').value,
+                dobYear: document.getElementById('dobYear').value,
                 pob: document.getElementById('pob').value,
                 address: document.getElementById('address').value,
                 passSeries: document.getElementById('passSeries').value,
@@ -187,69 +271,45 @@
             };
 
             const fontSize = 10;
-            // ИСПОЛЬЗУЕМ PDFLib.rgb
-            const color = PDFLib.rgb(0, 0, 0); // Черный цвет
+            const black = PDFLib.rgb(0, 0, 0);
+            const textOptions = { size: fontSize, font: customFont, color: black };
+            const paraOptions = { ...textOptions, lineHeight: 12, maxWidth: 450 };
 
-            // --- НАНОСИМ ТЕКСТ ---
-            // ВНИМАНИЕ: Координаты (x, y) приблизительные! 
-            // Отсчет идет от ЛЕВОГО НИЖНЕГО угла.
-
-            // Дата и номер (вверху справа)
-            firstPage.drawText(formData.date, { x: 420, y: 745, size: fontSize, font: customFont, color });
-            firstPage.drawText(`№ ${formData.docNumber}`, { x: 520, y: 745, size: fontSize, font: customFont, color });
-
-            // Председатель
-            firstPage.drawText(formData.chairman, { x: 180, y: 690, size: fontSize, font: customFont, color });
-
-            // Имя и Отчество
-            firstPage.drawText(formData.firstName, { x: 80, y: 610, size: fontSize, font: customFont, color });
-            firstPage.drawText(formData.patronymic, { x: 320, y: 610, size: fontSize, font: customFont, color });
-
-            // Дата рождения и Место рождения
-            firstPage.drawText(formData.dob, { x: 150, y: 590, size: fontSize, font: customFont, color });
-            firstPage.drawText(formData.pob, { x: 450, y: 590, size: fontSize, font: customFont, color });
-
-            // Адрес
-            firstPage.drawText(formData.address, { x: 150, y: 570, size: fontSize, font: customFont, color });
-
-            // Паспорт и Повестка
-            firstPage.drawText(formData.passSeries, { x: 140, y: 550, size: fontSize, font: customFont, color });
-            firstPage.drawText(formData.passNumber, { x: 230, y: 550, size: fontSize, font: customFont, color });
-            firstPage.drawText(formData.summons, { x: 420, y: 550, size: fontSize, font: customFont, color });
-
-            // Длинные текстовые поля (используем maxWidth для переноса строк)
-            const textOptions = { size: fontSize, font: customFont, color, maxWidth: 450, lineHeight: 12 };
+            // --- ОДНОСТРОЧНЫЕ ПОЛЯ ---
+            firstPage.drawText(formData.dateDay, { x: COORDS.date.day.x, y: COORDS.date.day.y, ...textOptions });
+            firstPage.drawText(formData.dateMonth, { x: COORDS.date.month.x, y: COORDS.date.month.y, ...textOptions });
+            firstPage.drawText(formData.dateYear, { x: COORDS.date.year.x, y: COORDS.date.year.y, ...textOptions });
             
-            firstPage.drawText(formData.complaints, { x: 100, y: 520, ...textOptions });
-            firstPage.drawText(formData.anamnesis, { x: 100, y: 480, ...textOptions });
-            firstPage.drawText(formData.objectiveData, { x: 100, y: 440, ...textOptions });
-            firstPage.drawText(formData.diagnosis, { x: 100, y: 400, ...textOptions });
+            firstPage.drawText(`№ ${formData.docNumber}`, { x: COORDS.docNumber.x, y: COORDS.docNumber.y, ...textOptions });
+            firstPage.drawText(formData.chairman, { x: COORDS.chairman.x, y: COORDS.chairman.y, ...textOptions });
+            
+            firstPage.drawText(formData.firstName, { x: COORDS.firstName.x, y: COORDS.firstName.y, ...textOptions });
+            firstPage.drawText(formData.patronymic, { x: COORDS.patronymic.x, y: COORDS.patronymic.y, ...textOptions });
+            
+            firstPage.drawText(formData.dobDay, { x: COORDS.dob.day.x, y: COORDS.dob.day.y, ...textOptions });
+            firstPage.drawText(formData.dobMonth, { x: COORDS.dob.month.x, y: COORDS.dob.month.y, ...textOptions });
+            firstPage.drawText(formData.dobYear, { x: COORDS.dob.year.x, y: COORDS.dob.year.y, ...textOptions });
+            
+            firstPage.drawText(formData.pob, { x: COORDS.pob.x, y: COORDS.pob.y, ...textOptions });
+            firstPage.drawText(formData.address, { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
+            
+            firstPage.drawText(formData.passSeries, { x: COORDS.passSeries.x, y: COORDS.passSeries.y, ...textOptions });
+            firstPage.drawText(formData.passNumber, { x: COORDS.passNumber.x, y: COORDS.passNumber.y, ...textOptions });
+            firstPage.drawText(formData.summons, { x: COORDS.summons.x, y: COORDS.summons.y, ...textOptions });
 
-            // Рекомендации
-            firstPage.drawText(formData.recommendations, { x: 100, y: 200, ...textOptions });
+            // --- МНОГОСТРОЧНЫЕ ПОЛЯ (С КРАСНОЙ СТРОКОЙ) ---
+            drawParagraph(firstPage, formData.complaints, COORDS.complaints.x, COORDS.complaints.y, { ...paraOptions, indent: COORDS.complaints.indent });
+            drawParagraph(firstPage, formData.anamnesis, COORDS.anamnesis.x, COORDS.anamnesis.y, { ...paraOptions, indent: COORDS.anamnesis.indent });
+            drawParagraph(firstPage, formData.objectiveData, COORDS.objectiveData.x, COORDS.objectiveData.y, { ...paraOptions, indent: COORDS.objectiveData.indent });
+            drawParagraph(firstPage, formData.diagnosis, COORDS.diagnosis.x, COORDS.diagnosis.y, { ...paraOptions, indent: COORDS.diagnosis.indent });
+            drawParagraph(firstPage, formData.recommendations, COORDS.recommendations.x, COORDS.recommendations.y, { ...paraOptions, indent: COORDS.recommendations.indent });
 
-            // --- ГАЛОЧКА КАТЕГОРИИ ГОДНОСТИ ---
-            const categoryYPositions = {
-                'A': 330,
-                'B': 310,
-                'V': 290,
-                'G': 270,
-                'D': 250
-            };
-
+            // --- ГАЛОЧКА ---
             if (formData.category) {
-                const yPos = categoryYPositions[formData.category];
-                // Рисуем крестик (две линии)
-                firstPage.drawText('X', { 
-                    x: 82, 
-                    y: yPos - 3, 
-                    size: 12, 
-                    font: customFont, 
-                    color: PDFLib.rgb(1, 0, 0) // Красный цвет
-                });
+                const pos = COORDS.categories[formData.category];
+                drawCheckmark(firstPage, pos.x, pos.y, black);
             }
 
-            // 3. Сохраняем и скачиваем
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const link = document.createElement('a');
@@ -259,7 +319,7 @@
 
         } catch (error) {
             console.error("Ошибка генерации PDF:", error);
-            alert("Ошибка: " + error.message + "\nПроверьте консоль (F12) для подробностей.");
+            alert("Ошибка: " + error.message);
         } finally {
             btn.disabled = false;
             btn.textContent = 'Скачать заполненный PDF';
