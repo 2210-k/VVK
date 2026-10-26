@@ -42,7 +42,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>№ документа (редактируемый)</label>
+                <label>№ документа</label>
                 <input type="text" id="docNumber" class="center-input" required>
             </div>
         </div>
@@ -65,7 +65,7 @@
 
         <div class="row">
             <div class="form-group">
-                <label>Дата рождения (20__ уже в бланке)</label>
+                <label>Дата рождения</label>
                 <div class="date-group">
                     <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2" required>
                     <input type="text" id="dobMonth" class="month" placeholder="ММ" maxlength="2" required>
@@ -181,9 +181,9 @@
         
         // МНОГОСТРОЧНЫЕ ПОЛЯ (Замените строку "ВПИШИ_Y" на ваши координаты по высоте)
         complaints: { x: 50, y: 506, maxWidth: 492, indent: 43 }, 
-        anamnesis: { x: 50, y: 478, maxWidth: 492, indent: 46 },
-        objectiveData: { x: 50, y: 437, maxWidth: 492, indent: 181 },
-        diagnosis: { x: 50, y: 438, maxWidth: 492, indent: 43 },
+        anamnesis: { x: 50, y: 490, maxWidth: 492, indent: 46 },
+        objectiveData: { x: 50, y: 449, maxWidth: 492, indent: 181 },
+        diagnosis: { x: 50, y: 408, maxWidth: 492, indent: 43 },
         recommendations: { x: 50, y: 258, maxWidth: 492, indent: 120 },
 
         categories: {
@@ -307,7 +307,7 @@
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, textOptions);
             
-            drawCenteredInRange(firstPage, `№ ${getVal('docNumber')}`, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, textOptions);
+            drawCenteredInRange(firstPage, `${getVal('docNumber')}`, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, textOptions);
             
             drawCenteredInRange(firstPage, getVal('dobDay'), COORDS.dob.day.xStart, COORDS.dob.day.xEnd, COORDS.dob.day.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dobMonth'), COORDS.dob.month.xStart, COORDS.dob.month.xEnd, COORDS.dob.month.y, textOptions);
