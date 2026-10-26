@@ -3,151 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ЕСС | Портал документов</title>
+    <title>ЕСС | Служебный портал</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #1e3a8a; --primary-hover: #1e40af; --bg: #f3f4f6; --text: #333; --danger: #ef4444; }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
+        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); }
         
-        /* ЭКРАН ВХОДА */
+        /* Вход */
         #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
         .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .auth-box h2 { color: var(--primary); margin-top: 0; margin-bottom: 25px; font-size: 24px; }
-        .auth-box p.subtitle { color: #666; font-size: 14px; margin-top: -15px; margin-bottom: 25px; }
-        .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        .auth-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.2); }
-        .btn-login { width: 100%; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; background: var(--primary); color: white; transition: 0.2s; }
-        .btn-login:hover { background: var(--primary-hover); }
-        .error-msg { color: var(--danger); font-size: 14px; margin-bottom: 15px; display: none; background: #fee2e2; padding: 10px; border-radius: 4px; text-align: left; }
-        .patient-link { display: block; margin-top: 20px; color: #666; text-decoration: none; font-size: 14px; }
-        .patient-link:hover { color: var(--primary); text-decoration: underline; }
+        .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-login { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; }
+        .error-msg { color: var(--danger); display: none; margin-bottom: 15px; }
 
-        /* ЭКРАН КАБИНЕТА */
+        /* Кабинет */
         #dashboard-screen { display: none; height: 100vh; }
-        .sidebar { width: 260px; background: var(--primary); color: white; display: flex; flex-direction: column; position: fixed; height: 100%; }
-        .sidebar h2 { padding: 20px; margin: 0; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
-        .menu-item { padding: 15px 20px; cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
-        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left: 4px solid #60a5fa; }
-        .menu-item a { color: white; text-decoration: none; display: block; font-size: 15px; }
-        .main-content { margin-left: 260px; display: flex; flex-direction: column; min-height: 100vh; }
-        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
-        .user-profile { display: flex; align-items: center; gap: 15px; font-weight: bold; color: var(--text); font-size: 14px; }
-        .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-logout:hover { background: var(--danger); color: white; }
-        .content { padding: 30px; }
-        .doc-types-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .type-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
-        .type-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .type-card h3 { margin: 10px 0; color: var(--primary); }
-        .type-card p { color: #666; font-size: 13px; margin: 0; }
+        .sidebar { width: 250px; background: var(--primary); color: white; position: fixed; height: 100%; }
+        .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; }
+        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; }
+        .main-content { margin-left: 250px; padding: 30px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        
+        /* Таблицы */
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8fafc; color: #64748b; font-weight: bold; font-size: 14px; }
+        .btn-edit { background: #eab308; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-download { background: var(--primary); color: white; padding: 5px 10px; text-decoration: none; border-radius: 4px; font-size: 13px; }
+        
+        /* Модалка редактирования */
+        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; }
+        .modal-content input { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn-save { background: #10b981; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        .btn-close { background: #ccc; color: #333; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <!-- ЭКРАН ВХОДА -->
+    <!-- Вход -->
     <div id="auth-screen">
         <div class="auth-box">
-            <h2>Портал ЕСС</h2>
-            <p class="subtitle">Вход для сотрудников</p>
+            <h2>Служебный портал</h2>
             <div id="auth-error" class="error-msg"></div>
             <form id="login-form">
-                <input type="email" id="email" placeholder="Служебный Email" required>
+                <input type="email" id="email" placeholder="Email" required>
                 <input type="password" id="password" placeholder="Пароль" required>
-                <button type="submit" class="btn-login">Войти в систему</button>
+                <button type="submit" class="btn-login">Войти</button>
             </form>
-            <a href="citizen.html" class="patient-link">Вход для пациентов (гражданский портал)</a>
+            <a href="citizen.html" style="display:block; margin-top:15px; color:#666;">Я пациент</a>
         </div>
     </div>
 
-    <!-- ЭКРАН КАБИНЕТА -->
+    <!-- Кабинет -->
     <div id="dashboard-screen">
         <div class="sidebar">
-            <h2>ЕСС | Портал</h2>
-            <div class="menu-item active"><a href="#">📄 Документы</a></div>
+            <h2>ЕСС | Админ</h2>
+            <div class="menu-item active" onclick="switchTab('docs', this)">📄 Все документы</div>
+            <div class="menu-item" onclick="switchTab('patients', this)">👥 Пациенты</div>
+            <div class="menu-item" onclick="window.location.href='generator-vvk.html'">➕ Создать ВВК</div>
         </div>
+
         <div class="main-content">
             <div class="header">
-                <h3>Рабочая область</h3>
-                <div class="user-profile">
-                    <span id="user-email">Загрузка...</span>
-                    <button class="btn-logout" id="logout-btn">Выйти</button>
-                </div>
+                <h2 id="page-title">Все документы</h2>
+                <button class="btn-logout" id="logout-btn" style="padding:8px 15px; cursor:pointer;">Выйти</button>
             </div>
-            <div class="content">
-                <h2>Создать новый документ</h2>
-                <div class="doc-types-grid">
-                    <div class="type-card" onclick="window.location.href='generator-vvk.html'">
-                        <h3>Заключение ВВК</h3>
-                        <p>Медицинское заключение</p>
-                    </div>
-                </div>
+
+            <!-- Вкладка документов -->
+            <div id="docs-tab">
+                <table>
+                    <thead><tr><th>Номер</th><th>Тип</th><th>Пациент</th><th>Дата</th><th>Файл</th></tr></thead>
+                    <tbody id="docs-table-body"></tbody>
+                </table>
             </div>
+
+            <!-- Вкладка пациентов -->
+            <div id="patients-tab" style="display:none;">
+                <table>
+                    <thead><tr><th>ФИО</th><th>Дата рождения</th><th>Паспорт</th><th>Действия</th></tr></thead>
+                    <tbody id="patients-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка редактирования -->
+    <div id="edit-modal">
+        <div class="modal-content">
+            <h3>Редактировать пациента</h3>
+            <input type="hidden" id="edit-id">
+            <label>Фамилия</label><input type="text" id="edit-last-name">
+            <label>Имя</label><input type="text" id="edit-first-name">
+            <label>Отчество</label><input type="text" id="edit-patronymic">
+            <label>Дата рождения</label><input type="date" id="edit-dob">
+            <label>Адрес</label><input type="text" id="edit-address">
+            <label>Серия паспорта</label><input type="text" id="edit-pass-series">
+            <label>Номер паспорта</label><input type="text" id="edit-pass-number">
+            <button class="btn-save" onclick="savePatient()">Сохранить</button>
+            <button class="btn-close" onclick="document.getElementById('edit-modal').style.display='none'">Отмена</button>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        const authScreen = document.getElementById('auth-screen');
-        const dashboardScreen = document.getElementById('dashboard-screen');
-        const loginForm = document.getElementById('login-form');
-        const logoutBtn = document.getElementById('logout-btn');
-        const authError = document.getElementById('auth-error');
-        const userEmailSpan = document.getElementById('user-email');
-
-        loginForm.addEventListener('submit', async (e) => {
+        const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+        
+        // Логин
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            authError.style.display = 'none';
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const submitBtn = loginForm.querySelector('button');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Проверка...';
-
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
+            const { error } = await supabaseClient.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            });
             if (error) {
-                authError.textContent = 'Ошибка входа: Неверный email или пароль.';
-                authError.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Войти в систему';
+                document.getElementById('auth-error').textContent = error.message;
+                document.getElementById('auth-error').style.display = 'block';
             }
         });
 
-        logoutBtn.addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-        });
+        document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
 
-        // ПРОВЕРКА: СОТРУДНИК ИЛИ ПАЦИЕНТ?
+        // Проверка входа и роли
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (session) {
-                const { data: patient } = await supabaseClient
-                    .from('patients')
-                    .select('id')
-                    .eq('user_id', session.user.id)
-                    .maybeSingle();
-
-                if (patient) {
-                    // Если это пациент - отправляем на его портал
-                    window.location.href = 'citizen.html';
-                } else {
-                    // Если это сотрудник - показываем кабинет
-                    authScreen.style.display = 'none';
-                    dashboardScreen.style.display = 'block';
-                    userEmailSpan.textContent = session.user.email;
+                // Проверяем роль
+                const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
+                
+                if (!profile || profile.role !== 'admin') {
+                    alert("У вас нет прав администратора!");
+                    await supabaseClient.auth.signOut();
+                    return;
                 }
+
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('dashboard-screen').style.display = 'block';
+                loadDocs();
+                loadPatients();
             } else {
-                authScreen.style.display = 'flex';
-                dashboardScreen.style.display = 'none';
-                document.getElementById('email').value = '';
-                document.getElementById('password').value = '';
-                const submitBtn = loginForm.querySelector('button');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Войти в систему';
+                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('dashboard-screen').style.display = 'none';
             }
         });
+
+        // Переключение вкладок
+        function switchTab(tab, element) {
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            if (tab === 'docs') {
+                document.getElementById('docs-tab').style.display = 'block';
+                document.getElementById('patients-tab').style.display = 'none';
+                document.getElementById('page-title').textContent = 'Все документы';
+            } else {
+                document.getElementById('docs-tab').style.display = 'none';
+                document.getElementById('patients-tab').style.display = 'block';
+                document.getElementById('page-title').textContent = 'Пациенты';
+            }
+        }
+
+        // Загрузка документов
+        async function loadDocs() {
+            const tbody = document.getElementById('docs-table-body');
+            tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
+            
+            const { data, error } = await supabaseClient.from('documents').select(`*, profiles(last_name, first_name, patronymic)`).order('created_at', {ascending: false});
+            
+            if (error) return console.error(error);
+            tbody.innerHTML = '';
+            data.forEach(doc => {
+                const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                const p = doc.profiles;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${doc.doc_number}</b></td>
+                        <td>${doc.document_type}</td>
+                        <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
+                        <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+                        <td><a href="${publicUrl}" target="_blank" class="btn-download">Скачать</a></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Загрузка пациентов
+        async function loadPatients() {
+            const tbody = document.getElementById('patients-table-body');
+            tbody.innerHTML = '<tr><td colspan="4">Загрузка...</td></tr>';
+            
+            const { data, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+            
+            if (error) return console.error(error);
+            tbody.innerHTML = '';
+            data.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
+                        <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
+                        <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
+                        <td><button class="btn-edit" onclick="openEdit('${p.id}')">Ред.</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Открытие модалки
+        async function openEdit(id) {
+            const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
+            if (!p) return;
+            
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('edit-last-name').value = p.last_name || '';
+            document.getElementById('edit-first-name').value = p.first_name || '';
+            document.getElementById('edit-patronymic').value = p.patronymic || '';
+            document.getElementById('edit-dob').value = p.dob || '';
+            document.getElementById('edit-address').value = p.address || '';
+            document.getElementById('edit-pass-series').value = p.pass_series || '';
+            document.getElementById('edit-pass-number').value = p.pass_number || '';
+            
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        // Сохранение
+        async function savePatient() {
+            const id = document.getElementById('edit-id').value;
+            const updates = {
+                last_name: document.getElementById('edit-last-name').value,
+                first_name: document.getElementById('edit-first-name').value,
+                patronymic: document.getElementById('edit-patronymic').value,
+                dob: document.getElementById('edit-dob').value || null,
+                address: document.getElementById('edit-address').value,
+                pass_series: document.getElementById('edit-pass-series').value,
+                pass_number: document.getElementById('edit-pass-number').value
+            };
+
+            const { error } = await supabaseClient.from('profiles').update(updates).eq('id', id);
+            if (error) {
+                alert("Ошибка сохранения: " + error.message);
+            } else {
+                document.getElementById('edit-modal').style.display = 'none';
+                loadPatients();
+                alert("Данные обновлены!");
+            }
+        }
     </script>
 </body>
 </html>
