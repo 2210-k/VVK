@@ -155,11 +155,11 @@
         firstName: { x: 74, y: 561 },
         patronymic: { x: 354, y: 561 },
         dob: { day: {x: 138, y: 547}, month: {x: 161, y: 547}, year: {x: 251, y: 547} },
-        pob: { x: 387, y: 545 },
-        address: { x: 147, y: 535 },
+        pob: { x: 387, y: 547 },
+        address: { x: 147, y: 534 },
         passSeries: { x: 128, y: 520 },
         passNumber: { x: 178, y: 520 },
-        summons: { x: 363, y: 525 },
+        summons: { x: 363, y: 520 },
         
         // Многострочные поля (y — это координата ПЕРВОЙ строки)
         complaints: { x: 50, y: 513, maxWidth: 492, indent: 43 }, // indent = отступ первой строки (в пунктах)
@@ -280,7 +280,7 @@
             firstPage.drawText(formData.dateMonth, { x: COORDS.date.month.x, y: COORDS.date.month.y, ...textOptions });
             firstPage.drawText(formData.dateYear, { x: COORDS.date.year.x, y: COORDS.date.year.y, ...textOptions });
             
-            firstPage.drawText(`№ ${formData.docNumber}`, { x: COORDS.docNumber.x, y: COORDS.docNumber.y, ...textOptions });
+            firstPage.drawText(`${formData.docNumber}`, { x: COORDS.docNumber.x, y: COORDS.docNumber.y, ...textOptions });
             firstPage.drawText(formData.chairman, { x: COORDS.chairman.x, y: COORDS.chairman.y, ...textOptions });
             
             firstPage.drawText(formData.firstName, { x: COORDS.firstName.x, y: COORDS.firstName.y, ...textOptions });
