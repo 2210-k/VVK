@@ -35,7 +35,7 @@
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
     <div class="patient-selector">
-        <label>👤 Выберите пациента (данные подставятся автоматически)</label>
+        <label>👤 Выберите пациента</label>
         <select id="patientSelect" class="form-select">
             <option value="">-- Загрузка пациентов... --</option>
         </select>
@@ -158,11 +158,9 @@
 <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 
 <script>
-    const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
 
-    // ВАШИ КООРДИНАТЫ (ОСТАВЛЕНЫ БЕЗ ИЗМЕНЕНИЙ)
+    // ВАШИ КООРДИНАТЫ
     const COORDS = {
         date: { day: { xStart: 50, xEnd: 65, y: 665 }, month: { xStart: 77, xEnd: 163, y: 665 }, year: { xStart: 177, xEnd: 213, y: 665 } },
         docNumber: { xStart: 510, xEnd: 546, y: 665 },
@@ -193,13 +191,17 @@
 
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
-    // Загрузка пациентов
+    // Загрузка пациентов (ТОЛЬКО роль 'patient')
     async function loadPatients() {
         const select = document.getElementById('patientSelect');
-        const { data: patients, error } = await supabaseClient.from('patients').select('*').order('last_name');
+        const { data: patients, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('role', 'patient')
+            .order('last_name');
 
         if (error) {
-            console.error('Ошибка загрузки пациентов:', error);
+            console.error(error);
             select.innerHTML = '<option value="">Ошибка загрузки</option>';
             return;
         }
@@ -214,7 +216,6 @@
         });
     }
 
-    // Автозаполнение
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (!selectedOption.value) return;
@@ -234,7 +235,6 @@
         document.getElementById('passNumber').value = patient.pass_number || '';
     });
 
-    // Инициализация
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
@@ -266,7 +266,6 @@
         document.getElementById('docNumber').value = `0433${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
     }
 
-    // Функции рисования
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
@@ -304,14 +303,13 @@
         page.drawLine({ start: { x: x + 4, y: y }, end: { x: x + 10, y: y + 8 }, thickness: 1.5, color: color });
     }
 
-    // Отправка
     document.getElementById('vvkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
         const patientId = document.getElementById('patientSelect').value;
 
         if (!patientId) {
-            alert("Пожалуйста, выберите пациента из списка!");
+            alert("Выберите пациента!");
             return;
         }
 
@@ -366,30 +364,23 @@
             const docNumber = getVal('docNumber');
             const fileName = `${Date.now()}_VVK_${docNumber}.pdf`;
 
-            // Сохраняем в Storage
-            const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                .from('documents')
-                .upload(fileName, pdfBlob, { contentType: 'application/pdf' });
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('documents').upload(fileName, pdfBlob, { contentType: 'application/pdf' });
+            if (uploadError) throw new Error("Ошибка загрузки: " + uploadError.message);
 
-            if (uploadError) throw new Error("Ошибка загрузки файла: " + uploadError.message);
-
-            // Сохраняем в БД
             const { error: dbError } = await supabaseClient.from('documents').insert({
                 patient_id: patientId,
                 doc_number: docNumber,
                 document_type: 'Заключение ВВК',
                 file_path: uploadData.path
             });
+            if (dbError) throw new Error("Ошибка БД: " + dbError.message);
 
-            if (dbError) throw new Error("Ошибка сохранения в БД: " + dbError.message);
-
-            // Скачиваем локально
             const link = document.createElement('a');
             link.href = URL.createObjectURL(pdfBlob);
             link.download = `Заключение_ВВК_${docNumber}.pdf`;
             link.click();
 
-            alert("Документ успешно создан и отправлен пациенту!");
+            alert("Документ создан и отправлен пациенту!");
             window.location.href = 'index.html';
 
         } catch (error) {
@@ -401,7 +392,6 @@
         }
     });
 
-    // Запуск
     initTemplates();
     initMonths();
     initAutoDate();
