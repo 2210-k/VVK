@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Генератор ВВК</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -25,19 +26,26 @@
         .date-group .month { width: 110px; }
         .date-group .year { width: 80px; }
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
-        .back-btn:hover { text-decoration: underline; }
+        .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
+    
+    <div class="patient-selector">
+        <label>👤 Выберите пациента (данные подставятся автоматически)</label>
+        <select id="patientSelect" class="form-select">
+            <option value="">-- Загрузка пациентов... --</option>
+        </select>
+    </div>
+
     <h2>Заключение ВВК</h2>
     <form id="vvkForm">
-        
         <div class="row">
             <div class="form-group">
-                <label>Дата заключения (Авто-заполнение)</label>
+                <label>Дата заключения</label>
                 <div class="date-group">
                     <input type="text" id="dateDay" class="day" maxlength="2" required>
                     <select id="dateMonth" class="month" required></select>
@@ -51,7 +59,7 @@
         </div>
 
         <div class="form-group">
-            <label>Председатель комиссии (должность, звание, инициалы)</label>
+            <label>Председатель комиссии</label>
             <input type="text" id="chairman" required>
         </div>
 
@@ -142,7 +150,7 @@
             <textarea id="recommendations"></textarea>
         </div>
 
-        <button type="submit" id="submitBtn">Скачать заполненный PDF</button>
+        <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
     </form>
 </div>
 
@@ -150,22 +158,17 @@
 <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 
 <script>
-    // ВАШИ КООРДИНАТЫ (оставлены без изменений)
+    const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const COORDS = {
-        date: { 
-            day: { xStart: 50, xEnd: 65, y: 665 }, 
-            month: { xStart: 77, xEnd: 163, y: 665 }, 
-            year: { xStart: 177, xEnd: 213, y: 665 } 
-        },
+        date: { day: { xStart: 50, xEnd: 65, y: 665 }, month: { xStart: 77, xEnd: 163, y: 665 }, year: { xStart: 177, xEnd: 213, y: 665 } },
         docNumber: { xStart: 510, xEnd: 546, y: 665 },
         chairman: { x: 172, y: 632.5 },
         firstName: { x: 74, y: 561 },
         patronymic: { x: 354, y: 561 },
-        dob: { 
-            day: { xStart: 138, xEnd: 153, y: 547 }, 
-            month: { xStart: 161, xEnd: 235, y: 547 }, 
-            year: { xStart: 251, xEnd: 263, y: 547 } 
-        },
+        dob: { day: { xStart: 138, xEnd: 153, y: 547 }, month: { xStart: 161, xEnd: 235, y: 547 }, year: { xStart: 251, xEnd: 263, y: 547 } },
         pob: { x: 387, y: 548 },
         address: { x: 147, y: 533 },
         passSeries: { xStart: 128, xEnd: 155, y: 520 },
@@ -176,13 +179,7 @@
         objectiveData: { x: 50, y: 453, maxWidth: 492, indent: 181, lineHeight: 13 },
         diagnosis: { x: 50, y: 399, maxWidth: 492, indent: 43, lineHeight: 14 },
         recommendations: { x: 50, y: 258, maxWidth: 492, indent: 120, lineHeight: 14 },
-        categories: {
-            'A': { x: 49, y: 332 },
-            'B': { x: 49, y: 318 },
-            'V': { x: 49, y: 305 },
-            'G': { x: 49, y: 291 },
-            'D': { x: 49, y: 277.5 }
-        }
+        categories: { 'A': { x: 49, y: 332 }, 'B': { x: 49, y: 318 }, 'V': { x: 49, y: 305 }, 'G': { x: 49, y: 291 }, 'D': { x: 49, y: 277.5 } }
     };
 
     const TEMPLATES = {
@@ -195,6 +192,48 @@
 
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
+    // --- ЗАГРУЗКА ПАЦИЕНТОВ ---
+    async function loadPatients() {
+        const select = document.getElementById('patientSelect');
+        const { data: patients, error } = await supabaseClient.from('patients').select('*').order('last_name');
+
+        if (error) {
+            console.error('Ошибка загрузки пациентов:', error);
+            select.innerHTML = '<option value="">Ошибка загрузки</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">-- Выберите пациента --</option>';
+        patients.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.dataset.patient = JSON.stringify(p);
+            opt.textContent = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
+            select.appendChild(opt);
+        });
+    }
+
+    // --- АВТОЗАПОЛНЕНИЕ ПРИ ВЫБОРЕ ПАЦИЕНТА ---
+    document.getElementById('patientSelect').addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (!selectedOption.value) return;
+        const patient = JSON.parse(selectedOption.dataset.patient);
+        
+        document.getElementById('firstName').value = patient.first_name || '';
+        document.getElementById('patronymic').value = patient.patronymic || '';
+        
+        if (patient.dob) {
+            const [year, month, day] = patient.dob.split('-');
+            document.getElementById('dobDay').value = day;
+            document.getElementById('dobMonth').value = MONTHS_GENITIVE[parseInt(month) - 1];
+            document.getElementById('dobYear').value = year.slice(-2);
+        }
+        document.getElementById('address').value = patient.address || '';
+        document.getElementById('passSeries').value = patient.pass_series || '';
+        document.getElementById('passNumber').value = patient.pass_number || '';
+    });
+
+    // --- ИНИЦИАЛИЗАЦИЯ ---
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
@@ -212,8 +251,6 @@
     function initMonths() {
         const dateMonthSelect = document.getElementById('dateMonth');
         const dobMonthSelect = document.getElementById('dobMonth');
-        dateMonthSelect.innerHTML = '';
-        dobMonthSelect.innerHTML = '';
         MONTHS_GENITIVE.forEach((month) => {
             dateMonthSelect.add(new Option(month, month));
             dobMonthSelect.add(new Option(month, month));
@@ -225,19 +262,14 @@
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
         document.getElementById('dateMonth').value = MONTHS_GENITIVE[today.getMonth()];
         document.getElementById('dateYear').value = today.getFullYear();
-        // Генерируем номер 0433001 (временный, пока нет базы)
         document.getElementById('docNumber').value = `0433${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
     }
 
-    initTemplates();
-    initMonths();
-    initAutoDate();
-
+    // --- РИСОВАНИЕ PDF ---
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
-        const fieldWidth = xEnd - xStart;
-        const startX = xStart + (fieldWidth - textWidth) / 2;
+        const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
         page.drawText(text, { ...options, x: startX, y });
     }
 
@@ -245,9 +277,7 @@
         if (!text) return;
         const { font, size, color, maxWidth, lineHeight, indent } = options;
         const words = text.split(' ');
-        let lines = [];
-        let currentLine = '';
-        let isFirstLine = true;
+        let lines = [], currentLine = '', isFirstLine = true;
         for (let word of words) {
             const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
             const testLine = currentLine === '' ? word : currentLine + ' ' + word;
@@ -273,11 +303,19 @@
         page.drawLine({ start: { x: x + 4, y: y }, end: { x: x + 10, y: y + 8 }, thickness: 1.5, color: color });
     }
 
+    // --- ОТПРАВКА ФОРМЫ ---
     document.getElementById('vvkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
+        const patientId = document.getElementById('patientSelect').value;
+
+        if (!patientId) {
+            alert("Пожалуйста, выберите пациента из списка!");
+            return;
+        }
+
         btn.disabled = true;
-        btn.textContent = 'Генерация PDF...';
+        btn.textContent = 'Генерация и сохранение...';
 
         try {
             const url = './template.pdf'; 
@@ -289,21 +327,16 @@
             const firstPage = pdfDoc.getPages()[0];
 
             const getVal = (id) => document.getElementById(id).value;
-            const fontSize = 10;
-            const black = PDFLib.rgb(0, 0, 0);
-            const textOptions = { size: fontSize, font: customFont, color: black };
+            const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, textOptions);
-            
-            drawCenteredInRange(firstPage, `${getVal('docNumber')}`, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, textOptions);
-            
+            drawCenteredInRange(firstPage, getVal('docNumber'), COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dobDay'), COORDS.dob.day.xStart, COORDS.dob.day.xEnd, COORDS.dob.day.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dobMonth'), COORDS.dob.month.xStart, COORDS.dob.month.xEnd, COORDS.dob.month.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dobYear'), COORDS.dob.year.xStart, COORDS.dob.year.xEnd, COORDS.dob.year.y, textOptions);
-
             drawCenteredInRange(firstPage, getVal('passSeries'), COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, textOptions);
             drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, textOptions);
             drawCenteredInRange(firstPage, getVal('summons'), COORDS.summons.xStart, COORDS.summons.xEnd, COORDS.summons.y, textOptions);
@@ -323,24 +356,54 @@
             const category = document.querySelector('input[name="category"]:checked').value;
             if (category) {
                 const pos = COORDS.categories[category];
-                drawCheckmark(firstPage, pos.x, pos.y, black);
+                drawCheckmark(firstPage, pos.x, pos.y, PDFLib.rgb(0, 0, 0));
             }
 
             const pdfBytes = await pdfDoc.save();
-            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            const docNumber = getVal('docNumber');
+            const fileName = `${Date.now()}_VVK_${docNumber}.pdf`;
+
+            // Загружаем в Storage
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                .from('documents')
+                .upload(fileName, pdfBlob, { contentType: 'application/pdf' });
+
+            if (uploadError) throw new Error("Ошибка загрузки файла: " + uploadError.message);
+
+            // Пишем в БД
+            const { error: dbError } = await supabaseClient.from('documents').insert({
+                patient_id: patientId,
+                doc_number: docNumber,
+                document_type: 'Заключение ВВК',
+                file_path: uploadData.path
+            });
+
+            if (dbError) throw new Error("Ошибка сохранения в БД: " + dbError.message);
+
+            // Скачиваем локально
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `Заключение_ВВК_${getVal('firstName')}.pdf`;
+            link.href = URL.createObjectURL(pdfBlob);
+            link.download = `Заключение_ВВК_${docNumber}.pdf`;
             link.click();
+
+            alert("Документ успешно создан и отправлен пациенту!");
+            window.location.href = 'index.html';
 
         } catch (error) {
             console.error(error);
             alert("Ошибка: " + error.message);
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Скачать заполненный PDF';
+            btn.textContent = 'Сгенерировать и сохранить PDF';
         }
     });
+
+    initTemplates();
+    initMonths();
+    initAutoDate();
+    loadPatients();
 </script>
 </body>
 </html>
