@@ -15,6 +15,7 @@
         .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
         button { background: #0056b3; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; }
         button:hover { background: #004494; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .row { display: flex; gap: 15px; }
         .row > .form-group { flex: 1; }
     </style>
@@ -138,22 +139,24 @@
 
         try {
             // 1. Загружаем шаблон PDF
-            // ВАЖНО: Файл template.pdf должен лежать в той же папке!
-            const url = 'template.pdf'; 
-            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+            // ВАЖНО: Файл template.pdf должен лежать в той же папке, что и index.html!
+            const url = './template.pdf'; 
+            const existingPdfBytes = await fetch(url).then(res => {
+                if (!res.ok) throw new Error(`Не удалось загрузить ${url}. Убедитесь, что файл существует.`);
+                return res.arrayBuffer();
+            });
 
             // 2. Загружаем документ и шрифт
-            const pdfDoc = await PDFDocument.load(existingPdfBytes);
+            // ИСПОЛЬЗУЕМ PDFLib, а не PDFDocument!
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
 
             // Загружаем шрифт с поддержкой кириллицы (Roboto)
-            // Если у вас нет интернета при генерации, скачайте шрифт и положите локально.
             const fontBytes = await fetch('https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf').then(res => res.arrayBuffer());
             const customFont = await pdfDoc.embedFont(fontBytes);
 
             const pages = pdfDoc.getPages();
             const firstPage = pages[0];
-            const { width, height } = firstPage.getSize();
 
             // Функция для форматирования даты из YYYY-MM-DD в DD.MM.YYYY
             const formatDate = (dateString) => {
@@ -184,11 +187,11 @@
             };
 
             const fontSize = 10;
-            const color = pdfLib.rgb(0, 0, 0); // Черный цвет
+            // ИСПОЛЬЗУЕМ PDFLib.rgb
+            const color = PDFLib.rgb(0, 0, 0); // Черный цвет
 
             // --- НАНОСИМ ТЕКСТ ---
             // ВНИМАНИЕ: Координаты (x, y) приблизительные! 
-            // Вам нужно будет подогнать их под ваш конкретный PDF, используя инструменты из прошлого сообщения.
             // Отсчет идет от ЛЕВОГО НИЖНЕГО угла.
 
             // Дата и номер (вверху справа)
@@ -226,8 +229,6 @@
             firstPage.drawText(formData.recommendations, { x: 100, y: 200, ...textOptions });
 
             // --- ГАЛОЧКА КАТЕГОРИИ ГОДНОСТИ ---
-            // В шаблоне стоят кружочки "o A", "o Б" и т.д.
-            // Координаты кружочков по оси Y:
             const categoryYPositions = {
                 'A': 330,
                 'B': 310,
@@ -236,7 +237,6 @@
                 'D': 250
             };
 
-            // Рисуем "X" (или галочку) поверх выбранного кружочка
             if (formData.category) {
                 const yPos = categoryYPositions[formData.category];
                 // Рисуем крестик (две линии)
@@ -245,7 +245,7 @@
                     y: yPos - 3, 
                     size: 12, 
                     font: customFont, 
-                    color: pdfLib.rgb(1, 0, 0) // Красный цвет для наглядности
+                    color: PDFLib.rgb(1, 0, 0) // Красный цвет
                 });
             }
 
@@ -259,7 +259,7 @@
 
         } catch (error) {
             console.error("Ошибка генерации PDF:", error);
-            alert("Произошла ошибка! Проверьте консоль (F12).\nСкорее всего, не найден файл template.pdf или шрифт.");
+            alert("Ошибка: " + error.message + "\nПроверьте консоль (F12) для подробностей.");
         } finally {
             btn.disabled = false;
             btn.textContent = 'Скачать заполненный PDF';
