@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Портал ЕСС | Рабочая область</title>
+    <style>
+        :root {
+            --primary: #1e3a8a; /* Строгий синий */
+            --bg: #f3f4f6;
+            --text: #333;
+        }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); display: flex; height: 100vh; }
+        
+        /* Боковое меню */
+        .sidebar { width: 250px; background: var(--primary); color: white; display: flex; flex-direction: column; }
+        .sidebar h2 { padding: 20px; margin: 0; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
+        .menu-item { padding: 15px 20px; cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
+        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left: 4px solid #60a5fa; }
+        .menu-item a { color: white; text-decoration: none; display: block; }
+
+        /* Основная область */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        /* Шапка */
+        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .user-profile { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--text); }
+        
+        /* Контент */
+        .content { padding: 30px; }
+        .btn-create { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-create:hover { background: #059669; }
+        
+        /* Список документов */
+        .documents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .doc-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
+        .doc-card h3 { margin-top: 0; color: var(--primary); }
+        .doc-card p { color: #666; font-size: 14px; }
+        .doc-card .btn-open { display: inline-block; margin-top: 15px; padding: 8px 16px; background: var(--primary); color: white; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- Боковое меню -->
+    <div class="sidebar">
+        <h2>ЕСС | Портал</h2>
+        <div class="menu-item active"><a href="#">📄 Документы</a></div>
+        <div class="menu-item"><a href="#">👥 Сотрудники</a></div>
+        <div class="menu-item"><a href="#">⚙️ Настройки</a></div>
+    </div>
+
+    <!-- Основная область -->
+    <div class="main-content">
+        <div class="header">
+            <h3>Рабочая область</h3>
+            <div class="user-profile">
+                <span>Иванов И.И.</span>
+                <!-- Здесь можно вывести аватарку -->
+            </div>
+        </div>
+
+        <div class="content">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1 style="margin: 0; color: #333;">Мои документы</h1>
+                <button class="btn-create" onclick="window.location.href='index.html'">+ Создать документ</button>
+            </div>
+
+            <div class="documents-grid">
+                <!-- Карточка документа -->
+                <div class="doc-card">
+                    <h3>Заключение экспертизы</h3>
+                    <p>№ 0433001 от 24.05.2024</p>
+                    <p><strong>Статус:</strong> Подписано</p>
+                    <a href="#" class="btn-open">Скачать PDF</a>
+                </div>
+                <div class="doc-card">
+                    <h3>Заключение экспертизы</h3>
+                    <p>№ 0433002 от 24.05.2024</p>
+                    <p><strong>Статус:</strong> Подписано</p>
+                    <a href="#" class="btn-open">Скачать PDF</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
