@@ -34,7 +34,7 @@
         .btn-edit { background: #eab308; }
         .btn-delete { background: var(--danger); }
         .btn-download { background: #64748b; }
-        .btn-view { background: var(--primary); } /* Синяя кнопка просмотра */
+        .btn-view { background: var(--primary); }
         .btn-add { background: var(--success); padding: 10px 20px; font-size: 14px; }
 
         /* Модалки (Редактирование/Добавление) */
@@ -67,7 +67,8 @@
                 <input type="password" id="password" placeholder="Пароль" required>
                 <button type="submit" class="btn-login">Войти</button>
             </form>
-            <a href="citizen.html" style="display:block; margin-top:15px; color:#666; font-size:14px;">Я пациент</a>
+            <!-- Ссылка на портал пациента -->
+            <a href="citizen.html" style="display:block; margin-top:15px; color:#666; font-size:14px; text-decoration:none;">Я пациент</a>
         </div>
     </div>
 
@@ -166,6 +167,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
+        // Обработка входа
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const { error } = await supabaseClient.auth.signInWithPassword({
@@ -178,26 +180,41 @@
             }
         });
 
+        // Выход
         document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
 
+        // ПРОВЕРКА РОЛЕЙ ПРИ ВХОДЕ
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (session) {
+                // Смотрим, кто это
                 const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
+                
+                // Если ПАЦИЕНТ - перекидываем на citizen.html
+                if (profile && profile.role === 'patient') {
+                    window.location.href = 'citizen.html';
+                    return;
+                }
+                
+                // Если не админ - выкидываем
                 if (!profile || profile.role !== 'admin') {
                     alert("У вас нет прав администратора!");
                     await supabaseClient.auth.signOut();
                     return;
                 }
+
+                // Если АДМИН - показываем панель
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
                 loadDocs();
                 loadPatients();
             } else {
+                // Если не вошел
                 document.getElementById('auth-screen').style.display = 'flex';
                 document.getElementById('dashboard-screen').style.display = 'none';
             }
         });
 
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         
         function closePreview() {
@@ -225,6 +242,7 @@
             }
         }
 
+        // --- РАБОТА С ДОКУМЕНТАМИ ---
         async function loadDocs() {
             const tbody = document.getElementById('docs-table-body');
             tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
@@ -245,7 +263,6 @@
                         <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
                         <td>
-                            <!-- ДОБАВЛЕНА КНОПКА ПРОСМОТРА -->
                             <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
                             <a href="${publicUrl}" target="_blank" class="btn-action btn-download">Скачать</a>
                             <button class="btn-action btn-delete" onclick="deleteDoc(${doc.id}, '${doc.file_path}')">Удалить</button>
@@ -263,6 +280,7 @@
             else loadDocs();
         }
 
+        // --- РАБОТА С ПАЦИЕНТАМИ ---
         async function loadPatients() {
             const tbody = document.getElementById('patients-table-body');
             tbody.innerHTML = '<tr><td colspan="4">Загрузка...</td></tr>';
@@ -330,6 +348,7 @@
         async function addPatient() {
             const email = document.getElementById('add-email').value;
             const password = document.getElementById('add-password').value;
+            // Используем временный клиент, чтобы не разлогинить админа
             const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
             if (authError) return alert("Ошибка: " + authError.message);
