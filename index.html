@@ -148,7 +148,7 @@
 
 <script>
     // =====================================================================
-    // ⚙️ ВАШИ КООРДИНАТЫ (Я вернул всё как было. xStart и xEnd - для центрирования) ⚙️
+    // ⚙️ ВАШИ КООРДИНАТЫ (Добавлен параметр lineHeight - отступ между строками) ⚙️
     // =====================================================================
     const COORDS = {
         // Для центрируемых полей пишем xStart (начало) и xEnd (конец поля)
@@ -179,12 +179,12 @@
         passNumber: { xStart: 178, xEnd: 227, y: 520 },
         summons: { xStart: 363, xEnd: 404, y: 520 },
         
-        // МНОГОСТРОЧНЫЕ ПОЛЯ (Замените строку "ВПИШИ_Y" на ваши координаты по высоте)
-        complaints: { x: 50, y: 506, maxWidth: 492, indent: 43 }, 
-        anamnesis: { x: 50, y: 495, maxWidth: 492, indent: 46 },
-        objectiveData: { x: 50, y: 454, maxWidth: 492, indent: 181 },
-        diagnosis: { x: 50, y: 398, maxWidth: 492, indent: 43 },
-        recommendations: { x: 50, y: 258, maxWidth: 492, indent: 120 },
+        // МНОГОСТРОЧНЫЕ ПОЛЯ (lineHeight — расстояние между строками, подберите под ваш шрифт)
+        complaints: { x: 50, y: 506, maxWidth: 492, indent: 43, lineHeight: 11 }, 
+        anamnesis: { x: 50, y: 495, maxWidth: 492, indent: 46, lineHeight: 11 },
+        objectiveData: { x: 50, y: 454, maxWidth: 492, indent: 181, lineHeight: 11 },
+        diagnosis: { x: 50, y: 398, maxWidth: 492, indent: 43, lineHeight: 11 },
+        recommendations: { x: 50, y: 258, maxWidth: 492, indent: 120, lineHeight: 11 },
 
         categories: {
             'A': { x: 49, y: 332 },
@@ -232,20 +232,16 @@
     // 🎨 ФУНКЦИИ РИСОВАНИЯ
     // =====================================================================
     
-    // НОВАЯ ФУНКЦИЯ: Центрирование по НАЧАЛУ и КОНЦУ поля
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
-        
-        // Вычисляем точку старта, чтобы текст оказался ровно посередине между xStart и xEnd
         const fieldWidth = xEnd - xStart;
         const startX = xStart + (fieldWidth - textWidth) / 2;
-        
         page.drawText(text, { ...options, x: startX, y });
     }
 
     function drawParagraph(page, text, x, y, options) {
-        if (!text || y === "ВПИШИ_Y") return; // Защита от забытых координат
+        if (!text || y === "ВПИШИ_Y") return;
         const { font, size, color, maxWidth, lineHeight, indent } = options;
         const words = text.split(' ');
         let lines = [];
@@ -269,7 +265,7 @@
         for (let line of lines) {
             const currentX = line.isFirst ? x + indent : x;
             page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
-            currentY -= lineHeight;
+            currentY -= lineHeight; // Используем lineHeight из COORDS
         }
     }
 
@@ -300,7 +296,8 @@
             const fontSize = 10;
             const black = PDFLib.rgb(0, 0, 0);
             const textOptions = { size: fontSize, font: customFont, color: black };
-            const paraOptions = { ...textOptions, lineHeight: 12 };
+            // Убрали lineHeight отсюда, теперь он берется из COORDS для каждого поля отдельно
+            const paraOptions = { ...textOptions }; 
 
             // --- ЦЕНТРИРУЕМЫЕ ПОЛЯ ---
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, textOptions);
@@ -325,11 +322,11 @@
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
 
             // --- МНОГОСТРОЧНЫЕ ПОЛЯ ---
-            drawParagraph(firstPage, getVal('complaints'), COORDS.complaints.x, COORDS.complaints.y, { ...paraOptions, maxWidth: COORDS.complaints.maxWidth, indent: COORDS.complaints.indent });
-            drawParagraph(firstPage, getVal('anamnesis'), COORDS.anamnesis.x, COORDS.anamnesis.y, { ...paraOptions, maxWidth: COORDS.anamnesis.maxWidth, indent: COORDS.anamnesis.indent });
-            drawParagraph(firstPage, getVal('objectiveData'), COORDS.objectiveData.x, COORDS.objectiveData.y, { ...paraOptions, maxWidth: COORDS.objectiveData.maxWidth, indent: COORDS.objectiveData.indent });
-            drawParagraph(firstPage, getVal('diagnosis'), COORDS.diagnosis.x, COORDS.diagnosis.y, { ...paraOptions, maxWidth: COORDS.diagnosis.maxWidth, indent: COORDS.diagnosis.indent });
-            drawParagraph(firstPage, getVal('recommendations'), COORDS.recommendations.x, COORDS.recommendations.y, { ...paraOptions, maxWidth: COORDS.recommendations.maxWidth, indent: COORDS.recommendations.indent });
+            drawParagraph(firstPage, getVal('complaints'), COORDS.complaints.x, COORDS.complaints.y, { ...paraOptions, maxWidth: COORDS.complaints.maxWidth, indent: COORDS.complaints.indent, lineHeight: COORDS.complaints.lineHeight });
+            drawParagraph(firstPage, getVal('anamnesis'), COORDS.anamnesis.x, COORDS.anamnesis.y, { ...paraOptions, maxWidth: COORDS.anamnesis.maxWidth, indent: COORDS.anamnesis.indent, lineHeight: COORDS.anamnesis.lineHeight });
+            drawParagraph(firstPage, getVal('objectiveData'), COORDS.objectiveData.x, COORDS.objectiveData.y, { ...paraOptions, maxWidth: COORDS.objectiveData.maxWidth, indent: COORDS.objectiveData.indent, lineHeight: COORDS.objectiveData.lineHeight });
+            drawParagraph(firstPage, getVal('diagnosis'), COORDS.diagnosis.x, COORDS.diagnosis.y, { ...paraOptions, maxWidth: COORDS.diagnosis.maxWidth, indent: COORDS.diagnosis.indent, lineHeight: COORDS.diagnosis.lineHeight });
+            drawParagraph(firstPage, getVal('recommendations'), COORDS.recommendations.x, COORDS.recommendations.y, { ...paraOptions, maxWidth: COORDS.recommendations.maxWidth, indent: COORDS.recommendations.indent, lineHeight: COORDS.recommendations.lineHeight });
 
             // --- ГАЛОЧКА ---
             const category = document.querySelector('input[name="category"]:checked').value;
