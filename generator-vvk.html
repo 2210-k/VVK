@@ -162,6 +162,7 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // ВАШИ КООРДИНАТЫ (ОСТАВЛЕНЫ БЕЗ ИЗМЕНЕНИЙ)
     const COORDS = {
         date: { day: { xStart: 50, xEnd: 65, y: 665 }, month: { xStart: 77, xEnd: 163, y: 665 }, year: { xStart: 177, xEnd: 213, y: 665 } },
         docNumber: { xStart: 510, xEnd: 546, y: 665 },
@@ -192,7 +193,7 @@
 
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
-    // --- ЗАГРУЗКА ПАЦИЕНТОВ ---
+    // Загрузка пациентов
     async function loadPatients() {
         const select = document.getElementById('patientSelect');
         const { data: patients, error } = await supabaseClient.from('patients').select('*').order('last_name');
@@ -213,7 +214,7 @@
         });
     }
 
-    // --- АВТОЗАПОЛНЕНИЕ ПРИ ВЫБОРЕ ПАЦИЕНТА ---
+    // Автозаполнение
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (!selectedOption.value) return;
@@ -233,7 +234,7 @@
         document.getElementById('passNumber').value = patient.pass_number || '';
     });
 
-    // --- ИНИЦИАЛИЗАЦИЯ ---
+    // Инициализация
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
@@ -265,7 +266,7 @@
         document.getElementById('docNumber').value = `0433${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
     }
 
-    // --- РИСОВАНИЕ PDF ---
+    // Функции рисования
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
@@ -303,7 +304,7 @@
         page.drawLine({ start: { x: x + 4, y: y }, end: { x: x + 10, y: y + 8 }, thickness: 1.5, color: color });
     }
 
-    // --- ОТПРАВКА ФОРМЫ ---
+    // Отправка
     document.getElementById('vvkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -365,14 +366,14 @@
             const docNumber = getVal('docNumber');
             const fileName = `${Date.now()}_VVK_${docNumber}.pdf`;
 
-            // Загружаем в Storage
+            // Сохраняем в Storage
             const { data: uploadData, error: uploadError } = await supabaseClient.storage
                 .from('documents')
                 .upload(fileName, pdfBlob, { contentType: 'application/pdf' });
 
             if (uploadError) throw new Error("Ошибка загрузки файла: " + uploadError.message);
 
-            // Пишем в БД
+            // Сохраняем в БД
             const { error: dbError } = await supabaseClient.from('documents').insert({
                 patient_id: patientId,
                 doc_number: docNumber,
@@ -400,6 +401,7 @@
         }
     });
 
+    // Запуск
     initTemplates();
     initMonths();
     initAutoDate();
