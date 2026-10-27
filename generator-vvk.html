@@ -231,7 +231,6 @@
             .from('profiles')
             .select('*')
             .eq('role', 'patient')
-            .eq('organization_id', currentOrgId)
             .order('last_name');
 
         if (error) { console.error(error); return; }
