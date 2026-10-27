@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор Повестки</title>
+    <title>Генератор Повестки (Отладка)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
@@ -34,13 +34,6 @@
         .btn-dl { background: #10b981; color: white; }
         .btn-close { background: #ef4444; color: white; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
-
-        @media (max-width: 768px) {
-            .row { flex-direction: column; gap: 0; }
-            .container { padding: 15px; }
-            .preview-header { flex-direction: column; align-items: flex-start; }
-            .preview-header > div { display: flex; width: 100%; gap: 10px; }
-        }
     </style>
 </head>
 <body>
@@ -49,7 +42,7 @@
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
     <div class="patient-selector">
-        <label>👤 Выберите гражданина (данные подставятся)</label>
+        <label>👤 Выберите гражданина</label>
         <select id="patientSelect" class="form-select">
             <option value="none">-- Без гражданина (В архив) --</option>
         </select>
@@ -57,23 +50,12 @@
 
     <h2>Повестка</h2>
     <form id="povestkaForm">
-        
         <div class="row">
-            <div class="form-group">
-                <label>Имя</label>
-                <input type="text" id="firstName">
-            </div>
-            <div class="form-group">
-                <label>Отчество</label>
-                <input type="text" id="patronymic">
-            </div>
+            <div class="form-group"><label>Имя</label><input type="text" id="firstName"></div>
+            <div class="form-group"><label>Отчество</label><input type="text" id="patronymic"></div>
         </div>
-        
         <div class="row">
-            <div class="form-group">
-                <label>№ паспорта</label>
-                <input type="text" id="passNumber">
-            </div>
+            <div class="form-group"><label>№ паспорта</label><input type="text" id="passNumber"></div>
             <div class="form-group">
                 <label>Дата рождения</label>
                 <div class="date-group">
@@ -83,12 +65,8 @@
                 </div>
             </div>
         </div>
-
-        <div class="form-group">
-            <label>Адрес регистрации</label>
-            <input type="text" id="address">
-        </div>
-
+        <div class="form-group"><label>Адрес регистрации</label><input type="text" id="address"></div>
+        
         <hr style="border: 1px solid #eee; margin: 20px 0;">
         
         <div class="row">
@@ -100,35 +78,22 @@
                     <input type="text" id="dateYear" class="year" maxlength="4" required>
                 </div>
             </div>
-            <div class="form-group">
-                <label>№ повестки (ННН)</label>
-                <input type="text" id="docNumber" class="center-input" placeholder="001" required>
-            </div>
+            <div class="form-group"><label>№ повестки</label><input type="text" id="docNumber" class="center-input" required></div>
         </div>
-
         <div class="row">
-            <div class="form-group">
-                <label>День явки (0-999)</label>
-                <input type="text" id="appearDay" class="center-input" placeholder="005" required>
-            </div>
-            <div class="form-group">
-                <label>Время явки</label>
-                <input type="text" id="appearTime" class="center-input" placeholder="10" required>
-            </div>
+            <div class="form-group"><label>День явки</label><input type="text" id="appearDay" class="center-input" required></div>
+            <div class="form-group"><label>Время явки</label><input type="text" id="appearTime" class="center-input" required></div>
         </div>
-
         <div class="form-group">
             <label>Адрес военного комиссариата</label>
             <select id="template-commissariat" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <input type="text" id="commissariatAddress" required>
         </div>
-
         <div class="form-group">
             <label>При себе иметь</label>
             <select id="template-bringWith" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <textarea id="bringWith" required></textarea>
         </div>
-
         <div class="row">
             <div class="form-group">
                 <label>Район</label>
@@ -141,13 +106,11 @@
                 <input type="text" id="regionName" class="center-input" required>
             </div>
         </div>
-
         <div class="form-group">
             <label>Специальное звание</label>
             <select id="template-rank" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
             <input type="text" id="rank" required>
         </div>
-
         <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
     </form>
 </div>
@@ -155,7 +118,7 @@
 <div id="preview-modal">
     <div class="preview-container">
         <div class="preview-header">
-            <h3>Предпросмотр повестки</h3>
+            <h3>Предпросмотр</h3>
             <div>
                 <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
                 <button class="btn-preview btn-close" id="close-preview-btn">Закрыть</button>
@@ -170,13 +133,12 @@
 
 <script>
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
-
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ВАШИ ИДЕАЛЬНЫЕ КООРДИНАТЫ
-    const COORDS = {
-        nameAndPassport: { x: 113, y: 251 },
+    // ВАШИ КООРДИНАТЫ (как вы замерили)
+    const RAW_COORDS = {
+        nameAndPassport: { x: 113, y: 251 }, 
         address: { x: 112, y: 231 },
         date: { 
             day: { xStart: 34, xEnd: 52, y: 184 }, 
@@ -193,6 +155,9 @@
         rank: { x: 161, y: 57 }
     };
 
+    // Сюда запишем перевернутые координаты
+    let COORDS = {}; 
+
     const TEMPLATES = {
         commissariat: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"],
         bringWith: ["медицинскую справку, военный билет (при наличии), иные документы по требованию военного комиссариата."],
@@ -201,26 +166,14 @@
         rank: ["генерал-майор воинской части №205"]
     };
 
-    // Месяцы в цифровом формате (01, 02, ...)
     const MONTHS_NUMERIC = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
     let currentPdfBlob = null;
 
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
-        const { data: citizens, error } = await supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('role', 'patient')
-            .order('last_name');
-
-        if (error) { 
-            console.error(error); 
-            alert("Ошибка загрузки граждан: " + error.message);
-            return; 
-        }
-        
+        const { data: citizens, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (error) return;
         select.innerHTML = '<option value="none">-- Без гражданина (В архив) --</option>';
-        
         citizens.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id;
@@ -237,12 +190,10 @@
             document.getElementById('dobMonth').value = MONTHS_NUMERIC[0];
             return;
         }
-
         const citizen = JSON.parse(selectedOption.dataset.citizen);
         document.getElementById('firstName').value = citizen.first_name || '';
         document.getElementById('patronymic').value = citizen.patronymic || '';
         document.getElementById('passNumber').value = citizen.pass_number || ''; 
-        
         if (citizen.dob) {
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
@@ -252,16 +203,13 @@
         document.getElementById('address').value = citizen.address || '';
     });
 
-    // ИСПРАВЛЕНА РАБОТА ШАБЛОНОВ
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
-            
             let inputId = fieldId;
             if (fieldId === 'district') inputId = 'districtName';
             if (fieldId === 'region') inputId = 'regionName';
             if (fieldId === 'commissariat') inputId = 'commissariatAddress';
-            
             const input = document.getElementById(inputId);
             
             options.forEach((text, index) => {
@@ -270,9 +218,7 @@
                 opt.textContent = `Вариант ${index + 1}`;
                 select.appendChild(opt);
             });
-            select.addEventListener('change', (e) => { 
-                if (e.target.value && input) input.value = e.target.value; 
-            });
+            select.addEventListener('change', (e) => { if (e.target.value && input) input.value = e.target.value; });
         }
     }
 
@@ -297,7 +243,7 @@
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
         const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
-        page.drawText(text, { ...options, x: startX, y });
+        page.drawText(text, { ...options, x: startX, y: y });
     }
 
     function drawParagraph(page, text, x, y, options) {
@@ -354,19 +300,46 @@
             const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
+            
+            // ИСПОЛЬЗУЕМ СТАБИЛЬНЫЙ ШРИФТ ОТ GOOGLE
             const fontBytes = await fetch('https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf').then(res => res.arrayBuffer());
             const customFont = await pdfDoc.embedFont(fontBytes);
+            
             const firstPage = pdfDoc.getPages()[0];
+            // УЗНАЕМ РЕАЛЬНЫЙ РАЗМЕР СТРАНИЦЫ
+            const { width, height } = firstPage.getSize();
+
+            // ПЕРЕВОРАЧИВАЕМ КООРДИНАТЫ (вычитаем из реальной высоты)
+            COORDS = {
+                nameAndPassport: { x: RAW_COORDS.nameAndPassport.x, y: height - RAW_COORDS.nameAndPassport.y },
+                address: { x: RAW_COORDS.address.x, y: height - RAW_COORDS.address.y },
+                date: { 
+                    day: { xStart: RAW_COORDS.date.day.xStart, xEnd: RAW_COORDS.date.day.xEnd, y: height - RAW_COORDS.date.day.y }, 
+                    month: { xStart: RAW_COORDS.date.month.xStart, xEnd: RAW_COORDS.date.month.xEnd, y: height - RAW_COORDS.date.month.y }, 
+                    year: { xStart: RAW_COORDS.date.year.xStart, xEnd: RAW_COORDS.date.year.xEnd, y: height - RAW_COORDS.date.year.y } 
+                },
+                docNumber: { xStart: RAW_COORDS.docNumber.xStart, xEnd: RAW_COORDS.docNumber.xEnd, y: height - RAW_COORDS.docNumber.y },
+                appearDay: { xStart: RAW_COORDS.appearDay.xStart, xEnd: RAW_COORDS.appearDay.xEnd, y: height - RAW_COORDS.appearDay.y },
+                appearTime: { xStart: RAW_COORDS.appearTime.xStart, xEnd: RAW_COORDS.appearTime.xEnd, y: height - RAW_COORDS.appearTime.y },
+                commissariat: { x: RAW_COORDS.commissariat.x, y: height - RAW_COORDS.commissariat.y },
+                bringWith: { x: RAW_COORDS.bringWith.x, y: height - RAW_COORDS.bringWith.y, maxWidth: RAW_COORDS.bringWith.maxWidth, lineHeight: RAW_COORDS.bringWith.lineHeight, indent: RAW_COORDS.bringWith.indent },
+                district: { xStart: RAW_COORDS.district.xStart, xEnd: RAW_COORDS.district.xEnd, y: height - RAW_COORDS.district.y },
+                region: { xStart: RAW_COORDS.region.xStart, xEnd: RAW_COORDS.region.xEnd, y: height - RAW_COORDS.region.y },
+                rank: { x: RAW_COORDS.rank.x, y: height - RAW_COORDS.rank.y }
+            };
 
             const getVal = (id) => document.getElementById(id).value;
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            if(actualCitizenId) {
-                const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
-                firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
-                firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
-            }
+            // --- ОТЛАДКА: Рисуем красную рамку по краям листа ---
+            firstPage.drawRectangle({ x: 0, y: 0, width: width, height: height, borderColor: PDFLib.rgb(1, 0, 0), borderWidth: 2 });
+            firstPage.drawText(`Размер: ${width}x${height}`, { x: 10, y: height - 20, size: 12, font: customFont, color: PDFLib.rgb(1, 0, 0) });
+            
+            // --- РИСОВАНИЕ ДАННЫХ (БЕЗ УСЛОВИЙ, ВСЕГДА) ---
+            const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
+            firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
+            firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
 
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, textOptions);
@@ -413,7 +386,7 @@
 
         } catch (error) {
             console.error(error);
-            alert("Ошибка: " + error.message + "\nУбедитесь, что povestka.pdf загружен на GitHub!");
+            alert("Ошибка: " + error.message);
         } finally {
             btn.disabled = false;
             btn.textContent = 'Сгенерировать и сохранить PDF';
