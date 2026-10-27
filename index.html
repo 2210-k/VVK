@@ -28,7 +28,7 @@
         .main-content { margin-left: 260px; padding: 30px; }
         .header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; flex-wrap: wrap; gap: 15px; }
         
-        /* Таблицы (с адаптацией под мобилки) */
+        /* Таблицы */
         .table-responsive { width: 100%; overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
@@ -51,6 +51,13 @@
         .btn-save { background: var(--success); color: white; }
         .btn-cancel { background: #ccc; color: #333; }
 
+        /* Карточки шаблонов в модалке */
+        .template-card { padding: 15px; border: 1px solid #ddd; border-radius: 6px; background: #f8fafc; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+        .template-card:hover { border-color: var(--primary); background: #eef5ff; transform: translateY(-2px); }
+        .template-card h4 { margin: 0 0 5px 0; color: var(--primary); font-size: 16px; }
+        .template-card p { margin: 0; color: #64748b; font-size: 13px; }
+
+        /* Предпросмотр */
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
@@ -59,15 +66,12 @@
 
         /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; display: flex; flex-direction: column; }
-            .sidebar h2 { display: none; } /* Скрываем логотип, чтобы сэкономить место */
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .sidebar h2 { display: none; }
             .menu-label { display: none; }
-            
-            /* Делаем меню горизонтальным */
             .sidebar-menu-container { display: flex; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
             .menu-item { border-left: none; border-bottom: 3px solid transparent; padding: 12px 15px; flex-shrink: 0; }
             .menu-item.active { border-left: none; border-bottom: 3px solid #60a5fa; background: transparent; }
-            
             .main-content { margin-left: 0; padding: 15px; }
             .header { flex-direction: column; align-items: flex-start; }
             .header > div { width: 100%; }
@@ -95,7 +99,6 @@
             <h2>Служебный портал</h2>
             
             <div class="sidebar-menu-container">
-                <!-- БЛОК ОРГАНИЗАЦИЙ -->
                 <div class="menu-item active org-tab" data-org="1" onclick="switchOrg(1, this)">🚑 ЕСС</div>
                 <div class="menu-item org-tab" data-org="2" onclick="switchOrg(2, this)">🚓 МВД</div>
                 <div class="menu-item org-tab" data-org="3" onclick="switchOrg(3, this)">🏛️ Правительство</div>
@@ -104,7 +107,8 @@
                 <div class="menu-item active doc-menu-item" onclick="switchTab('docs', this)" style="margin-left: 20px;">📄 Документы</div>
                 <div class="menu-item patient-menu-item" onclick="switchTab('citizens', this)">👥 Граждане</div>
                 
-                <div class="menu-item" onclick="goToGenerator()" style="color: #6ee7b7; font-weight: bold;">➕ Создать</div>
+                <!-- Кнопка теперь открывает каталог -->
+                <div class="menu-item" onclick="openCreateDocModal()" style="color: #6ee7b7; font-weight: bold;">➕ Создать документ</div>
             </div>
         </div>
 
@@ -117,7 +121,7 @@
             <div id="docs-tab">
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Номер</th><th>Тип</th><th>Получатель</th><th>Дата</th><th>Действия</th></tr></thead>
+                        <thead><tr><th>Номер</th><th>Тип документа</th><th>Получатель</th><th>Дата</th><th>Действия</th></tr></thead>
                         <tbody id="docs-table-body"></tbody>
                     </table>
                 </div>
@@ -133,6 +137,18 @@
                         <tbody id="citizens-table-body"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ВЫБОРА ДОКУМЕНТА -->
+    <div id="create-doc-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="create-doc-title">Выберите документ</h3>
+            <p style="color:#666; font-size:14px; margin-top:5px;">Доступные шаблоны для этой организации:</p>
+            <div id="templates-list" style="margin-top: 15px;"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('create-doc-modal')">Отмена</button>
             </div>
         </div>
     </div>
@@ -157,7 +173,7 @@
         </div>
     </div>
 
-    <!-- Модалка добавления -->
+    <!-- Модалка добавления гражданина -->
     <div id="add-modal" class="modal">
         <div class="modal-content">
             <h3>Новый гражданин</h3>
@@ -264,8 +280,45 @@
             document.getElementById('page-title').textContent = `${suffix}: ${currentOrgName}`;
         }
 
-        function goToGenerator() {
-            window.location.href = `generator-vvk.html?org=${currentOrgId}`;
+        // --- ОТКРЫТИЕ КАТАЛОГА ДОКУМЕНТОВ ---
+        async function openCreateDocModal() {
+            document.getElementById('create-doc-title').textContent = `Создать документ (${currentOrgName})`;
+            document.getElementById('create-doc-modal').style.display = 'flex';
+            
+            const list = document.getElementById('templates-list');
+            list.innerHTML = '<p>Загрузка шаблонов...</p>';
+            
+            // Запрашиваем шаблоны, привязанные к текущей организации
+            const { data: templates, error } = await supabaseClient
+                .from('document_templates')
+                .select('*')
+                .eq('organization_id', currentOrgId);
+                
+            if (error) { list.innerHTML = 'Ошибка загрузки: ' + error.message; return; }
+            
+            list.innerHTML = '';
+            if (templates.length === 0) {
+                list.innerHTML = '<p style="color:#888;">Для этой организации пока нет доступных документов.</p>';
+                return;
+            }
+            
+            templates.forEach(tpl => {
+                const div = document.createElement('div');
+                div.className = 'template-card';
+                div.innerHTML = `
+                    <h4>${tpl.name}</h4>
+                    <p>${tpl.description || 'Документ'}</p>
+                `;
+                // При клике переходим в генератор с ID организации
+                div.onclick = () => {
+                    if (tpl.url === '#') {
+                        alert('Этот документ еще в разработке!');
+                    } else {
+                        window.location.href = `${tpl.url}?org=${currentOrgId}`;
+                    }
+                };
+                list.appendChild(div);
+            });
         }
 
         function refreshData() {
