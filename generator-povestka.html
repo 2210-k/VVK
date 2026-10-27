@@ -40,7 +40,6 @@
             .container { padding: 15px; }
             .preview-header { flex-direction: column; align-items: flex-start; }
             .preview-header > div { display: flex; width: 100%; gap: 10px; }
-            .preview-header > div > button, .preview-header > div > a { flex: 1; text-align: center; }
         }
     </style>
 </head>
@@ -50,7 +49,7 @@
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
     <div class="patient-selector">
-        <label>👤 Выберите гражданина (данные подставятся автоматически)</label>
+        <label>👤 Выберите гражданина</label>
         <select id="patientSelect" class="form-select">
             <option value="none">-- Без гражданина (В архив) --</option>
         </select>
@@ -59,7 +58,6 @@
     <h2>Повестка</h2>
     <form id="povestkaForm">
         
-        <!-- Блок данных гражданина (подтягивается автоматически) -->
         <div class="row">
             <div class="form-group">
                 <label>Имя</label>
@@ -93,7 +91,6 @@
 
         <hr style="border: 1px solid #eee; margin: 20px 0;">
         
-        <!-- Блок данных повестки -->
         <div class="row">
             <div class="form-group">
                 <label>Дата повестки</label>
@@ -134,15 +131,21 @@
 
         <div class="row">
             <div class="form-group">
-                <label>Район, область</label>
+                <label>Район (Соль-Илецкого)</label>
                 <select id="template-district" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
-                <input type="text" id="district" class="center-input" required>
+                <input type="text" id="districtName" class="center-input" required>
             </div>
             <div class="form-group">
-                <label>Специальное звание</label>
-                <select id="template-rank" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
-                <input type="text" id="rank" required>
+                <label>Область (Оренбургской)</label>
+                <select id="template-region" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
+                <input type="text" id="regionName" class="center-input" required>
             </div>
+        </div>
+
+        <div class="form-group">
+            <label>Специальное звание</label>
+            <select id="template-rank" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
+            <input type="text" id="rank" required>
         </div>
 
         <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
@@ -171,56 +174,43 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // =====================================================================
-    // ⚙️ КООРДИНАТЫ (Вам нужно будет подогнать их под ваш PDF povestka.pdf)
-    // =====================================================================
+    // ВАШИ КООРДИНАТЫ
     const COORDS = {
-        // Данные гражданина
-        nameAndPassport: { x: 150, y: 750 }, // Место для ИО, № паспорта, даты рождения
-        address: { x: 150, y: 720 },
+        nameAndPassport: { x: 113, y: 251 }, 
+        address: { x: 112, y: 231 },
         
-        // Данные повестки (центрируем)
         date: { 
-            day: { xStart: 50, xEnd: 70, y: 680 }, 
-            month: { xStart: 80, xEnd: 100, y: 680 }, 
-            year: { xStart: 110, xEnd: 150, y: 680 } 
+            day: { xStart: 34, xEnd: 52, y: 184 }, 
+            month: { xStart: 55, xEnd: 72, y: 184 }, 
+            year: { xStart: 88, xEnd: 105, y: 184 } 
         },
-        docNumber: { xStart: 550, xEnd: 600, y: 680 },
+        docNumber: { xStart: 538, xEnd: 558, y: 184 },
         
-        appearDay: { xStart: 480, xEnd: 530, y: 640 },
-        appearTime: { xStart: 630, xEnd: 680, y: 640 },
+        appearDay: { xStart: 191, xEnd: 210, y: 158 },
+        appearTime: { xStart: 245, xEnd: 281, y: 158 },
         
-        commissariat: { x: 150, y: 610 },
+        commissariat: { x: 194, y: 143 },
         
-        // Многострочное поле
-        bringWith: { x: 150, y: 580, maxWidth: 400, lineHeight: 15, indent: 0 },
+        // ИСПРАВЛЕНА ШИРИНА maxWidth (243 вместо 556)
+        bringWith: { x: 33, y: 117, maxWidth: 523, lineHeight: 15, indent: 341 },
         
-        district: { xStart: 300, xEnd: 450, y: 420 }, // "Соль-Илецкого Оренбургской"
-        rank: { x: 250, y: 380 } // "генерал-майор воинской части №205"
+        // Район и Область РАЗДЕЛЕНЫ
+        district: { xStart: 253, xEnd: 338, y: 77 }, 
+        region: { xStart: 375, xEnd: 444, y: 77 },
+        rank: { x: 161, y: 56 } 
     };
 
-    // =====================================================================
-    // 📝 ШАБЛОНЫ
-    // =====================================================================
     const TEMPLATES = {
-        commissariat: [
-            "г. Соль-Илецк, ул. Васильковая, д. 40/8"
-        ],
-        bringWith: [
-            "медицинскую справку, военный билет (при наличии), иные документы по требованию военного комиссариата."
-        ],
-        district: [
-            "Соль-Илецкого Оренбургской"
-        ],
-        rank: [
-            "генерал-майор воинской части №205"
-        ]
+        commissariat: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"],
+        bringWith: ["медицинскую справку, военный билет (при наличии), иные документы по требованию военного комиссариата."],
+        district: ["Соль-Илецкого"],
+        region: ["Оренбургской"],
+        rank: ["генерал-майор воинской части №205"]
     };
 
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
     let currentPdfBlob = null;
 
-    // --- ЗАГРУЗКА ГРАЖДАН ---
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
         const { data: citizens, error } = await supabaseClient
@@ -241,7 +231,6 @@
         });
     }
 
-    // --- АВТОЗАПОЛНЕНИЕ ---
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (!selectedOption.value || selectedOption.value === 'none') {
@@ -253,22 +242,23 @@
         const citizen = JSON.parse(selectedOption.dataset.citizen);
         document.getElementById('firstName').value = citizen.first_name || '';
         document.getElementById('patronymic').value = citizen.patronymic || '';
-        document.getElementById('passNumber').value = citizen.pass_number || ''; // Берем только номер паспорта
+        document.getElementById('passNumber').value = citizen.pass_number || ''; 
         
         if (citizen.dob) {
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
             document.getElementById('dobMonth').value = MONTHS_GENITIVE[parseInt(month) - 1];
-            document.getElementById('dobYear').value = year; // Для повестки год полностью
+            document.getElementById('dobYear').value = year;
         }
         document.getElementById('address').value = citizen.address || '';
     });
 
-    // --- ИНИЦИАЛИЗАЦИЯ ШАБЛОНОВ ---
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
-            const input = document.getElementById(fieldId);
+            // Для полей район/область ID в HTML немного другие
+            const input = document.getElementById(fieldId === 'district' ? 'districtName' : fieldId === 'region' ? 'regionName' : fieldId);
+            
             options.forEach((text, index) => {
                 const opt = document.createElement('option');
                 opt.value = text;
@@ -298,7 +288,6 @@
         document.getElementById('docNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
     }
 
-    // --- ФУНКЦИИ РИСОВАНИЯ ---
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
@@ -331,7 +320,6 @@
         }
     }
 
-    // --- ПРЕДПРОСМОТР ---
     document.getElementById('close-preview-btn').addEventListener('click', () => {
         document.getElementById('preview-modal').style.display = 'none';
         document.getElementById('pdf-preview-frame').src = '';
@@ -347,7 +335,6 @@
         link.click();
     });
 
-    // --- ОТПРАВКА ФОРМЫ ---
     document.getElementById('povestkaForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -358,7 +345,6 @@
         btn.textContent = 'Генерация...';
 
         try {
-            // ВАЖНО: Здесь мы загружаем povestka.pdf. Убедитесь, что он есть на GitHub!
             const url = './povestka.pdf'; 
             const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
@@ -371,29 +357,21 @@
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            // 1. Рисуем данные гражданина (одной строкой или по частям)
             if(actualCitizenId) {
-                const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № паспорта ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
+                const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
                 firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
                 firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
             }
 
-            // 2. Дата повестки (центрированно)
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, textOptions);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, textOptions);
-            
-            // 3. Номер повестки (центрированно)
             drawCenteredInRange(firstPage, getVal('docNumber'), COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, textOptions);
-
-            // 4. День и время явки (центрированно)
             drawCenteredInRange(firstPage, getVal('appearDay'), COORDS.appearDay.xStart, COORDS.appearDay.xEnd, COORDS.appearDay.y, textOptions);
             drawCenteredInRange(firstPage, getVal('appearTime'), COORDS.appearTime.xStart, COORDS.appearTime.xEnd, COORDS.appearTime.y, textOptions);
 
-            // 5. Адрес комиссариата
             firstPage.drawText(getVal('commissariatAddress'), { x: COORDS.commissariat.x, y: COORDS.commissariat.y, ...textOptions });
 
-            // 6. При себе иметь (многострочно)
             drawParagraph(firstPage, getVal('bringWith'), COORDS.bringWith.x, COORDS.bringWith.y, { 
                 ...paraOptions, 
                 maxWidth: COORDS.bringWith.maxWidth, 
@@ -401,13 +379,12 @@
                 lineHeight: COORDS.bringWith.lineHeight 
             });
 
-            // 7. Район/область (центрированно)
-            drawCenteredInRange(firstPage, getVal('district'), COORDS.district.xStart, COORDS.district.xEnd, COORDS.district.y, textOptions);
+            // Отрисовка района и области отдельно
+            drawCenteredInRange(firstPage, getVal('districtName'), COORDS.district.xStart, COORDS.district.xEnd, COORDS.district.y, textOptions);
+            drawCenteredInRange(firstPage, getVal('regionName'), COORDS.region.xStart, COORDS.region.xEnd, COORDS.region.y, textOptions);
 
-            // 8. Звание
             firstPage.drawText(getVal('rank'), { x: COORDS.rank.x, y: COORDS.rank.y, ...textOptions });
 
-            // --- СОХРАНЕНИЕ ---
             const pdfBytes = await pdfDoc.save();
             currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
             
@@ -439,7 +416,6 @@
         }
     });
 
-    // Запуск
     initTemplates();
     initMonths();
     initAutoDate();
