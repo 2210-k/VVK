@@ -6,30 +6,22 @@
     <title>Личный кабинет | ЕСС</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --primary: #10b981; 
-            --primary-dark: #047857; 
-            --bg: #f3f4f6; 
-            --text: #1f2937; 
-            --sidebar-bg: #ffffff;
-            --card-bg: #ffffff;
-        }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+        :root { --primary: #10b981; --primary-dark: #047857; --bg: #f3f4f6; --text: #1f2937; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 70px; }
         
-        /* ================= ЭКРАН ВХОДА ================= */
-        #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #10b981 0%, #047857 100%); }
-        .auth-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
+        /* Вход */
+        #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 15px; box-sizing: border-box; }
+        .auth-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
         .auth-box h2 { color: var(--primary-dark); margin-top: 0; margin-bottom: 10px; }
         .auth-box input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; font-size: 16px; }
         .btn:hover { background: var(--primary-dark); }
-        .error-msg { color: #dc2626; font-size: 14px; margin-bottom: 15px; display: none; }
+        .error-msg { color: #dc2626; font-size: 14px; margin-bottom: 15px; display: none; background: #fee2e2; padding: 10px; border-radius: 6px; }
 
-        /* ================= КАБИНЕТ (DASHBOARD) ================= */
-        #dashboard-screen { display: none; height: 100vh; overflow: hidden; }
+        /* Кабинет */
+        #dashboard-screen { display: none; min-height: 100vh; }
         
-        /* Боковое меню */
-        .sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid #e5e7eb; height: 100%; position: fixed; display: flex; flex-direction: column; }
+        .sidebar { width: 260px; background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; display: flex; flex-direction: column; z-index: 100; }
         .logo-area { padding: 25px 20px; border-bottom: 1px solid #e5e7eb; text-align: center; }
         .logo-area h2 { margin: 0; color: var(--primary-dark); font-size: 20px; }
         .logo-area p { margin: 5px 0 0 0; color: #6b7280; font-size: 12px; }
@@ -41,57 +33,74 @@
         .logout-area { padding: 20px; border-top: 1px solid #e5e7eb; }
         .btn-logout { width: 100%; background: #fee2e2; color: #dc2626; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-        /* Основной контент */
-        .main-content { margin-left: 260px; padding: 30px; height: calc(100vh - 60px); overflow-y: auto; }
+        .main-content { margin-left: 260px; padding: 30px; }
         
-        /* Баннер приветствия */
         .welcome-banner { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
         .welcome-banner h1 { margin: 0 0 10px 0; font-size: 24px; }
         .welcome-banner p { margin: 0; opacity: 0.9; font-size: 15px; }
 
-        /* Статистика */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); }
-        .stat-card h3 { margin: 0; font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card h3 { margin: 0; font-size: 14px; color: #6b7280; text-transform: uppercase; }
         .stat-card .value { font-size: 28px; font-weight: bold; color: var(--text); margin-top: 10px; }
 
-        /* Карточки документов */
         .section-title { font-size: 20px; margin-bottom: 20px; color: var(--text); }
         .docs-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .doc-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid #e5e7eb; }
-        .doc-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-color: #d1d5db; }
+        .doc-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .doc-info h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--text); }
         .doc-info p { margin: 0; color: #6b7280; font-size: 14px; }
         
         .doc-actions { display: flex; gap: 10px; }
-        .btn-view, .btn-dl { padding: 10px 15px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; text-decoration: none; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-view, .btn-dl { padding: 10px 15px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; text-decoration: none; border: none; cursor: pointer; }
         .btn-view { background: #f3f4f6; color: #374151; }
-        .btn-view:hover { background: #e5e7eb; }
         .btn-dl { background: var(--primary); color: white; }
-        .btn-dl:hover { background: var(--primary-dark); }
         
         .empty-state { text-align: center; padding: 50px; background: white; border-radius: 12px; color: #6b7280; border: 2px dashed #d1d5db; }
 
-        /* Профиль */
         .profile-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-width: 600px; }
         .profile-row { display: flex; border-bottom: 1px solid #f3f4f6; padding: 15px 0; }
         .profile-row:last-child { border-bottom: none; }
         .profile-label { width: 200px; font-weight: 600; color: #6b7280; }
         .profile-value { flex: 1; color: var(--text); font-weight: 500; }
 
-        /* Модалка предпросмотра */
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
-        .preview-container { width: 90%; height: 90%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
         .preview-header h3 { margin: 0; color: #333; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
+        .btn-close-prev { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
+        .mobile-nav { display: none; }
+        
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 15px; }
+            
+            /* Нижнее меню */
+            .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+            .mobile-nav .menu-item { flex: 1; flex-direction: column; padding: 10px 5px; font-size: 12px; border-left: none; border-top: 3px solid transparent; text-align: center; gap: 4px; color: #64748b; }
+            .mobile-nav .menu-item.active { border-top-color: var(--primary); color: var(--primary); background: transparent; }
+            
+            .doc-card { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .doc-actions { width: 100%; }
+            .doc-actions button, .doc-actions a { flex: 1; justify-content: center; }
+            .profile-row { flex-direction: column; gap: 5px; }
+            .profile-label { width: 100%; }
+            .welcome-banner { padding: 20px; }
+            .welcome-banner h1 { font-size: 20px; }
+            .preview-header { flex-direction: column; align-items: flex-start; }
+            .preview-header > div { display: flex; width: 100%; gap: 10px; margin-top: 10px; }
+            .preview-header > div > a, .preview-header > div > button { flex: 1; text-align: center; }
+        }
     </style>
 </head>
 <body>
-    <!-- ЭКРАН ВХОДА -->
+    <!-- ВХОД -->
     <div id="auth-screen">
         <div class="auth-box">
-            <h2>Кабинет пациента</h2>
+            <h2>Кабинет гражданина</h2>
             <p style="color:#666; margin-bottom:25px;">Портал Единой Службы Спасения</p>
             <div id="auth-error" class="error-msg"></div>
             <form id="login-form">
@@ -105,7 +114,7 @@
 
     <!-- КАБИНЕТ -->
     <div id="dashboard-screen">
-        <!-- Боковое меню -->
+        <!-- САЙДБАР ДЛЯ ПК -->
         <div class="sidebar">
             <div class="logo-area">
                 <h2>ЕСС</h2>
@@ -121,13 +130,19 @@
             </div>
         </div>
 
-        <!-- Основной контент -->
+        <!-- НИЖНЕЕ МЕНЮ ДЛЯ ТЕЛЕФОНА -->
+        <div class="mobile-nav">
+            <div class="menu-item active" onclick="switchTab('home', this)">🏠<br>Главная</div>
+            <div class="menu-item" onclick="switchTab('docs', this)">📄<br>Документы</div>
+            <div class="menu-item" onclick="switchTab('profile', this)">👤<br>Профиль</div>
+            <div class="menu-item" onclick="document.getElementById('logout-btn').click()" style="color:#ef4444;">🚪<br>Выйти</div>
+        </div>
+
         <div class="main-content">
-            <!-- ВКЛАДКА: ГЛАВНАЯ -->
             <div id="tab-home">
                 <div class="welcome-banner">
                     <h1 id="welcome-text">Здравствуйте!</h1>
-                    <p>Добро пожаловать в ваш личный кабинет. Здесь вы можете просматривать и скачивать свои медицинские документы.</p>
+                    <p>Здесь вы можете просматривать и скачивать свои медицинские документы.</p>
                 </div>
 
                 <div class="stats-grid">
@@ -147,7 +162,6 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКА: ДОКУМЕНТЫ -->
             <div id="tab-docs" style="display:none;">
                 <h2 class="section-title">Все мои документы</h2>
                 <div class="docs-grid" id="all-docs-list">
@@ -155,44 +169,27 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКА: ПРОФИЛЬ -->
             <div id="tab-profile" style="display:none;">
                 <h2 class="section-title">Мой профиль</h2>
                 <div class="profile-card">
-                    <div class="profile-row">
-                        <div class="profile-label">ФИО</div>
-                        <div class="profile-value" id="prof-name">—</div>
-                    </div>
-                    <div class="profile-row">
-                        <div class="profile-label">Дата рождения</div>
-                        <div class="profile-value" id="prof-dob">—</div>
-                    </div>
-                    <div class="profile-row">
-                        <div class="profile-label">Место рождения</div>
-                        <div class="profile-value" id="prof-pob">—</div>
-                    </div>
-                    <div class="profile-row">
-                        <div class="profile-label">Адрес регистрации</div>
-                        <div class="profile-value" id="prof-address">—</div>
-                    </div>
-                    <div class="profile-row">
-                        <div class="profile-label">Паспорт</div>
-                        <div class="profile-value" id="prof-passport">—</div>
-                    </div>
+                    <div class="profile-row"><div class="profile-label">ФИО</div><div class="profile-value" id="prof-name">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Дата рождения</div><div class="profile-value" id="prof-dob">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Место рождения</div><div class="profile-value" id="prof-pob">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Адрес</div><div class="profile-value" id="prof-address">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Паспорт</div><div class="profile-value" id="prof-passport">—</div></div>
                 </div>
-                <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">Если вы обнаружили ошибку в своих данных, пожалуйста, свяжитесь с регистратурой.</p>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛКА ПРОСМОТРА PDF -->
+    <!-- МОДАЛКА ПРОСМОТРА -->
     <div id="preview-modal">
         <div class="preview-container">
             <div class="preview-header">
                 <h3>Просмотр документа</h3>
                 <div>
                     <a id="preview-download-btn" href="#" class="btn-dl" download style="display:inline-flex; padding: 10px 20px;">Скачать</a>
-                    <button class="btn-logout" style="width:auto; padding: 10px 20px; margin-left:10px;" onclick="closePreview()">Закрыть</button>
+                    <button class="btn-close-prev" onclick="closePreview()">Закрыть</button>
                 </div>
             </div>
             <iframe id="preview-frame" class="preview-iframe"></iframe>
@@ -204,9 +201,8 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let globalDocs = []; // Храним документы для вкладок
+        let globalDocs = [];
 
-        // --- ВХОД ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const { error } = await supabaseClient.auth.signInWithPassword({
@@ -219,10 +215,8 @@
             }
         });
 
-        // --- ВЫХОД ---
         document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
 
-        // --- ПРОВЕРКА АВТОРИЗАЦИИ ---
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (session) {
                 const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
@@ -232,11 +226,9 @@
                     return;
                 }
 
-                // Приветствие
-                const firstName = profile.first_name || 'Пациент';
+                const firstName = profile.first_name || 'Гражданин';
                 document.getElementById('welcome-text').textContent = `Здравствуйте, ${firstName}!`;
 
-                // Заполняем профиль
                 document.getElementById('prof-name').textContent = `${profile.last_name || ''} ${profile.first_name || ''} ${profile.patronymic || ''}`;
                 document.getElementById('prof-dob').textContent = profile.dob ? new Date(profile.dob).toLocaleDateString('ru-RU') : '—';
                 document.getElementById('prof-pob').textContent = profile.pob || '—';
@@ -252,10 +244,10 @@
             }
         });
 
-        // --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
         function switchTab(tabId, element) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
+            // Подсвечиваем и в сайдбаре, и в нижнем меню
+            document.querySelectorAll(`.menu-item[onclick*="${tabId}"]`).forEach(el => el.classList.add('active'));
             
             document.getElementById('tab-home').style.display = 'none';
             document.getElementById('tab-docs').style.display = 'none';
@@ -264,7 +256,6 @@
             document.getElementById(`tab-${tabId}`).style.display = 'block';
         }
 
-        // --- ПРЕДПРОСМОТР ---
         function closePreview() {
             document.getElementById('preview-modal').style.display = 'none';
             document.getElementById('preview-frame').src = ''; 
@@ -276,7 +267,6 @@
             document.getElementById('preview-modal').style.display = 'flex';
         }
 
-        // --- ЗАГРУЗКА ДОКУМЕНТОВ ---
         async function loadMyDocs(userId) {
             const { data: docs, error } = await supabaseClient
                 .from('documents')
@@ -291,23 +281,20 @@
             
             globalDocs = docs || [];
             
-            // Обновляем статистику
             document.getElementById('stat-total-docs').textContent = globalDocs.length;
             if (globalDocs.length > 0) {
                 document.getElementById('stat-last-doc').textContent = new Date(globalDocs[0].created_at).toLocaleDateString('ru-RU');
             }
 
-            // Рендерим списки
             renderDocsList('all-docs-list', globalDocs);
-            renderDocsList('home-recent-docs', globalDocs.slice(0, 3)); // На главной только 3 последних
+            renderDocsList('home-recent-docs', globalDocs.slice(0, 3));
         }
 
-        // --- ОТРИСОВКА КАРТОЧЕК ---
         function renderDocsList(containerId, docs) {
             const container = document.getElementById(containerId);
             
             if (docs.length === 0) {
-                container.innerHTML = '<div class="empty-state">У вас пока нет загруженных документов.</div>';
+                container.innerHTML = '<div class="empty-state">У вас пока нет документов.</div>';
                 return;
             }
 
