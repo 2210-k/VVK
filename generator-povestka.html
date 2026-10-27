@@ -176,26 +176,28 @@
 
     // ⚠️ ВАЖНО: Я перевернул координаты Y (вычел ваши значения из 842)
     const COORDS = {
-        nameAndPassport: { x: 113, y: 591 }, 
-        address: { x: 112, y: 611 },
+        // Данные гражданина
+        nameAndPassport: { x: 113, y: 251 }, // Место для ИО, № паспорта, даты рождения
+        address: { x: 112, y: 231 },
         
+        // Данные повестки (центрируем)
         date: { 
-            day: { xStart: 34, xEnd: 52, y: 658 }, 
-            month: { xStart: 55, xEnd: 72, y: 658 }, 
-            year: { xStart: 88, xEnd: 105, y: 658 } 
+            day: { xStart: 34, xEnd: 52, y: 184 }, 
+            month: { xStart: 55, xEnd: 72, y: 184 }, 
+            year: { xStart: 88, xEnd: 105, y: 184 } 
         },
-        docNumber: { xStart: 538, xEnd: 558, y: 658 },
+        docNumber: { xStart: 538, xEnd: 558, y: 184 },
         
-        appearDay: { xStart: 191, xEnd: 210, y: 684 },
-        appearTime: { xStart: 245, xEnd: 281, y: 684 },
+        appearDay: { xStart: 191, xEnd: 210, y: 158 },
+        appearTime: { xStart: 245, xEnd: 281, y: 158 },
         
-        commissariat: { x: 194, y: 699 },
+        commissariat: { x: 194, y: 143 },
         
-        bringWith: { x: 337, y: 725, maxWidth: 243, lineHeight: 15, indent: 0 },
+        bringWith: { x: 33, y: 118, maxWidth: 523, lineHeight: 343, indent: 0 },
         
-        district: { xStart: 320, xEnd: 400, y: 767 }, 
-        region: { xStart: 440, xEnd: 520, y: 767 },
-        rank: { x: 250, y: 792 } 
+        district: { xStart: 253, xEnd: 337, y: 78 }, 
+        region: { xStart: 337, xEnd: 445, y: 78 },
+        rank: { x: 161, y: 57 } 
     };
 
     const TEMPLATES = {
