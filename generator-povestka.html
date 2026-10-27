@@ -55,13 +55,13 @@
             <div class="form-group"><label>Отчество</label><input type="text" id="patronymic"></div>
         </div>
         <div class="row">
-            <div class="form-group"><label>№ паспорта</label><input type="text" id="passNumber"></div>
+            <!-- Изменил подпись, чтобы было понятно, что нужно вводить -->
+            <div class="form-group"><label>№ паспорта (Серия и номер)</label><input type="text" id="passNumber"></div>
             <div class="form-group">
                 <label>Дата рождения</label>
                 <div class="date-group">
                     <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2">
                     <select id="dobMonth" class="month"></select>
-                    <!-- Изменено на 4 символа -->
                     <input type="text" id="dobYear" class="year" placeholder="ГГГГ" maxlength="4">
                 </div>
             </div>
@@ -76,7 +76,6 @@
                 <div class="date-group">
                     <input type="text" id="dateDay" class="day" maxlength="2" required>
                     <select id="dateMonth" class="month" required></select>
-                    <!-- Изменено на 2 символа -->
                     <input type="text" id="dateYear" class="year" maxlength="2" required>
                 </div>
             </div>
@@ -138,7 +137,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ТВОИ КООРДИНАТЫ (ВСЕ Y УМЕНЬШЕНЫ НА 10)
+    // ТВОИ ОТКАЛИБРОВАННЫЕ КООРДИНАТЫ
     const RAW_COORDS = {
         nameAndPassport: { x: 113, y: 241 }, 
         address: { x: 112, y: 221 },
@@ -194,12 +193,17 @@
         const citizen = JSON.parse(selectedOption.dataset.citizen);
         document.getElementById('firstName').value = citizen.first_name || '';
         document.getElementById('patronymic').value = citizen.patronymic || '';
-        document.getElementById('passNumber').value = citizen.pass_number || ''; 
+        
+        // ОБЪЕДИНЯЕМ СЕРИЮ И НОМЕР ПАСПОРТА
+        const passSeries = citizen.pass_series || '';
+        const passNum = citizen.pass_number || '';
+        document.getElementById('passNumber').value = `${passSeries} ${passNum}`.trim();
+
         if (citizen.dob) {
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
             document.getElementById('dobMonth').value = MONTHS_NUMERIC[parseInt(month) - 1];
-            document.getElementById('dobYear').value = year; // ТЕПЕРЬ 4 ЦИФРЫ
+            document.getElementById('dobYear').value = year; 
         }
         document.getElementById('address').value = citizen.address || '';
     });
@@ -236,7 +240,7 @@
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
         document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
-        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2); // ТЕПЕРЬ 2 ЦИФРЫ
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2); 
         document.getElementById('docNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
     }
 
@@ -308,7 +312,7 @@
             
             const firstPage = pdfDoc.getPages()[0];
             
-            // ФОРМУЛА
+            // ТВОЯ ФОРМУЛА
             const { width, height } = firstPage.getSize();
             const CROP_HEIGHT = 293;
             function convertY(y) {
@@ -316,7 +320,6 @@
                 return height - z;         
             }
 
-            // Пересчитываем все координаты
             COORDS = {
                 nameAndPassport: { x: RAW_COORDS.nameAndPassport.x, y: convertY(RAW_COORDS.nameAndPassport.y) },
                 address: { x: RAW_COORDS.address.x, y: convertY(RAW_COORDS.address.y) },
@@ -339,7 +342,7 @@
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            // РИСОВАНИЕ ТЕКСТА (БЕЗ РАМКИ)
+            // РИСОВАНИЕ
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
             firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
