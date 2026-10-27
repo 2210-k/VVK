@@ -136,8 +136,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ТВОИ КООРДИНАТЫ (КАК ЕСТЬ)
-    const COORDS = {
+    // ТВОИ ЗАМЕРЕННЫЕ КООРДИНАТЫ
+    const RAW_COORDS = {
         nameAndPassport: { x: 113, y: 251 }, 
         address: { x: 112, y: 231 },
         date: { 
@@ -154,6 +154,8 @@
         region: { xStart: 337, xEnd: 445, y: 78 },
         rank: { x: 161, y: 57 }
     };
+
+    let COORDS = {}; // Сюда запишем пересчитанные
 
     const TEMPLATES = {
         commissariat: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"],
@@ -298,23 +300,47 @@
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
             
-            // Стабильный шрифт
             const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
             const fontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
             const customFont = await pdfDoc.embedFont(fontBytes);
             
             const firstPage = pdfDoc.getPages()[0];
+            
+            // ⚠️ ТВОЯ ФОРМУЛА В ДЕЙСТВИИ ⚠️
             const { width, height } = firstPage.getSize();
+            const CROP_HEIGHT = 293;
+            function convertY(y) {
+                const z = CROP_HEIGHT - y; // Расстояние от верха картинки
+                return height - z;         // Вычитаем из реальной высоты листа
+            }
 
-            // --- ДИАГНОСТИКА: РИСУЕМ КРАСНУЮ РАМКУ ПО КРАЯМ И РАЗМЕР ---
-            firstPage.drawRectangle({ x: 0, y: 0, width: width, height: height, borderColor: PDFLib.rgb(1, 0, 0), borderWidth: 3 });
-            firstPage.drawText(`Size: ${width}x${height}`, { x: 10, y: 10, size: 20, font: customFont, color: PDFLib.rgb(1, 0, 0) });
+            // Пересчитываем все координаты
+            COORDS = {
+                nameAndPassport: { x: RAW_COORDS.nameAndPassport.x, y: convertY(RAW_COORDS.nameAndPassport.y) },
+                address: { x: RAW_COORDS.address.x, y: convertY(RAW_COORDS.address.y) },
+                date: { 
+                    day: { xStart: RAW_COORDS.date.day.xStart, xEnd: RAW_COORDS.date.day.xEnd, y: convertY(RAW_COORDS.date.day.y) }, 
+                    month: { xStart: RAW_COORDS.date.month.xStart, xEnd: RAW_COORDS.date.month.xEnd, y: convertY(RAW_COORDS.date.month.y) }, 
+                    year: { xStart: RAW_COORDS.date.year.xStart, xEnd: RAW_COORDS.date.year.xEnd, y: convertY(RAW_COORDS.date.year.y) } 
+                },
+                docNumber: { xStart: RAW_COORDS.docNumber.xStart, xEnd: RAW_COORDS.docNumber.xEnd, y: convertY(RAW_COORDS.docNumber.y) },
+                appearDay: { xStart: RAW_COORDS.appearDay.xStart, xEnd: RAW_COORDS.appearDay.xEnd, y: convertY(RAW_COORDS.appearDay.y) },
+                appearTime: { xStart: RAW_COORDS.appearTime.xStart, xEnd: RAW_COORDS.appearTime.xEnd, y: convertY(RAW_COORDS.appearTime.y) },
+                commissariat: { x: RAW_COORDS.commissariat.x, y: convertY(RAW_COORDS.commissariat.y) },
+                bringWith: { x: RAW_COORDS.bringWith.x, y: convertY(RAW_COORDS.bringWith.y), maxWidth: RAW_COORDS.bringWith.maxWidth, lineHeight: RAW_COORDS.bringWith.lineHeight, indent: RAW_COORDS.bringWith.indent },
+                district: { xStart: RAW_COORDS.district.xStart, xEnd: RAW_COORDS.district.xEnd, y: convertY(RAW_COORDS.district.y) },
+                region: { xStart: RAW_COORDS.region.xStart, xEnd: RAW_COORDS.region.xEnd, y: convertY(RAW_COORDS.region.y) },
+                rank: { x: RAW_COORDS.rank.x, y: convertY(RAW_COORDS.rank.y) }
+            };
 
             const getVal = (id) => document.getElementById(id).value;
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            // --- РИСОВАНИЕ ТЕКСТА (БЕЗ ВСЯКИХ ФОРМУЛ) ---
+            // --- РИСУЕМ КРАСНУЮ РАМКУ ПО ВСЕМУ ЛИСТУ А4 (для проверки) ---
+            firstPage.drawRectangle({ x: 0, y: 0, width: width, height: height, borderColor: PDFLib.rgb(1, 0, 0), borderWidth: 3 });
+
+            // --- РИСОВАНИЕ ТЕКСТА ---
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
             firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
