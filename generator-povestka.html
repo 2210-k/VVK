@@ -21,8 +21,8 @@
         .date-group { display: flex; gap: 5px; }
         .date-group input, .date-group select, .center-input { text-align: center; }
         .date-group .day { width: 30%; }
-        .date-group .month { width: 40%; }
-        .date-group .year { width: 30%; }
+        .date-group .month { width: 70%; }
+        .date-group .year { width: 40%; }
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
 
@@ -61,7 +61,8 @@
                 <div class="date-group">
                     <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2">
                     <select id="dobMonth" class="month"></select>
-                    <input type="text" id="dobYear" class="year" placeholder="ГГ" maxlength="2">
+                    <!-- Изменено на 4 символа -->
+                    <input type="text" id="dobYear" class="year" placeholder="ГГГГ" maxlength="4">
                 </div>
             </div>
         </div>
@@ -75,7 +76,7 @@
                 <div class="date-group">
                     <input type="text" id="dateDay" class="day" maxlength="2" required>
                     <select id="dateMonth" class="month" required></select>
-                    <!-- ТУТ ИЗМЕНЕНО НА ГГ -->
+                    <!-- Изменено на 2 символа -->
                     <input type="text" id="dateYear" class="year" maxlength="2" required>
                 </div>
             </div>
@@ -137,26 +138,26 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ТВОИ ЗАМЕРЕННЫЕ КООРДИНАТЫ
+    // ТВОИ КООРДИНАТЫ (ВСЕ Y УМЕНЬШЕНЫ НА 10)
     const RAW_COORDS = {
-        nameAndPassport: { x: 113, y: 251 }, 
-        address: { x: 112, y: 231 },
+        nameAndPassport: { x: 113, y: 241 }, 
+        address: { x: 112, y: 221 },
         date: { 
-            day: { xStart: 34, xEnd: 52, y: 184 }, 
-            month: { xStart: 55, xEnd: 72, y: 184 }, 
-            year: { xStart: 88, xEnd: 105, y: 184 } 
+            day: { xStart: 34, xEnd: 52, y: 174 }, 
+            month: { xStart: 55, xEnd: 72, y: 174 }, 
+            year: { xStart: 88, xEnd: 105, y: 174 } 
         },
-        docNumber: { xStart: 538, xEnd: 558, y: 184 },
-        appearDay: { xStart: 191, xEnd: 210, y: 158 },
-        appearTime: { xStart: 245, xEnd: 281, y: 158 },
-        commissariat: { x: 194, y: 143 },
-        bringWith: { x: 33, y: 118, maxWidth: 523, lineHeight: 13, indent: 343 },
-        district: { xStart: 253, xEnd: 337, y: 78 }, 
-        region: { xStart: 337, xEnd: 445, y: 78 },
-        rank: { x: 161, y: 57 }
+        docNumber: { xStart: 538, xEnd: 558, y: 174 },
+        appearDay: { xStart: 191, xEnd: 210, y: 148 },
+        appearTime: { xStart: 245, xEnd: 281, y: 148 },
+        commissariat: { x: 194, y: 133 },
+        bringWith: { x: 33, y: 108, maxWidth: 523, lineHeight: 13, indent: 343 },
+        district: { xStart: 253, xEnd: 337, y: 68 }, 
+        region: { xStart: 337, xEnd: 445, y: 68 },
+        rank: { x: 161, y: 47 }
     };
 
-    let COORDS = {}; // Сюда запишем пересчитанные
+    let COORDS = {}; 
 
     const TEMPLATES = {
         commissariat: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"],
@@ -198,7 +199,7 @@
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
             document.getElementById('dobMonth').value = MONTHS_NUMERIC[parseInt(month) - 1];
-            document.getElementById('dobYear').value = year.slice(-2); // Берем 2 цифры года
+            document.getElementById('dobYear').value = year; // ТЕПЕРЬ 4 ЦИФРЫ
         }
         document.getElementById('address').value = citizen.address || '';
     });
@@ -235,7 +236,7 @@
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
         document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
-        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2); // 2 цифры года
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2); // ТЕПЕРЬ 2 ЦИФРЫ
         document.getElementById('docNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
     }
 
@@ -307,12 +308,12 @@
             
             const firstPage = pdfDoc.getPages()[0];
             
-            // ТВОЯ ФОРМУЛА + ОПУСКАНИЕ НА 10 ПУНКТОВ
+            // ФОРМУЛА
             const { width, height } = firstPage.getSize();
             const CROP_HEIGHT = 293;
             function convertY(y) {
                 const z = CROP_HEIGHT - y; 
-                return (height - z) - 10; // Вычитаем 10, чтобы опустить текст вниз
+                return height - z;         
             }
 
             // Пересчитываем все координаты
@@ -338,7 +339,7 @@
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            // --- РИСОВАНИЕ ТЕКСТА ---
+            // РИСОВАНИЕ ТЕКСТА (БЕЗ РАМКИ)
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
             firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
