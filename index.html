@@ -107,7 +107,6 @@
                 <div class="menu-item active doc-menu-item" onclick="switchTab('docs', this)" style="margin-left: 20px;">📄 Документы</div>
                 <div class="menu-item patient-menu-item" onclick="switchTab('citizens', this)">👥 Граждане</div>
                 
-                <!-- Кнопка теперь открывает каталог -->
                 <div class="menu-item" onclick="openCreateDocModal()" style="color: #6ee7b7; font-weight: bold;">➕ Создать документ</div>
             </div>
         </div>
@@ -294,11 +293,15 @@
                 .select('*')
                 .eq('organization_id', currentOrgId);
                 
-            if (error) { list.innerHTML = 'Ошибка загрузки: ' + error.message; return; }
+            if (error) { 
+                list.innerHTML = `<p style="color:red;">Ошибка загрузки: ${error.message}</p>`; 
+                console.error(error);
+                return; 
+            }
             
             list.innerHTML = '';
-            if (templates.length === 0) {
-                list.innerHTML = '<p style="color:#888;">Для этой организации пока нет доступных документов.</p>';
+            if (!templates || templates.length === 0) {
+                list.innerHTML = '<p style="color:#888;">Для этой организации пока нет доступных шаблонов документов.</p>';
                 return;
             }
             
@@ -352,7 +355,7 @@
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 const recipient = doc.profiles 
                     ? `${doc.profiles.last_name} ${doc.profiles.first_name} ${doc.profiles.patronymic || ''}` 
-                    : '<span style="color:#888; font-style:italic;">Внутренний (Без гражданина)</span>';
+                    : '<span style="color:#888; font-style:italic;">Не отправлен (В архиве)</span>';
 
                 tbody.innerHTML += `
                     <tr>
