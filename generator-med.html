@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор Медицинской справки</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="date"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        textarea { resize: vertical; height: 60px; }
+        .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        button[type="submit"]:hover { background: #004494; }
+        button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 200px; }
+        .date-group { display: flex; gap: 5px; }
+        .date-group input, .date-group select, .center-input { text-align: center; }
+        .date-group .day { width: 25%; }
+        .date-group .month { width: 45%; }
+        .date-group .year { width: 25%; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
+        
+        .doctor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: #f9f9f9; padding: 8px; border-radius: 4px; }
+        .doctor-row span { width: 180px; font-weight: bold; font-size: 14px; }
+        .doctor-row label { margin: 0; font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        
+        .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .checkbox-main { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 14px; }
+        .checkbox-sub-group { display: flex; flex-wrap: wrap; gap: 10px; padding-left: 25px; font-size: 13px; color: #555; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .checkbox-item input { width: 16px; height: 16px; cursor: pointer; }
+
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-header h3 { margin: 0; color: #333; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-close { background: #ef4444; color: white; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Вернуться на портал</a>
+    
+    <div class="patient-selector">
+        <label>👤 Выберите гражданина (данные подставятся)</label>
+        <select id="patientSelect" class="form-select">
+            <option value="none">-- Без гражданина (В архив) --</option>
+        </select>
+    </div>
+
+    <h2>Медицинская справка</h2>
+    <form id="medForm">
+        
+        <div class="row">
+            <div class="form-group">
+                <label>Дата выдачи (Дата осмотра)</label>
+                <div class="date-group">
+                    <input type="text" id="dateDay" class="day" maxlength="2" placeholder="ДД" required>
+                    <select id="dateMonth" class="month" required></select>
+                    <input type="text" id="dateYear" class="year" maxlength="2" placeholder="ГГ" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>№ документа (0405ННН)</label>
+                <input type="text" id="docNumber" class="center-input" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group"><label>Имя</label><input type="text" id="firstName"></div>
+            <div class="form-group"><label>Отчество</label><input type="text" id="patronymic"></div>
+        </div>
+        
+        <div class="row">
+            <div class="form-group">
+                <label>Дата рождения</label>
+                <div class="date-group">
+                    <input type="text" id="dobDay" class="day" maxlength="2" placeholder="ДД">
+                    <select id="dobMonth" class="month"></select>
+                    <input type="text" id="dobYear" class="year" maxlength="2" placeholder="ГГ">
+                </div>
+            </div>
+            <div class="form-group"><label>Место рождения</label><input type="text" id="pob"></div>
+        </div>
+
+        <div class="form-group"><label>Адрес регистрации</label><input type="text" id="address"></div>
+        
+        <div class="row">
+            <div class="form-group"><label>Паспорт (Серия)</label><input type="text" id="passSeries" class="center-input" maxlength="4"></div>
+            <div class="form-group"><label>Паспорт (Номер)</label><input type="text" id="passNumber" class="center-input" maxlength="6"></div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Группа крови</label>
+                <select id="template-blood" class="form-select"><option value="">-- Шаблон --</option></select>
+                <input type="text" id="bloodType" required>
+            </div>
+            <div class="form-group">
+                <label>Резус фактор</label>
+                <select id="template-rh" class="form-select"><option value="">-- Шаблон --</option></select>
+                <input type="text" id="rhFactor" required>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label>Аллергии</label>
+                <select id="template-allergy" class="form-select"><option value="">-- Шаблон --</option></select>
+                <input type="text" id="allergies" required>
+            </div>
+            <div class="form-group">
+                <label>Хронические заболевания</label>
+                <select id="template-chronic" class="form-select"><option value="">-- Шаблон --</option></select>
+                <input type="text" id="chronicDiseases" required>
+            </div>
+        </div>
+
+        <h4 style="margin-bottom: 10px;">Заключение врачей</h4>
+        <div id="doctorsList"></div>
+
+        <div class="row" style="margin-top: 15px;">
+            <div class="form-group">
+                <label>ЭКГ</label>
+                <select id="ecg" class="form-select">
+                    <option value="normal">Норма</option>
+                    <option value="abnormal">Отклонения</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Анализ крови</label>
+                <select id="template-bloodtest" class="form-select"><option value="">-- Шаблон --</option></select>
+                <input type="text" id="bloodTest" required>
+            </div>
+            <div class="form-group">
+                <label>Анализ мочи</label>
+                <select id="template-urinetest" class="form-select"><option value="">-- Шаблон --</option></select>
+                <input type="text" id="urineTest" required>
+            </div>
+        </div>
+
+        <h4 style="margin-bottom: 10px;">Допускается к:</h4>
+        <div class="checkbox-group">
+            <div>
+                <label class="checkbox-main"><input type="checkbox" id="perm-drive"> Управлению транспортными средствами</label>
+                <div class="checkbox-sub-group">
+                    <label class="checkbox-item"><input type="checkbox" id="perm-drive-A"> А</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-drive-A1"> А1</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-drive-M"> М</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-drive-B"> В</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-drive-B1"> В1</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-drive-C"> С</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-drive-D"> D</label>
+                </div>
+            </div>
+            <div>
+                <label class="checkbox-main"><input type="checkbox" id="perm-license"> Получению лицензий:</label>
+                <div class="checkbox-sub-group">
+                    <label class="checkbox-item"><input type="checkbox" id="perm-license-taxi"> Таксиста</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-license-weapon"> На оружие</label>
+                </div>
+            </div>
+            <div>
+                <label class="checkbox-main"><input type="checkbox" id="perm-military"> Прохождению воинской службы</label>
+            </div>
+            <div>
+                <label class="checkbox-main"><input type="checkbox" id="perm-state"> Службе в государственных структурах:</label>
+                <div class="checkbox-sub-group">
+                    <label class="checkbox-item"><input type="checkbox" id="perm-state-ess"> ЕСС</label>
+                    <label class="checkbox-item"><input type="checkbox" id="perm-state-mvd"> МВД РФ</label>
+                </div>
+            </div>
+            <div>
+                <label class="checkbox-main"><input type="checkbox" id="perm-work"> Работе по трудовому договору</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Особые отметки</label>
+            <textarea id="specialNotes" placeholder="Ограничения, режим ношения и т.п."></textarea>
+        </div>
+
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <h4>Реквизиты (2-я страница)</h4>
+        
+        <div class="row">
+            <div class="form-group">
+                <label>День (от 0 до 999)</label>
+                <input type="text" id="dayNumber" class="center-input" placeholder="000" required>
+            </div>
+            <div class="form-group">
+                <label>Рег. номер (ЕСС-ННН)</label>
+                <input type="text" id="regNumber" class="center-input" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Служебные отметки</label>
+            <textarea id="serviceNotes" placeholder="Служебная информация"></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
+    </form>
+</div>
+
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Предпросмотр справки</h3>
+            <div>
+                <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-preview btn-close" id="close-preview-btn">Закрыть</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentOrgId = parseInt(urlParams.get('org')) || 1;
+
+    // =====================================================================
+    // ⚠️ ТВОИ КООРДИНАТЫ (ВСТАВЛЕНЫ ПОЛНОСТЬЮ) ⚠️
+    // =====================================================================
+    const COORDS = {
+        // --- СТРАНИЦА 1 ---
+        date: { 
+            day: { xStart: 35, xEnd: 50, y: 684 },   
+            month: { xStart: 63, xEnd: 149, y: 684 }, 
+            year: { xStart: 184, xEnd: 198, y: 684 }  
+        },
+        docNumber: { xStart: 496, xEnd: 546, y: 684 },
+        
+        firstName: { x: 75, y: 652 },
+        patronymic: { x: 353, y: 652 },
+        dob: { 
+            day: { xStart: 138, xEnd: 152, y: 640 },
+            month: { xStart: 161, xEnd: 235, y: 640 },
+            year: { xStart: 250, xEnd: 263, y: 640 }
+        },
+        pob: { x: 386, y: 640 },
+        address: { x: 148, y: 626 },
+        passSeries: { xStart: 128, xEnd: 155, y: 612 },
+        passNumber: { xStart: 171, xEnd: 226, y: 612 },
+
+        bloodType: { x: 120, y: 600 },
+        rhFactor: { x: 368, y: 600 },
+        allergies: { x: 99, y: 585 },
+        chronicDiseases: { x: 177, y: 572 },
+
+        doctors: {
+            terapevt: { status: { xStart: 184, xEnd: 354, y: 503 }, date: { xStart: 354, xEnd: 418, y: 503 } },
+            hirurg: { status: { xStart: 184, xEnd: 354, y: 473 }, date: { xStart: 354, xEnd: 418, y: 473 } },
+            narkolog: { status: { xStart: 184, xEnd: 354, y: 443 }, date: { xStart: 354, xEnd: 418, y: 443 } },
+            oftalmolog: { status: { xStart: 184, xEnd: 354, y: 413 }, date: { xStart: 354, xEnd: 418, y: 413 } },
+            lor: { status: { xStart: 184, xEnd: 354, y: 383 }, date: { xStart: 354, xEnd: 418, y: 383 } },
+            psihiatr: { status: { xStart: 184, xEnd: 354, y: 353 }, date: { xStart: 354, xEnd: 418, y: 353 } }
+        },
+
+        ecg: { 
+            normal: { xStart: 201, xEnd: 230, y: 313 },
+            abnormal: { xStart: 240, xEnd: 293, y: 313 }
+        },
+        fluorography: { 
+            day: { xStart: 174, xEnd: 189, y: 310 },
+            month: { xStart: 195, xEnd: 255, y: 310 },
+            year: { xStart: 269, xEnd: 284, y: 310 }
+        },
+        bloodTest: { x: 173, y: 296 },
+        urineTest: { x: 128, y: 282 },
+
+        // ⚠️ НОВЫЕ КООРДИНАТЫ ДЛЯ ДНЯ ОКОНЧАНИЯ (000-999) ⚠️
+        expirationDayCount: { xStart: 291, xEnd: 332, y: 274 },
+
+        conclusionName: { x: 379, y: 248 },
+
+        permissions: {
+            drive: { x: 59, y: 221 },
+            license: { x: 59, y: 208 },
+            military: { x: 59, y: 195 },
+            state: { x: 59, y: 182 },
+            work: { x: 59, y: 169 },
+            
+            subPermissions: {
+                driveA: { x: 319, y: 221 },   
+                driveA1: { x: 340, y: 221 },  
+                driveM: { x: 367, y: 221 },   
+                driveB: { x: 390, y: 221 },   
+                driveB1: { x: 411, y: 221 },  
+                driveC: { x: 438, y: 221 },   
+                driveD: { x: 458, y: 221 },   
+
+                licenseTaxi: { x: 174, y: 208 },   
+                licenseWeapon: { x: 229, y: 208 }, 
+
+                stateEss: { x: 250, y: 182 }, 
+                stateMvd: { x: 282, y: 182 }  
+            }
+        },
+
+        specialNotes: { x: 53, y: 154, maxWidth: 558, lineHeight: 13, indent: 274 },
+
+        // --- СТРАНИЦА 2 ---
+        page2: {
+            date: { 
+                day: { xStart: 298, xEnd: 313, y: 810 }, 
+                month: { xStart: 322, xEnd: 397, y: 810 }, 
+                year: { xStart: 410, xEnd: 424, y: 810 } 
+            },
+            docNumber: { xStart: 239, xEnd: 278, y: 810 },
+            dayNumber: { xStart: 400, xEnd: 421, y: 768 },
+            expirationDate: { 
+                day: { xStart: 234, xEnd: 250, y: 768 },
+                month: { xStart: 256, xEnd: 331, y: 768 },
+                year: { xStart: 345, xEnd: 360, y: 768 }
+            },
+            regNumber: { xStart: 230, xEnd: 298, y: 714 },
+            serviceNotes: { x: 35, y: 557, maxWidth: 558, lineHeight: 13, indent: 115 }
+        }
+    };
+
+    const TEMPLATES = {
+        blood: ["Н/У"],
+        rh: ["Н/У"],
+        allergy: ["не выявлено"],
+        chronic: ["отсутствуют"],
+        bloodTest: ["без патологий"],
+        urineTest: ["без патологий"]
+    };
+
+    const DOCTORS_LIST = [
+        { id: 'terapevt', name: 'Терапевт' },
+        { id: 'hirurg', name: 'Хирург' },
+        { id: 'narkolog', name: 'Нарколог' },
+        { id: 'oftalmolog', name: 'Офтальмолог (окулист)' },
+        { id: 'lor', name: 'Оториноларинголог (ЛОР)' },
+        { id: 'psihiatr', name: 'Психиатр' }
+    ];
+
+    const MONTHS_NUMERIC = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+    let currentPdfBlob = null;
+
+    function initDoctors() {
+        const list = document.getElementById('doctorsList');
+        DOCTORS_LIST.forEach(doc => {
+            list.innerHTML += `
+                <div class="doctor-row">
+                    <span>${doc.name}</span>
+                    <label><input type="radio" name="doc-${doc.id}" value="здоров" checked> Здоров</label>
+                    <label><input type="radio" name="doc-${doc.id}" value="не здоров"> Не здоров</label>
+                </div>
+            `;
+        });
+    }
+
+    function initTemplates() {
+        for (const [key, values] of Object.entries(TEMPLATES)) {
+            const select = document.getElementById(`template-${key}`);
+            const input = document.getElementById(key === 'blood' ? 'bloodType' : key === 'rh' ? 'rhFactor' : key === 'allergy' ? 'allergies' : key === 'chronic' ? 'chronicDiseases' : key === 'bloodTest' ? 'bloodTest' : 'urineTest');
+            
+            values.forEach((val, i) => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', (e) => { if (e.target.value && input) input.value = e.target.value; });
+        }
+    }
+
+    async function loadCitizens() {
+        const select = document.getElementById('patientSelect');
+        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (!citizens) return;
+        select.innerHTML = '<option value="none">-- Без гражданина --</option>';
+        citizens.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.dataset.citizen = JSON.stringify(p);
+            opt.textContent = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
+            select.appendChild(opt);
+        });
+    }
+
+    document.getElementById('patientSelect').addEventListener('change', (e) => {
+        const opt = e.target.options[e.target.selectedIndex];
+        if (!opt.value || opt.value === 'none') return;
+        
+        const c = JSON.parse(opt.dataset.citizen);
+        document.getElementById('firstName').value = c.first_name || '';
+        document.getElementById('patronymic').value = c.patronymic || '';
+        document.getElementById('pob').value = c.pob || '';
+        document.getElementById('address').value = c.address || '';
+        document.getElementById('passSeries').value = c.pass_series || '';
+        document.getElementById('passNumber').value = c.pass_number || '';
+
+        if (c.dob) {
+            const [year, month, day] = c.dob.split('-');
+            document.getElementById('dobDay').value = day;
+            document.getElementById('dobMonth').value = MONTHS_NUMERIC[parseInt(month) - 1];
+            document.getElementById('dobYear').value = year.slice(-2);
+        }
+    });
+
+    function initDates() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+        
+        document.getElementById('docNumber').value = `0405${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        document.getElementById('regNumber').value = `ЕСС-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        
+        MONTHS_NUMERIC.forEach((m, i) => {
+            document.getElementById('dateMonth').add(new Option(m, m));
+            document.getElementById('dobMonth').add(new Option(m, m));
+        });
+        document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
+        document.getElementById('dobMonth').value = MONTHS_NUMERIC[0];
+    }
+
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const textWidth = options.font.widthOfTextAtSize(text, options.size);
+        const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
+        page.drawText(text, { ...options, x: startX, y });
+    }
+
+    function drawParagraph(page, text, x, y, options) {
+        if (!text) return;
+        const { font, size, color, maxWidth, lineHeight, indent } = options;
+        const words = text.split(' ');
+        let lines = [], currentLine = '', isFirstLine = true;
+        for (let word of words) {
+            const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
+            const testLine = currentLine === '' ? word : currentLine + ' ' + word;
+            if (font.widthOfTextAtSize(testLine, size) <= availableWidth) {
+                currentLine = testLine;
+            } else {
+                lines.push({ text: currentLine, isFirst: isFirstLine });
+                currentLine = word;
+                isFirstLine = false;
+            }
+        }
+        if (currentLine !== '') lines.push({ text: currentLine, isFirst: isFirstLine });
+        let currentY = y;
+        for (let line of lines) {
+            const currentX = line.isFirst ? x + indent : x;
+            page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
+            currentY -= lineHeight;
+        }
+    }
+
+    document.getElementById('close-preview-btn').addEventListener('click', () => {
+        document.getElementById('preview-modal').style.display = 'none';
+        document.getElementById('pdf-preview-frame').src = '';
+        window.location.href = 'index.html';
+    });
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+        if (!currentPdfBlob) return;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(currentPdfBlob);
+        link.download = `Мед_справка.pdf`;
+        link.click();
+    });
+
+    document.getElementById('medForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Генерация...';
+
+        try {
+            const url = './med_spravka.pdf';
+            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytes);
+            
+            const pages = pdfDoc.getPages();
+            const firstPage = pages[0];
+            const page2 = pages.length > 1 ? pages[1] : null;
+
+            const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+            const getVal = (id) => document.getElementById(id).value;
+
+            const dateDay = getVal('dateDay');
+            const dateMonth = getVal('dateMonth');
+            const dateYear = getVal('dateYear');
+            const dateMonthGenitive = MONTHS_GENITIVE[parseInt(dateMonth) - 1];
+
+            // Считаем дату окончания (+50 дней)
+            const issueDate = new Date(2000 + parseInt(dateYear), parseInt(dateMonth) - 1, parseInt(dateDay));
+            issueDate.setDate(issueDate.getDate() + 50);
+            const expDay = String(issueDate.getDate()).padStart(2, '0');
+            const expMonth = MONTHS_GENITIVE[issueDate.getMonth()];
+            const expYear = String(issueDate.getFullYear()).slice(-2);
+
+            // --- СТРАНИЦА 1 ---
+            drawCenteredInRange(firstPage, dateDay, COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, textOptions);
+            drawCenteredInRange(firstPage, dateMonthGenitive, COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, textOptions);
+            drawCenteredInRange(firstPage, dateYear, COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, textOptions);
+            drawCenteredInRange(firstPage, getVal('docNumber'), COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, textOptions);
+
+            firstPage.drawText(getVal('firstName'), { x: COORDS.firstName.x, y: COORDS.firstName.y, ...textOptions });
+            firstPage.drawText(getVal('patronymic'), { x: COORDS.patronymic.x, y: COORDS.patronymic.y, ...textOptions });
+
+            const dobMonthGenitive = MONTHS_GENITIVE[parseInt(getVal('dobMonth')) - 1];
+            drawCenteredInRange(firstPage, getVal('dobDay'), COORDS.dob.day.xStart, COORDS.dob.day.xEnd, COORDS.dob.day.y, textOptions);
+            drawCenteredInRange(firstPage, dobMonthGenitive, COORDS.dob.month.xStart, COORDS.dob.month.xEnd, COORDS.dob.month.y, textOptions);
+            drawCenteredInRange(firstPage, getVal('dobYear'), COORDS.dob.year.xStart, COORDS.dob.year.xEnd, COORDS.dob.year.y, textOptions);
+
+            firstPage.drawText(getVal('pob'), { x: COORDS.pob.x, y: COORDS.pob.y, ...textOptions });
+            firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
+
+            drawCenteredInRange(firstPage, getVal('passSeries'), COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, textOptions);
+            drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, textOptions);
+
+            firstPage.drawText(getVal('bloodType'), { x: COORDS.bloodType.x, y: COORDS.bloodType.y, ...textOptions });
+            firstPage.drawText(getVal('rhFactor'), { x: COORDS.rhFactor.x, y: COORDS.rhFactor.y, ...textOptions });
+            firstPage.drawText(getVal('allergies'), { x: COORDS.allergies.x, y: COORDS.allergies.y, ...textOptions });
+            firstPage.drawText(getVal('chronicDiseases'), { x: COORDS.chronicDiseases.x, y: COORDS.chronicDiseases.y, ...textOptions });
+
+            DOCTORS_LIST.forEach(doc => {
+                const status = document.querySelector(`input[name="doc-${doc.id}"]:checked`).value;
+                const coord = COORDS.doctors[doc.id];
+                drawCenteredInRange(firstPage, status, coord.status.xStart, coord.status.xEnd, coord.status.y, textOptions);
+                // ТУТ ДАТА ЦИФРАМИ (ДД.ММ.ГГ)
+                drawCenteredInRange(firstPage, `${dateDay}.${dateMonth}.${dateYear}`, coord.date.xStart, coord.date.xEnd, coord.date.y, textOptions);
+            });
+
+            const ecgValue = getVal('ecg');
+            if (ecgValue === 'normal') {
+                firstPage.drawLine({ start: {x: COORDS.ecg.normal.xStart, y: COORDS.ecg.normal.y}, end: {x: COORDS.ecg.normal.xEnd, y: COORDS.ecg.normal.y}, thickness: 1, color: PDFLib.rgb(0,0,0) });
+            } else {
+                firstPage.drawLine({ start: {x: COORDS.ecg.abnormal.xStart, y: COORDS.ecg.abnormal.y}, end: {x: COORDS.ecg.abnormal.xEnd, y: COORDS.ecg.abnormal.y}, thickness: 1, color: PDFLib.rgb(0,0,0) });
+            }
+
+            // ФЛЮОРОГРАФИЯ (МЕСЯЦ СЛОВОМ)
+            drawCenteredInRange(firstPage, dateDay, COORDS.fluorography.day.xStart, COORDS.fluorography.day.xEnd, COORDS.fluorography.day.y, textOptions);
+            drawCenteredInRange(firstPage, dateMonthGenitive, COORDS.fluorography.month.xStart, COORDS.fluorography.month.xEnd, COORDS.fluorography.month.y, textOptions);
+            drawCenteredInRange(firstPage, dateYear, COORDS.fluorography.year.xStart, COORDS.fluorography.year.xEnd, COORDS.fluorography.year.y, textOptions);
+
+            firstPage.drawText(getVal('bloodTest'), { x: COORDS.bloodTest.x, y: COORDS.bloodTest.y, ...textOptions });
+            firstPage.drawText(getVal('urineTest'), { x: COORDS.urineTest.x, y: COORDS.urineTest.y, ...textOptions });
+
+            // ДЕНЬ ОКОНЧАНИЯ (000-999)
+            // Вставляем количество дней (50) или день месяца. Если там написано "день", скорее всего это число.
+            drawCenteredInRange(firstPage, "50", COORDS.expirationDayCount.xStart, COORDS.expirationDayCount.xEnd, COORDS.expirationDayCount.y, textOptions); 
+
+            const nameStr = `${getVal('firstName')} ${getVal('patronymic')} (${getVal('passSeries')} ${getVal('passNumber')})`;
+            firstPage.drawText(nameStr, { x: COORDS.conclusionName.x, y: COORDS.conclusionName.y, ...textOptions });
+
+            const drawCross = (page, x, y) => {
+                page.drawLine({ start: {x: x-3, y: y-3}, end: {x: x+3, y: y+3}, thickness: 1.5, color: PDFLib.rgb(0,0,0) });
+                page.drawLine({ start: {x: x-3, y: y+3}, end: {x: x+3, y: y-3}, thickness: 1.5, color: PDFLib.rgb(0,0,0) });
+            };
+            
+            if (document.getElementById('perm-drive').checked) drawCross(firstPage, COORDS.permissions.drive.x, COORDS.permissions.drive.y);
+            if (document.getElementById('perm-license').checked) drawCross(firstPage, COORDS.permissions.license.x, COORDS.permissions.license.y);
+            if (document.getElementById('perm-military').checked) drawCross(firstPage, COORDS.permissions.military.x, COORDS.permissions.military.y);
+            if (document.getElementById('perm-state').checked) drawCross(firstPage, COORDS.permissions.state.x, COORDS.permissions.state.y);
+            if (document.getElementById('perm-work').checked) drawCross(firstPage, COORDS.permissions.work.x, COORDS.permissions.work.y);
+
+            if (document.getElementById('perm-drive-A').checked) drawCross(firstPage, COORDS.permissions.subPermissions.driveA.x, COORDS.permissions.subPermissions.driveA.y);
+            if (document.getElementById('perm-drive-A1').checked) drawCross(firstPage, COORDS.permissions.subPermissions.driveA1.x, COORDS.permissions.subPermissions.driveA1.y);
+            if (document.getElementById('perm-drive-M').checked) drawCross(firstPage, COORDS.permissions.subPermissions.driveM.x, COORDS.permissions.subPermissions.driveM.y);
+            if (document.getElementById('perm-drive-B').checked) drawCross(firstPage, COORDS.permissions.subPermissions.driveB.x, COORDS.permissions.subPermissions.driveB.y);
+            if (document.getElementById('perm-drive-B1').checked) drawCross(firstPage, COORDS.permissions.subPermissions.driveB1.x, COORDS.permissions.subPermissions.driveB1.y);
+            if (document.getElementById('perm-drive-C').checked) drawCross(firstPage, COORDS.permissions.subPermissions.driveC.x, COORDS.permissions.subPermissions.driveC.y);
+            if (document.getElementById('perm-drive-D').checked) drawCross(firstPage, COORDS.permissions.subPermissions.driveD.x, COORDS.permissions.subPermissions.driveD.y);
+
+            if (document.getElementById('perm-license-taxi').checked) drawCross(firstPage, COORDS.permissions.subPermissions.licenseTaxi.x, COORDS.permissions.subPermissions.licenseTaxi.y);
+            if (document.getElementById('perm-license-weapon').checked) drawCross(firstPage, COORDS.permissions.subPermissions.licenseWeapon.x, COORDS.permissions.subPermissions.licenseWeapon.y);
+
+            if (document.getElementById('perm-state-ess').checked) drawCross(firstPage, COORDS.permissions.subPermissions.stateEss.x, COORDS.permissions.subPermissions.stateEss.y);
+            if (document.getElementById('perm-state-mvd').checked) drawCross(firstPage, COORDS.permissions.subPermissions.stateMvd.x, COORDS.permissions.subPermissions.stateMvd.y);
+
+            drawParagraph(firstPage, getVal('specialNotes'), COORDS.specialNotes.x, COORDS.specialNotes.y, { 
+                ...textOptions, 
+                maxWidth: COORDS.specialNotes.maxWidth, 
+                lineHeight: COORDS.specialNotes.lineHeight,
+                indent: COORDS.specialNotes.indent
+            });
+
+            // --- СТРАНИЦА 2 ---
+            if (page2) {
+                drawCenteredInRange(page2, dateDay, COORDS.page2.date.day.xStart, COORDS.page2.date.day.xEnd, COORDS.page2.date.day.y, textOptions);
+                drawCenteredInRange(page2, dateMonthGenitive, COORDS.page2.date.month.xStart, COORDS.page2.date.month.xEnd, COORDS.page2.date.month.y, textOptions);
+                drawCenteredInRange(page2, dateYear, COORDS.page2.date.year.xStart, COORDS.page2.date.year.xEnd, COORDS.page2.date.year.y, textOptions);
+                drawCenteredInRange(page2, getVal('docNumber'), COORDS.page2.docNumber.xStart, COORDS.page2.docNumber.xEnd, COORDS.page2.docNumber.y, textOptions);
+                drawCenteredInRange(page2, getVal('dayNumber'), COORDS.page2.dayNumber.xStart, COORDS.page2.dayNumber.xEnd, COORDS.page2.dayNumber.y, textOptions);
+
+                drawCenteredInRange(page2, expDay, COORDS.page2.expirationDate.day.xStart, COORDS.page2.expirationDate.day.xEnd, COORDS.page2.expirationDate.day.y, textOptions);
+                drawCenteredInRange(page2, expMonth, COORDS.page2.expirationDate.month.xStart, COORDS.page2.expirationDate.month.xEnd, COORDS.page2.expirationDate.month.y, textOptions);
+                drawCenteredInRange(page2, expYear, COORDS.page2.expirationDate.year.xStart, COORDS.page2.expirationDate.year.xEnd, COORDS.page2.expirationDate.year.y, textOptions);
+
+                drawCenteredInRange(page2, getVal('regNumber'), COORDS.page2.regNumber.xStart, COORDS.page2.regNumber.xEnd, COORDS.page2.regNumber.y, textOptions);
+                
+                drawParagraph(page2, getVal('serviceNotes'), COORDS.page2.serviceNotes.x, COORDS.page2.serviceNotes.y, { 
+                    ...textOptions, 
+                    maxWidth: COORDS.page2.serviceNotes.maxWidth, 
+                    lineHeight: COORDS.page2.serviceNotes.lineHeight,
+                    indent: COORDS.page2.serviceNotes.indent
+                });
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            const fileName = `${Date.now()}_MED_${getVal('docNumber')}.pdf`;
+
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            await supabaseClient.from('documents').insert({
+                patient_id: null,
+                organization_id: currentOrgId,
+                doc_number: getVal('docNumber'),
+                document_type: 'Медицинская справка',
+                file_path: fileName
+            });
+
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl + '#' + Date.now(); 
+            document.getElementById('preview-modal').style.display = 'flex';
+
+        } catch (error) {
+            console.error(error);
+            alert("Ошибка: " + error.message + "\nУбедитесь, что файл med_spravka.pdf загружен на GitHub!");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать и сохранить PDF';
+        }
+    });
+
+    initDoctors();
+    initTemplates();
+    initDates();
+    loadCitizens();
+</script>
+</body>
+</html>
