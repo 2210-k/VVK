@@ -3,56 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ЕСС | Служебный портал</title>
+    <title>Портал ГОС УСЛУГИ | Админ</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; }
-        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); }
+        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; --sidebar: #111827; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
         
         /* Вход */
-        #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .auth-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .btn-login { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; }
+        #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; padding: 20px; box-sizing: border-box; }
+        .auth-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .auth-box input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn-login { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; font-size: 16px; }
         .error-msg { color: var(--danger); display: none; margin-bottom: 15px; font-size: 14px; }
 
         /* Кабинет */
-        #dashboard-screen { display: none; height: 100vh; }
-        .sidebar { width: 250px; background: var(--primary); color: white; position: fixed; height: 100%; }
+        #dashboard-screen { display: none; height: 100vh; display: flex; }
+        .sidebar { width: 260px; background: var(--sidebar); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
-        .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; }
-        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; }
-        .main-content { margin-left: 250px; padding: 30px; }
-        .header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
         
-        /* Таблицы и кнопки */
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #f8fafc; color: #64748b; font-weight: bold; font-size: 14px; }
+        .org-tabs { display: flex; flex-direction: column; padding: 10px; gap: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .org-tab { padding: 12px 15px; cursor: pointer; border-radius: 6px; color: #9ca3af; font-weight: 500; transition: 0.2s; text-align: center; }
+        .org-tab:hover { background: rgba(255,255,255,0.1); color: white; }
+        .org-tab.active { background: var(--primary); color: white; box-shadow: 0 2px 10px rgba(30, 58, 138, 0.5); }
+
+        .menu { flex: 1; padding: 10px; }
+        .menu-item { padding: 15px; cursor: pointer; border-radius: 6px; color: #d1d5db; margin-bottom: 5px; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); color: white; }
         
-        .btn-action { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; text-decoration: none; display: inline-block; margin-right: 5px; }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; font-size: 24px; }
+        .btn-logout { background: #fee2e2; color: var(--danger); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* Таблицы */
+        .table-container { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8fafc; color: #64748b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .btn-action { border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; text-decoration: none; display: inline-block; margin-right: 5px; }
         .btn-edit { background: #eab308; }
         .btn-delete { background: var(--danger); }
         .btn-download { background: #64748b; }
         .btn-view { background: var(--primary); }
-        .btn-add { background: var(--success); padding: 10px 20px; font-size: 14px; }
+        .btn-add { background: var(--success); padding: 10px 20px; }
 
-        /* Модалки (Редактирование/Добавление) */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; max-height: 90vh; overflow-y: auto; }
-        .modal-content label { display: block; margin-top: 10px; font-weight: bold; font-size: 13px; }
-        .modal-content input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        .modal-actions { margin-top: 20px; display: flex; gap: 10px; }
-        .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        /* Модалки */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 100; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; }
+        .modal-content label { display: block; margin-top: 15px; font-weight: bold; font-size: 13px; color: #4b5563; }
+        .modal-content input { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+        .modal-actions { margin-top: 25px; display: flex; gap: 10px; }
+        .modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; }
         .btn-save { background: var(--success); color: white; }
-        .btn-cancel { background: #ccc; color: #333; }
+        .btn-cancel { background: #e5e7eb; color: #333; }
 
-        /* Модалка предпросмотра PDF */
-        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
-        .preview-container { width: 90%; height: 90%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
-        .preview-header h3 { margin: 0; color: #333; }
+        /* Предпросмотр */
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; }
+        .preview-header { padding: 15px 20px; background: white; display: flex; justify-content: space-between; align-items: center; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
+
+        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
+        @media (max-width: 768px) {
+            #dashboard-screen { flex-direction: column; height: auto; min-height: 100vh; }
+            .sidebar { width: 100%; height: auto; position: static; }
+            .sidebar h2 { padding: 15px; }
+            .org-tabs { flex-direction: row; overflow-x: auto; white-space: nowrap; }
+            .org-tab { padding: 10px; font-size: 14px; }
+            .menu { display: flex; padding: 10px; gap: 10px; }
+            .menu-item { flex: 1; justify-content: center; padding: 10px; font-size: 14px; text-align: center; }
+            .main-content { padding: 15px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .btn-add { width: 100%; margin-bottom: 15px; }
+            
+            /* Превращаем таблицы в карточки */
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { border: 1px solid #eee; margin-bottom: 15px; border-radius: 8px; padding: 10px; }
+            td { border: none; position: relative; padding-left: 50%; text-align: right; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 10px; }
+            td:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+            td:before { position: absolute; top: 0; left: 0; width: 45%; padding-right: 10px; white-space: nowrap; text-align: left; font-weight: bold; color: #6b7280; }
+            
+            /* Подписи для колонок в мобильной версии */
+            td:nth-of-type(1):before { content: "Номер"; }
+            td:nth-of-type(2):before { content: "Тип"; }
+            td:nth-of-type(3):before { content: "Пациент"; }
+            td:nth-of-type(4):before { content: "Дата"; }
+            td:nth-of-type(5):before { content: "Действия"; }
+            
+            /* Для таблицы пациентов */
+            #patients-tab td:nth-of-type(1):before { content: "ФИО"; }
+            #patients-tab td:nth-of-type(2):before { content: "Дата рожд."; }
+            #patients-tab td:nth-of-type(3):before { content: "Паспорт"; }
+            #patients-tab td:nth-of-type(4):before { content: "Действия"; }
+            
+            td:last-child { text-align: center; padding-left: 0; }
+        }
     </style>
 </head>
 <body>
@@ -60,45 +106,55 @@
     <!-- Вход -->
     <div id="auth-screen">
         <div class="auth-box">
-            <h2>Служебный портал ЕСС</h2>
+            <h2>Портал ГОС УСЛУГИ</h2>
+            <p style="color:#666; margin-bottom:20px;">Вход для сотрудников</p>
             <div id="auth-error" class="error-msg"></div>
             <form id="login-form">
                 <input type="email" id="email" placeholder="Служебный Email" required>
                 <input type="password" id="password" placeholder="Пароль" required>
                 <button type="submit" class="btn-login">Войти</button>
             </form>
-            <a href="citizen.html" style="display:block; margin-top:15px; color:#666; font-size:14px; text-decoration:none;">Я пациент</a>
+            <a href="citizen.html" style="display:block; margin-top:15px; color:#666; font-size:14px; text-decoration:none;">Вход для граждан</a>
         </div>
     </div>
 
     <!-- Кабинет -->
     <div id="dashboard-screen">
         <div class="sidebar">
-            <h2>ЕСС | Админ</h2>
-            <div class="menu-item active" onclick="switchTab('docs', this)">📄 Все документы</div>
-            <div class="menu-item" onclick="switchTab('patients', this)">👥 Пациенты</div>
-            <div class="menu-item" onclick="window.location.href='generator-vvk.html'">➕ Создать ВВК</div>
+            <h2>ГОС УСЛУГИ</h2>
+            
+            <!-- Вкладки организаций -->
+            <div class="org-tabs" id="org-tabs-container">
+                <!-- Заполняется через JS -->
+            </div>
+
+            <div class="menu">
+                <div class="menu-item active" onclick="switchTab('docs', this)">📄 Документы</div>
+                <div class="menu-item" onclick="switchTab('patients', this)">👥 Пациенты</div>
+            </div>
+            
+            <div style="padding: 15px;">
+                <button class="btn-logout" id="logout-btn" style="width:100%;">Выйти</button>
+            </div>
         </div>
 
         <div class="main-content">
             <div class="header">
-                <h2 id="page-title">Все документы</h2>
-                <div>
-                    <button class="btn-login" id="logout-btn" style="padding:8px 15px; width:auto; cursor:pointer; background:#ef4444;">Выйти</button>
-                </div>
+                <h2 id="page-title">Документы <span id="current-org-name" style="color:#6b7280; font-weight:normal;"></span></h2>
+                <a href="generator-vvk.html" class="btn-action btn-add" style="text-decoration:none;">+ Создать документ</a>
             </div>
 
-            <!-- Вкладка документов -->
-            <div id="docs-tab">
+            <!-- Документы -->
+            <div id="docs-tab" class="table-container">
                 <table>
                     <thead><tr><th>Номер</th><th>Тип</th><th>Пациент</th><th>Дата</th><th>Действия</th></tr></thead>
                     <tbody id="docs-table-body"></tbody>
                 </table>
             </div>
 
-            <!-- Вкладка пациентов -->
-            <div id="patients-tab" style="display:none;">
-                <div style="margin-bottom: 15px; text-align: right;">
+            <!-- Пациенты -->
+            <div id="patients-tab" class="table-container" style="display:none;">
+                <div style="padding: 15px; text-align: right; border-bottom: 1px solid #eee;">
                     <button class="btn-action btn-add" onclick="openAddPatientModal()">+ Добавить пациента</button>
                 </div>
                 <table>
@@ -109,10 +165,10 @@
         </div>
     </div>
 
-    <!-- Модалка редактирования -->
+    <!-- Модалки (Редактирование/Добавление) -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
-            <h3>Редактировать пациента</h3>
+            <h3 style="margin-top:0;">Редактировать пациента</h3>
             <input type="hidden" id="edit-id">
             <label>Фамилия</label><input type="text" id="edit-last-name">
             <label>Имя</label><input type="text" id="edit-first-name">
@@ -129,11 +185,10 @@
         </div>
     </div>
 
-    <!-- Модалка добавления пациента -->
     <div id="add-modal" class="modal">
         <div class="modal-content">
-            <h3>Новый пациент</h3>
-            <label>Email (будет логином)</label><input type="email" id="add-email">
+            <h3 style="margin-top:0;">Новый пациент</h3>
+            <label>Email (логин)</label><input type="email" id="add-email">
             <label>Пароль</label><input type="text" id="add-password" value="123456">
             <label>Фамилия</label><input type="text" id="add-last-name">
             <label>Имя</label><input type="text" id="add-first-name">
@@ -147,18 +202,16 @@
         </div>
     </div>
 
-    <!-- Модалка ПРОСМОТРА PDF -->
+    <!-- Предпросмотр PDF -->
     <div id="preview-modal">
-        <div class="preview-container">
-            <div class="preview-header">
-                <h3>Просмотр документа</h3>
-                <div>
-                    <a id="preview-download-btn" href="#" class="btn-action btn-download" download style="padding: 10px 20px; font-size: 14px;">Скачать</a>
-                    <button class="btn-action btn-delete" onclick="closePreview()" style="padding: 10px 20px; font-size: 14px;">Закрыть</button>
-                </div>
+        <div class="preview-header">
+            <h3 style="margin:0;">Просмотр</h3>
+            <div>
+                <a id="preview-download-btn" href="#" class="btn-action btn-download" download>Скачать</a>
+                <button class="btn-action btn-delete" onclick="closePreview()">Закрыть</button>
             </div>
-            <iframe id="preview-frame" class="preview-iframe"></iframe>
         </div>
+        <iframe id="preview-frame" class="preview-iframe"></iframe>
     </div>
 
     <script>
@@ -166,7 +219,10 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Обработка входа
+        let currentOrgId = null; // Текущая выбранная организация
+        let allOrgs = []; // Список всех организаций
+
+        // --- ЛОГИН / ЛОГАУТ ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const { error } = await supabaseClient.auth.signInWithPassword({
@@ -179,72 +235,89 @@
             }
         });
 
-        // Выход
         document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
 
-        // ПРОВЕРКА РОЛЕЙ ПРИ ВХОДЕ
+        // --- ПРОВЕРКА АВТОРИЗАЦИИ И ЗАГРУЗКА ---
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (session) {
                 const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
-                
-                // Если ПАЦИЕНТ - перекидываем на citizen.html
-                if (profile && profile.role === 'patient') {
-                    window.location.href = 'citizen.html';
-                    return;
-                }
-                
-                // Если не админ - выкидываем
                 if (!profile || profile.role !== 'admin') {
                     alert("У вас нет прав администратора!");
                     await supabaseClient.auth.signOut();
                     return;
                 }
-
-                // Если АДМИН - показываем панель
+                
                 document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('dashboard-screen').style.display = 'block';
-                loadDocs();
-                loadPatients();
+                document.getElementById('dashboard-screen').style.display = 'flex';
+                
+                await loadOrganizations(); // Сначала грузим вкладки организаций
+                
             } else {
                 document.getElementById('auth-screen').style.display = 'flex';
                 document.getElementById('dashboard-screen').style.display = 'none';
             }
         });
 
-        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+        // --- ЗАГРУЗКА ОРГАНИЗАЦИЙ ---
+        async function loadOrganizations() {
+            const { data, error } = await supabaseClient.from('organizations').select('*').order('id');
+            if (error) return console.error(error);
+            
+            allOrgs = data;
+            const container = document.getElementById('org-tabs-container');
+            container.innerHTML = '';
+            
+            data.forEach((org, index) => {
+                const div = document.createElement('div');
+                div.className = `org-tab ${index === 0 ? 'active' : ''}`;
+                div.textContent = org.name;
+                div.onclick = () => selectOrganization(org.id, org.name, div);
+                container.appendChild(div);
+            });
+
+            if (data.length > 0) {
+                selectOrganization(data[0].id, data[0].name, container.firstChild);
+            }
+        }
+
+        // --- ВЫБОР ОРГАНИЗАЦИИ ---
+        function selectOrganization(orgId, orgName, element) {
+            currentOrgId = orgId;
+            document.getElementById('current-org-name').textContent = `(${orgName})`;
+            
+            document.querySelectorAll('.org-tab').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            
+            loadDocs();
+            loadPatients();
+        }
+
+        // --- ВСПОМОГАТЕЛЬНЫЕ ---
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closePreview() { document.getElementById('preview-modal').style.display = 'none'; document.getElementById('preview-frame').src = ''; }
+        function previewDoc(url) { document.getElementById('preview-frame').src = url; document.getElementById('preview-download-btn').href = url; document.getElementById('preview-modal').style.display = 'flex'; }
         
-        function closePreview() {
-            document.getElementById('preview-modal').style.display = 'none';
-            document.getElementById('preview-frame').src = ''; 
-        }
-
-        function previewDoc(url) {
-            document.getElementById('preview-frame').src = url;
-            document.getElementById('preview-download-btn').href = url;
-            document.getElementById('preview-modal').style.display = 'flex';
-        }
-
         function switchTab(tab, element) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
             if (tab === 'docs') {
                 document.getElementById('docs-tab').style.display = 'block';
                 document.getElementById('patients-tab').style.display = 'none';
-                document.getElementById('page-title').textContent = 'Все документы';
             } else {
                 document.getElementById('docs-tab').style.display = 'none';
                 document.getElementById('patients-tab').style.display = 'block';
-                document.getElementById('page-title').textContent = 'Пациенты';
             }
         }
 
         // --- РАБОТА С ДОКУМЕНТАМИ ---
         async function loadDocs() {
             const tbody = document.getElementById('docs-table-body');
-            tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Загрузка...</td></tr>';
             
-            const { data, error } = await supabaseClient.from('documents').select(`*, profiles(last_name, first_name, patronymic)`).order('created_at', {ascending: false});
+            const { data, error } = await supabaseClient.from('documents')
+                .select(`*, profiles(last_name, first_name, patronymic)`)
+                .eq('organization_id', currentOrgId) // ФИЛЬТР ПО ОРГАНИЗАЦИИ
+                .order('created_at', {ascending: false});
             
             if (error) return console.error(error);
             tbody.innerHTML = '';
@@ -253,11 +326,14 @@
             data.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 const p = doc.profiles;
+                // Если документа без пациента, выводим прочерк
+                const patientName = p ? `${p.last_name} ${p.first_name} ${p.patronymic || ''}` : '—'; 
+                
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${doc.doc_number}</b></td>
                         <td>${doc.document_type}</td>
-                        <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
+                        <td>${patientName}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
                         <td>
                             <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
@@ -280,8 +356,9 @@
         // --- РАБОТА С ПАЦИЕНТАМИ ---
         async function loadPatients() {
             const tbody = document.getElementById('patients-table-body');
-            tbody.innerHTML = '<tr><td colspan="4">Загрузка...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Загрузка...</td></tr>';
             
+            // Показываем всех пациентов, так как они могут быть привязаны к системе в целом
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
             
             if (error) return console.error(error);
@@ -346,17 +423,12 @@
             const email = document.getElementById('add-email').value;
             const password = document.getElementById('add-password').value;
             
-            // ИСПРАВЛЕНИЕ: Создаем временный клиент БЕЗ сохранения сессии в браузере
             const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                auth: {
-                    persistSession: false,
-                    autoRefreshToken: false,
-                    detectSessionInUrl: false
-                }
+                auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
             });
             
             const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
-            if (authError) return alert("Ошибка создания пользователя: " + authError.message);
+            if (authError) return alert("Ошибка создания: " + authError.message);
 
             const updates = {
                 last_name: document.getElementById('add-last-name').value,
@@ -367,16 +439,9 @@
                 role: 'patient'
             };
 
-            // Обновляем профиль через ОСНОВНОЙ клиент
             const { error: profileError } = await supabaseClient.from('profiles').update(updates).eq('id', authData.user.id);
-            
-            if (profileError) {
-                alert("Пользователь создан, но данные не сохранились: " + profileError.message);
-            } else {
-                alert("Пациент успешно добавлен!");
-                closeModal('add-modal');
-                loadPatients();
-            }
+            if (profileError) alert("Ошибка данных: " + profileError.message);
+            else { alert("Пациент добавлен!"); closeModal('add-modal'); loadPatients(); }
         }
     </script>
 </body>
