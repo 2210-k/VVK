@@ -6,36 +6,45 @@
     <title>Генератор ВВК</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; margin: 0; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"], textarea, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
         textarea { resize: vertical; height: 80px; }
         .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
-        .radio-group { display: flex; gap: 15px; margin-top: 5px; }
+        .radio-group { display: flex; gap: 15px; margin-top: 5px; flex-wrap: wrap; }
         .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
-        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
         button[type="submit"]:hover { background: #004494; }
         button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
         .row { display: flex; gap: 15px; }
         .row > .form-group { flex: 1; }
         .date-group { display: flex; gap: 5px; }
         .date-group input, .date-group select, .center-input { text-align: center; }
-        .date-group .day { width: 60px; }
-        .date-group .month { width: 110px; }
-        .date-group .year { width: 80px; }
+        .date-group .day { width: 30%; }
+        .date-group .month { width: 70%; }
+        .date-group .year { width: 40%; }
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
 
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
-        .preview-container { width: 90%; height: 90%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
         .preview-header h3 { margin: 0; color: #333; }
         .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
         .btn-dl { background: #10b981; color: white; }
-        .btn-close { background: #ef4444; color: white; margin-left: 10px; }
+        .btn-close { background: #ef4444; color: white; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
+
+        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
+        @media (max-width: 768px) {
+            .row { flex-direction: column; gap: 0; }
+            .container { padding: 15px; }
+            .preview-header { flex-direction: column; align-items: flex-start; }
+            .preview-header > div { display: flex; width: 100%; gap: 10px; }
+            .preview-header > div > button, .preview-header > div > a { flex: 1; text-align: center; }
+        }
     </style>
 </head>
 <body>
@@ -44,9 +53,9 @@
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
     <div class="patient-selector">
-        <label>👤 Выберите получателя (Пациента)</label>
+        <label>👤 Выберите гражданина (кому отправить)</label>
         <select id="patientSelect" class="form-select">
-            <option value="none">-- Без пациента (Отчет) --</option>
+            <option value="none">-- Без гражданина (Внутренний документ) --</option>
         </select>
     </div>
 
@@ -166,7 +175,7 @@
 <div id="preview-modal">
     <div class="preview-container">
         <div class="preview-header">
-            <h3>Предпросмотр документа</h3>
+            <h3>Предпросмотр</h3>
             <div>
                 <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
                 <button class="btn-preview btn-close" id="close-preview-btn">Закрыть</button>
@@ -182,7 +191,6 @@
 <script>
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
 
-    // ЧИТАЕМ ID ОРГАНИЗАЦИИ ИЗ ССЫЛКИ (по умолчанию ЕСС = 1)
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
@@ -217,10 +225,9 @@
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
     let currentPdfBlob = null;
 
-    async function loadPatients() {
+    async function loadCitizens() {
         const select = document.getElementById('patientSelect');
-        // Загружаем пациентов ТОЛЬКО выбранной организации
-        const { data: patients, error } = await supabaseClient
+        const { data: citizens, error } = await supabaseClient
             .from('profiles')
             .select('*')
             .eq('role', 'patient')
@@ -229,10 +236,10 @@
 
         if (error) { console.error(error); return; }
         
-        patients.forEach(p => {
+        citizens.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id;
-            opt.dataset.patient = JSON.stringify(p);
+            opt.dataset.citizen = JSON.stringify(p);
             opt.textContent = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
             select.appendChild(opt);
         });
@@ -241,26 +248,25 @@
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (!selectedOption.value || selectedOption.value === 'none') {
-            // Очищаем поля, если выбран "Без пациента"
             ['firstName', 'patronymic', 'pob', 'address', 'passSeries', 'passNumber', 'dobDay', 'dobYear'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('dobMonth').value = MONTHS_GENITIVE[0];
             return;
         }
 
-        const patient = JSON.parse(selectedOption.dataset.patient);
-        document.getElementById('firstName').value = patient.first_name || '';
-        document.getElementById('patronymic').value = patient.patronymic || '';
+        const citizen = JSON.parse(selectedOption.dataset.citizen);
+        document.getElementById('firstName').value = citizen.first_name || '';
+        document.getElementById('patronymic').value = citizen.patronymic || '';
         
-        if (patient.dob) {
-            const [year, month, day] = patient.dob.split('-');
+        if (citizen.dob) {
+            const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
             document.getElementById('dobMonth').value = MONTHS_GENITIVE[parseInt(month) - 1];
             document.getElementById('dobYear').value = year.slice(-2);
         }
-        document.getElementById('pob').value = patient.pob || '';
-        document.getElementById('address').value = patient.address || '';
-        document.getElementById('passSeries').value = patient.pass_series || '';
-        document.getElementById('passNumber').value = patient.pass_number || '';
+        document.getElementById('pob').value = citizen.pob || '';
+        document.getElementById('address').value = citizen.address || '';
+        document.getElementById('passSeries').value = citizen.pass_series || '';
+        document.getElementById('passNumber').value = citizen.pass_number || '';
     });
 
     function initTemplates() {
@@ -349,8 +355,8 @@
     document.getElementById('vvkForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
-        const patientVal = document.getElementById('patientSelect').value;
-        const actualPatientId = (patientVal === 'none') ? null : patientVal;
+        const citizenVal = document.getElementById('patientSelect').value;
+        const actualCitizenId = (citizenVal === 'none') ? null : citizenVal;
 
         btn.disabled = true;
         btn.textContent = 'Генерация...';
@@ -373,7 +379,7 @@
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, textOptions);
             drawCenteredInRange(firstPage, getVal('docNumber'), COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, textOptions);
             
-            if(actualPatientId) {
+            if(actualCitizenId) {
                 drawCenteredInRange(firstPage, getVal('dobDay'), COORDS.dob.day.xStart, COORDS.dob.day.xEnd, COORDS.dob.day.y, textOptions);
                 drawCenteredInRange(firstPage, getVal('dobMonth'), COORDS.dob.month.xStart, COORDS.dob.month.xEnd, COORDS.dob.month.y, textOptions);
                 drawCenteredInRange(firstPage, getVal('dobYear'), COORDS.dob.year.xStart, COORDS.dob.year.xEnd, COORDS.dob.year.y, textOptions);
@@ -409,9 +415,8 @@
             const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
             if (uploadError) throw new Error("Ошибка загрузки: " + uploadError.message);
 
-            // СОХРАНЯЕМ С organization_id И ВОЗМОЖНЫМ NULL patient_id
             const { error: dbError } = await supabaseClient.from('documents').insert({
-                patient_id: actualPatientId,
+                patient_id: actualCitizenId,
                 organization_id: currentOrgId,
                 doc_number: docNumber,
                 document_type: 'Заключение ВВК',
@@ -435,7 +440,7 @@
     initTemplates();
     initMonths();
     initAutoDate();
-    loadPatients();
+    loadCitizens();
 </script>
 </body>
 </html>
