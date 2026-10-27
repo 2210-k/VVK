@@ -11,10 +11,8 @@
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input[type="text"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        textarea { resize: vertical; height: 80px; }
+        textarea { resize: vertical; height: 60px; }
         .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
-        .radio-group { display: flex; gap: 15px; margin-top: 5px; flex-wrap: wrap; }
-        .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
         button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
         button[type="submit"]:hover { background: #004494; }
         button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
@@ -27,6 +25,8 @@
         .date-group .year { width: 40%; }
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
+        .radio-group { display: flex; gap: 15px; margin-top: 5px; flex-wrap: wrap; }
+        .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -37,13 +37,11 @@
         .btn-close { background: #ef4444; color: white; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
 
-        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         @media (max-width: 768px) {
             .row { flex-direction: column; gap: 0; }
             .container { padding: 15px; }
             .preview-header { flex-direction: column; align-items: flex-start; }
             .preview-header > div { display: flex; width: 100%; gap: 10px; }
-            .preview-header > div > button, .preview-header > div > a { flex: 1; text-align: center; }
         }
     </style>
 </head>
@@ -53,9 +51,9 @@
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
     <div class="patient-selector">
-        <label>👤 Выберите гражданина (кому отправить)</label>
+        <label>👤 Выберите гражданина (данные подставятся автоматически)</label>
         <select id="patientSelect" class="form-select">
-            <option value="none">-- Без гражданина (Внутренний документ) --</option>
+            <option value="none">-- Без гражданина (В архив) --</option>
         </select>
     </div>
 
@@ -225,6 +223,7 @@
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
     let currentPdfBlob = null;
 
+    // ИСПРАВЛЕНА ЗАГРУЗКА ГРАЖДАН (удален фильтр по организации)
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
         const { data: citizens, error } = await supabaseClient
@@ -233,7 +232,13 @@
             .eq('role', 'patient')
             .order('last_name');
 
-        if (error) { console.error(error); return; }
+        if (error) { 
+            console.error(error); 
+            alert("Ошибка загрузки граждан: " + error.message);
+            return; 
+        }
+        
+        select.innerHTML = '<option value="none">-- Без гражданина (В архив) --</option>';
         
         citizens.forEach(p => {
             const opt = document.createElement('option');
