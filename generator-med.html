@@ -280,7 +280,6 @@
         bloodTest: { x: 173, y: 296.5 },
         urineTest: { x: 128, y: 283 },
         
-        // ⚠️ Это поле мы УБРАЛИ с 1-й страницы, но оставили координаты для 2-й
         expirationDayCount: { xStart: 291, xEnd: 332, y: 741 }, 
         
         conclusionName: { x: 379, y: 249 },
@@ -306,6 +305,7 @@
         },
         specialNotes: { x: 53, y: 154, maxWidth: 491, lineHeight: 13, indent: 275 },
         page2: {
+            // ИСПРАВЛЕНИЕ: Дата выдачи берет изначальную дату, а не вычисленную
             date: { 
                 day: { xStart: 298, xEnd: 313, y: 810 }, 
                 month: { xStart: 322, xEnd: 397, y: 810 }, 
@@ -313,7 +313,7 @@
             },
             docNumber: { xStart: 239, xEnd: 278, y: 810 },
             dayNumber: { xStart: 400, xEnd: 421, y: 768 },
-            // ⚠️ Сюда мы выводим рассчитанный день (75)
+            // Координаты для дня окончания (75)
             calculatedExpirationDay: { xStart: 291, xEnd: 332, y: 741 }, 
             expirationDate: { 
                 day: { xStart: 234, xEnd: 250, y: 768 },
@@ -520,17 +520,10 @@
             const dateYear = getVal('dateYear');
             const dateMonthGenitive = MONTHS_GENITIVE[parseInt(dateMonth) - 1];
 
-            // ⚠️ СЧИТАЕМ ДЕНЬ ОКОНЧАНИЯ ПО ТВОЕЙ ФОРМУЛЕ ⚠️
+            // Считаем день окончания по формуле: введенный день + 50
             const dayNumStr = getVal('dayNumber');
             const dayNum = parseInt(dayNumStr) || 0;
             const expirationDay = dayNum + 50;
-
-            // Считаем календарную дату окончания (для второй страницы, если нужно)
-            const issueDate = new Date(2000 + parseInt(dateYear), parseInt(dateMonth) - 1, parseInt(dateDay));
-            issueDate.setDate(issueDate.getDate() + 50);
-            const expDay = String(issueDate.getDate()).padStart(2, '0');
-            const expMonth = MONTHS_GENITIVE[issueDate.getMonth()];
-            const expYear = String(issueDate.getFullYear()).slice(-2);
 
             // --- СТРАНИЦА 1 ---
             drawCenteredInRange(firstPage, dateDay, COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, textOptions);
@@ -578,8 +571,6 @@
             firstPage.drawText(getVal('bloodTest'), { x: COORDS.bloodTest.x, y: COORDS.bloodTest.y, ...textOptions });
             firstPage.drawText(getVal('urineTest'), { x: COORDS.urineTest.x, y: COORDS.urineTest.y, ...textOptions });
 
-            // Убрали отрисовку expirationDayCount с 1-й страницы!
-
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')} (${getVal('passSeries')} ${getVal('passNumber')})`;
             firstPage.drawText(nameStr, { x: COORDS.conclusionName.x, y: COORDS.conclusionName.y, ...textOptions });
 
@@ -614,16 +605,26 @@
 
             // --- СТРАНИЦА 2 ---
             if (page2) {
+                // Выводим изначальную дату (27 октября 2026)
                 drawCenteredInRange(page2, dateDay, COORDS.page2.date.day.xStart, COORDS.page2.date.day.xEnd, COORDS.page2.date.day.y, textOptions);
                 drawCenteredInRange(page2, dateMonthGenitive, COORDS.page2.date.month.xStart, COORDS.page2.date.month.xEnd, COORDS.page2.date.month.y, textOptions);
                 drawCenteredInRange(page2, dateYear, COORDS.page2.date.year.xStart, COORDS.page2.date.year.xEnd, COORDS.page2.date.year.y, textOptions);
+                
                 drawCenteredInRange(page2, getVal('docNumber'), COORDS.page2.docNumber.xStart, COORDS.page2.docNumber.xEnd, COORDS.page2.docNumber.y, textOptions);
+                
+                // Выводим введенный день (25)
                 drawCenteredInRange(page2, getVal('dayNumber'), COORDS.page2.dayNumber.xStart, COORDS.page2.dayNumber.xEnd, COORDS.page2.dayNumber.y, textOptions);
 
-                // ⚠️ ВЫВОДИМ РАСЧЕТ (dayNumber + 50) НА ВТОРУЮ СТРАНИЦУ ⚠️
+                // Выводим вычисленный день окончания (75)
                 drawCenteredInRange(page2, String(expirationDay), COORDS.page2.calculatedExpirationDay.xStart, COORDS.page2.calculatedExpirationDay.xEnd, COORDS.page2.calculatedExpirationDay.y, textOptions);
 
-                // Вывод календарной даты (если на бланке есть место под ДД МММ ГГ)
+                // Если на бланке есть отдельное место для "Дата окончания" (ДД МММ ГГ), то оно выводится здесь:
+                const issueDate = new Date(2000 + parseInt(dateYear), parseInt(dateMonth) - 1, parseInt(dateDay));
+                issueDate.setDate(issueDate.getDate() + 50);
+                const expDay = String(issueDate.getDate()).padStart(2, '0');
+                const expMonth = MONTHS_GENITIVE[issueDate.getMonth()];
+                const expYear = String(issueDate.getFullYear()).slice(-2);
+
                 drawCenteredInRange(page2, expDay, COORDS.page2.expirationDate.day.xStart, COORDS.page2.expirationDate.day.xEnd, COORDS.page2.expirationDate.day.y, textOptions);
                 drawCenteredInRange(page2, expMonth, COORDS.page2.expirationDate.month.xStart, COORDS.page2.expirationDate.month.xEnd, COORDS.page2.expirationDate.month.y, textOptions);
                 drawCenteredInRange(page2, expYear, COORDS.page2.expirationDate.year.xStart, COORDS.page2.expirationDate.year.xEnd, COORDS.page2.expirationDate.year.y, textOptions);
