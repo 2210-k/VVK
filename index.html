@@ -19,7 +19,6 @@
         /* Кабинет */
         #dashboard-screen { display: none; min-height: 100vh; }
         
-        /* Сайдбар: только организации */
         .sidebar { width: 260px; background: var(--primary); color: white; position: fixed; height: 100%; overflow-y: auto; z-index: 100; transition: 0.3s; }
         .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
         .menu-label { padding: 15px 20px 5px 20px; font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
@@ -27,15 +26,12 @@
         .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; }
         
-        /* Рабочая область */
         .main-content { margin-left: 260px; padding: 30px; }
         
-        /* Шапка рабочей области */
         .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
         .workspace-title h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); }
         .workspace-title p { margin: 0; color: #64748b; font-size: 14px; }
         
-        /* Кнопки и табы */
         .actions-area { display: flex; gap: 15px; align-items: center; }
         .btn-create { background: var(--success); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .btn-create:hover { background: #059669; transform: translateY(-2px); }
@@ -45,7 +41,6 @@
         .tab:hover { color: var(--primary); }
         .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* Таблицы */
         .table-responsive { width: 100%; overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
@@ -57,31 +52,27 @@
         .btn-download { background: #64748b; }
         .btn-view { background: var(--primary); }
 
-        /* Модалки */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
         .modal-content { background: white; padding: 30px; border-radius: 8px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; }
         .modal-content h3 { margin-top: 0; color: var(--primary); }
         .modal-content label { display: block; margin-top: 15px; font-weight: bold; font-size: 13px; }
-        .modal-content input, .modal-content select { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        .modal-content input { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
         .modal-actions { margin-top: 25px; display: flex; gap: 10px; }
         .modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px; }
         .btn-save { background: var(--success); color: white; }
         .btn-cancel { background: #e2e8f0; color: #333; }
 
-        /* Карточки шаблонов */
         .template-card { padding: 20px; border: 2px solid #e2e8f0; border-radius: 8px; background: #f8fafc; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .template-card:hover { border-color: var(--primary); background: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .template-card h4 { margin: 0 0 8px 0; color: var(--primary); font-size: 18px; }
         .template-card p { margin: 0; color: #64748b; font-size: 14px; }
 
-        /* Предпросмотр */
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
         .preview-header h3 { margin: 0; color: #333; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
 
-        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         @media (max-width: 768px) {
             .sidebar { width: 100%; height: auto; position: relative; }
             .sidebar h2 { display: none; }
@@ -112,7 +103,6 @@
     </div>
 
     <div id="dashboard-screen">
-        <!-- САЙДБАР: ТОЛЬКО ОРГАНИЗАЦИИ -->
         <div class="sidebar">
             <h2>Организации</h2>
             <div class="sidebar-menu-container">
@@ -123,10 +113,7 @@
             </div>
         </div>
 
-        <!-- РАБОЧАЯ ОБЛАСТЬ -->
         <div class="main-content">
-            
-            <!-- Шапка рабочей области (название орг + кнопка создать) -->
             <div class="workspace-header">
                 <div class="workspace-title">
                     <h1 id="org-title">Единая Служба Спасения</h1>
@@ -138,13 +125,11 @@
                 </div>
             </div>
 
-            <!-- Табы внутри организации -->
             <div class="tabs">
                 <div class="tab active" onclick="switchTab('docs', this)">📄 Документы организации</div>
-                <div class="tab" onclick="switchTab('citizens', this)">👥 Граждане</div>
+                <div class="tab" onclick="switchTab('citizens', this)">👥 База граждан</div>
             </div>
 
-            <!-- Контент: Документы -->
             <div id="docs-tab">
                 <div class="table-responsive">
                     <table>
@@ -154,7 +139,6 @@
                 </div>
             </div>
 
-            <!-- Контент: Граждане -->
             <div id="citizens-tab" style="display:none;">
                 <div style="margin-bottom: 15px; text-align: right;">
                     <button class="btn-action btn-edit" style="background:#10b981; padding:10px 20px;" onclick="openAddCitizenModal()">+ Добавить гражданина</button>
@@ -173,7 +157,7 @@
     <div id="create-doc-modal" class="modal">
         <div class="modal-content">
             <h3 id="create-doc-title">Выберите документ</h3>
-            <p style="color:#64748b; font-size:14px; margin-top:5px;">Доступные шаблоны для этой организации:</p>
+            <p style="color:#64748b; font-size:14px; margin-top:5px;">Доступные шаблоны:</p>
             <div id="templates-list" style="margin-top: 20px;"></div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeModal('create-doc-modal')">Отмена</button>
@@ -201,17 +185,10 @@
         </div>
     </div>
 
-    <!-- Модалка добавления гражданина -->
+    <!-- Модалка добавления гражданина (УБРАН ВЫБОР ОРГАНИЗАЦИИ) -->
     <div id="add-modal" class="modal">
         <div class="modal-content">
             <h3>Новый гражданин</h3>
-            <label>Организация</label>
-            <select id="add-org-id">
-                <option value="1">ЕСС</option>
-                <option value="2">МВД</option>
-                <option value="3">Правительство</option>
-                <option value="4">ВЧ</option>
-            </select>
             <label>Email (логин)</label><input type="email" id="add-email">
             <label>Пароль</label><input type="text" id="add-password" value="123456">
             <label>Фамилия</label><input type="text" id="add-last-name">
@@ -226,7 +203,6 @@
         </div>
     </div>
 
-    <!-- Предпросмотр -->
     <div id="preview-modal">
         <div class="preview-container">
             <div class="preview-header">
@@ -248,7 +224,6 @@
         let currentOrgId = 1; 
         let currentOrgName = 'Единая Служба Спасения';
 
-        // --- АВТОРИЗАЦИЯ ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const { error } = await supabaseClient.auth.signInWithPassword({
@@ -280,19 +255,15 @@
             }
         });
 
-        // --- ПЕРЕКЛЮЧЕНИЕ ОРГАНИЗАЦИЙ ---
         function switchOrg(orgId, orgName, element) {
             document.querySelectorAll('.org-tab').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
-            
             currentOrgId = orgId;
             currentOrgName = orgName;
             document.getElementById('org-title').textContent = currentOrgName;
-            
             refreshData();
         }
 
-        // --- ПЕРЕКЛЮЧЕНИЕ ТАБОВ (Документы / Граждане) ---
         function switchTab(tab, element) {
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
@@ -306,7 +277,6 @@
             }
         }
 
-        // --- КАТАЛОГ ДОКУМЕНТОВ ---
         async function openCreateDocModal() {
             document.getElementById('create-doc-title').textContent = `Создать документ (${currentOrgName})`;
             document.getElementById('create-doc-modal').style.display = 'flex';
@@ -333,22 +303,15 @@
             templates.forEach(tpl => {
                 const div = document.createElement('div');
                 div.className = 'template-card';
-                div.innerHTML = `
-                    <h4>${tpl.name}</h4>
-                    <p>${tpl.description || 'Документ'}</p>
-                `;
+                div.innerHTML = `<h4>${tpl.name}</h4><p>${tpl.description || 'Документ'}</p>`;
                 div.onclick = () => {
-                    if (tpl.url === '#') {
-                        alert('Этот документ еще в разработке!');
-                    } else {
-                        window.location.href = `${tpl.url}?org=${currentOrgId}`;
-                    }
+                    if (tpl.url === '#') alert('Этот документ еще в разработке!');
+                    else window.location.href = `${tpl.url}?org=${currentOrgId}`;
                 };
                 list.appendChild(div);
             });
         }
 
-        // --- ЗАГРУЗКА ДАННЫХ ---
         function refreshData() {
             loadDocs();
             loadCitizens();
@@ -362,6 +325,7 @@
             document.getElementById('preview-modal').style.display = 'flex';
         }
 
+        // --- ДОКУМЕНТЫ (фильтруются по организации) ---
         async function loadDocs() {
             const tbody = document.getElementById('docs-table-body');
             tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
@@ -405,6 +369,7 @@
             else loadDocs();
         }
 
+        // --- ГРАЖДАНЕ (ГЛОБАЛЬНЫЕ, БЕЗ ФИЛЬТРА ПО ОРГАНИЗАЦИИ) ---
         async function loadCitizens() {
             const tbody = document.getElementById('citizens-table-body');
             tbody.innerHTML = '<tr><td colspan="4">Загрузка...</td></tr>';
@@ -412,13 +377,12 @@
             const { data, error } = await supabaseClient
                 .from('profiles')
                 .select('*')
-                .eq('role', 'patient')
-                .eq('organization_id', currentOrgId)
+                .eq('role', 'patient') // Только граждане
                 .order('last_name');
             
             if (error) return console.error(error);
             tbody.innerHTML = '';
-            if(data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">Нет граждан</td></tr>';
+            if(data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">В базе нет граждан</td></tr>';
 
             data.forEach(p => {
                 tbody.innerHTML += `
@@ -471,14 +435,12 @@
             document.getElementById('add-patronymic').value = '';
             document.getElementById('add-dob').value = '';
             document.getElementById('add-pob').value = '';
-            document.getElementById('add-org-id').value = currentOrgId; 
             document.getElementById('add-modal').style.display = 'flex';
         }
 
         async function addCitizen() {
             const email = document.getElementById('add-email').value;
             const password = document.getElementById('add-password').value;
-            const orgId = document.getElementById('add-org-id').value;
 
             const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
                 auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
@@ -493,8 +455,8 @@
                 patronymic: document.getElementById('add-patronymic').value,
                 dob: document.getElementById('add-dob').value || null,
                 pob: document.getElementById('add-pob').value,
-                role: 'patient',
-                organization_id: orgId
+                role: 'patient'
+                // organization_id больше не передаем, гражданин глобальный
             };
 
             const { error: profileError } = await supabaseClient.from('profiles').update(updates).eq('id', authData.user.id);
