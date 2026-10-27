@@ -50,7 +50,9 @@
         </select>
     </div>
 
-    <h2>Заключение ВВК</h2>
+    <!-- ЭТА НАДПИСЬ ДОКАЖЕТ, ЧТО ОТКРЫЛСЯ НУЖНЫЙ ФАЙЛ -->
+    <h2 style="color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px;">Заключение ВВК</h2>
+    
     <form id="vvkForm">
         <div class="row">
             <div class="form-group">
@@ -344,7 +346,8 @@
         btn.textContent = 'Генерация...';
 
         try {
-            const url = './template.pdf'; // ВВК использует template.pdf
+            // ЖЕСТКО ЗАГРУЖАЕМ ШАБЛОН ВВК
+            const url = './template.pdf'; 
             const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
