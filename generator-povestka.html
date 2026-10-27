@@ -136,8 +136,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ВАШИ КООРДИНАТЫ (СТРОГО КАК ВЫ НАПИСАЛИ, БЕЗ ПЕРЕВОРОТОВ)
-    const COORDS = {
+    // Ваши оригинальные координаты (замеренные по картинке 293)
+    const RAW_COORDS = {
         nameAndPassport: { x: 113, y: 251 }, 
         address: { x: 112, y: 231 },
         date: { 
@@ -155,6 +155,8 @@
         rank: { x: 161, y: 57 }
     };
 
+    let COORDS = {}; // Сюда запишем пересчитанные
+
     const TEMPLATES = {
         commissariat: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"],
         bringWith: ["медицинскую справку, военный билет (при наличии), иные документы по требованию военного комиссариата."],
@@ -168,8 +170,8 @@
 
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
-        const { data: citizens, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
-        if (error) return;
+        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (!citizens) return;
         select.innerHTML = '<option value="none">-- Без гражданина (В архив) --</option>';
         citizens.forEach(p => {
             const opt = document.createElement('option');
@@ -298,20 +300,47 @@
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
             
-            // 🟢 СТАБИЛЬНАЯ ССЫЛКА НА ШРИФТ ЧЕРЕЗ CDN CLOUDFLARE
             const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
-            const fontRes = await fetch(fontUrl);
-            if (!fontRes.ok) throw new Error(`Не удалось загрузить шрифт (${fontRes.status})`);
-            const fontBytes = await fontRes.arrayBuffer();
-            
+            const fontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
             const customFont = await pdfDoc.embedFont(fontBytes);
+            
             const firstPage = pdfDoc.getPages()[0];
+            // Получаем реальную высоту листа (скорее всего 841 или 842)
+            const { width, height } = firstPage.getSize();
+
+            // === ВАША ФОРМУЛА ===
+            // 1. Считаем отступ от верха обрезанной картинки: 293 - y = z
+            // 2. Вычитаем этот отступ из полной высоты листа А4: height - z = итоговая Y
+            function convertY(y) {
+                const CROP_HEIGHT = 293;
+                const z = CROP_HEIGHT - y;
+                return height - z;
+            }
+
+            // Пересчитываем все координаты по вашей формуле
+            COORDS = {
+                nameAndPassport: { x: RAW_COORDS.nameAndPassport.x, y: convertY(RAW_COORDS.nameAndPassport.y) },
+                address: { x: RAW_COORDS.address.x, y: convertY(RAW_COORDS.address.y) },
+                date: { 
+                    day: { xStart: RAW_COORDS.date.day.xStart, xEnd: RAW_COORDS.date.day.xEnd, y: convertY(RAW_COORDS.date.day.y) }, 
+                    month: { xStart: RAW_COORDS.date.month.xStart, xEnd: RAW_COORDS.date.month.xEnd, y: convertY(RAW_COORDS.date.month.y) }, 
+                    year: { xStart: RAW_COORDS.date.year.xStart, xEnd: RAW_COORDS.date.year.xEnd, y: convertY(RAW_COORDS.date.year.y) } 
+                },
+                docNumber: { xStart: RAW_COORDS.docNumber.xStart, xEnd: RAW_COORDS.docNumber.xEnd, y: convertY(RAW_COORDS.docNumber.y) },
+                appearDay: { xStart: RAW_COORDS.appearDay.xStart, xEnd: RAW_COORDS.appearDay.xEnd, y: convertY(RAW_COORDS.appearDay.y) },
+                appearTime: { xStart: RAW_COORDS.appearTime.xStart, xEnd: RAW_COORDS.appearTime.xEnd, y: convertY(RAW_COORDS.appearTime.y) },
+                commissariat: { x: RAW_COORDS.commissariat.x, y: convertY(RAW_COORDS.commissariat.y) },
+                bringWith: { x: RAW_COORDS.bringWith.x, y: convertY(RAW_COORDS.bringWith.y), maxWidth: RAW_COORDS.bringWith.maxWidth, lineHeight: RAW_COORDS.bringWith.lineHeight, indent: RAW_COORDS.bringWith.indent },
+                district: { xStart: RAW_COORDS.district.xStart, xEnd: RAW_COORDS.district.xEnd, y: convertY(RAW_COORDS.district.y) },
+                region: { xStart: RAW_COORDS.region.xStart, xEnd: RAW_COORDS.region.xEnd, y: convertY(RAW_COORDS.region.y) },
+                rank: { x: RAW_COORDS.rank.x, y: convertY(RAW_COORDS.rank.y) }
+            };
 
             const getVal = (id) => document.getElementById(id).value;
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            // Отрисовка данных (координаты строго ваши)
+            // --- РИСОВАНИЕ ---
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
             firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
@@ -343,20 +372,17 @@
             const docNumber = getVal('docNumber');
             const fileName = `${Date.now()}_POVESTKA_${docNumber}.pdf`;
 
-            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
-            if (uploadError) throw new Error("Ошибка загрузки: " + uploadError.message);
-
-            const { error: dbError } = await supabaseClient.from('documents').insert({
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            await supabaseClient.from('documents').insert({
                 patient_id: actualCitizenId,
                 organization_id: currentOrgId,
                 doc_number: docNumber,
                 document_type: 'Повестка',
-                file_path: uploadData.path
+                file_path: fileName
             });
-            if (dbError) throw new Error("Ошибка БД: " + dbError.message);
 
             const fileUrl = URL.createObjectURL(currentPdfBlob);
-            document.getElementById('pdf-preview-frame').src = fileUrl;
+            document.getElementById('pdf-preview-frame').src = fileUrl + '#' + Date.now(); 
             document.getElementById('preview-modal').style.display = 'flex';
 
         } catch (error) {
