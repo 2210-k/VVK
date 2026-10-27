@@ -49,7 +49,7 @@
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
     <div class="patient-selector">
-        <label>👤 Выберите гражданина</label>
+        <label>👤 Выберите гражданина (данные подставятся)</label>
         <select id="patientSelect" class="form-select">
             <option value="none">-- Без гражданина (В архив) --</option>
         </select>
@@ -174,27 +174,20 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ⚠️ ВАЖНО: Я перевернул координаты Y (вычел ваши значения из 842)
+    // ВАШИ ИДЕАЛЬНЫЕ КООРДИНАТЫ
     const COORDS = {
-        // Данные гражданина
-        nameAndPassport: { x: 113, y: 251 }, // Место для ИО, № паспорта, даты рождения
+        nameAndPassport: { x: 113, y: 251 },
         address: { x: 112, y: 231 },
-        
-        // Данные повестки (центрируем)
         date: { 
             day: { xStart: 34, xEnd: 52, y: 184 }, 
             month: { xStart: 55, xEnd: 72, y: 184 }, 
             year: { xStart: 88, xEnd: 105, y: 184 } 
         },
         docNumber: { xStart: 538, xEnd: 558, y: 184 },
-        
         appearDay: { xStart: 191, xEnd: 210, y: 158 },
         appearTime: { xStart: 245, xEnd: 281, y: 158 },
-        
         commissariat: { x: 194, y: 143 },
-        
         bringWith: { x: 33, y: 118, maxWidth: 523, lineHeight: 13, indent: 343 },
-        
         district: { xStart: 253, xEnd: 337, y: 78 }, 
         region: { xStart: 337, xEnd: 445, y: 78 },
         rank: { x: 161, y: 57 }
@@ -208,7 +201,8 @@
         rank: ["генерал-майор воинской части №205"]
     };
 
-    const MONTHS_GENITIVE = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    // Месяцы в цифровом формате (01, 02, ...)
+    const MONTHS_NUMERIC = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
     let currentPdfBlob = null;
 
     async function loadCitizens() {
@@ -240,7 +234,7 @@
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (!selectedOption.value || selectedOption.value === 'none') {
             ['firstName', 'patronymic', 'passNumber', 'address', 'dobDay', 'dobYear'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('dobMonth').value = MONTHS_GENITIVE[0];
+            document.getElementById('dobMonth').value = MONTHS_NUMERIC[0];
             return;
         }
 
@@ -252,13 +246,13 @@
         if (citizen.dob) {
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
-            document.getElementById('dobMonth').value = MONTHS_GENITIVE[parseInt(month) - 1];
+            document.getElementById('dobMonth').value = MONTHS_NUMERIC[parseInt(month) - 1];
             document.getElementById('dobYear').value = year;
         }
         document.getElementById('address').value = citizen.address || '';
     });
 
-    // ИСПРАВЛЕНА ОШИБКА С ID ПОЛЯ ДЛЯ АДРЕСА КОМИССАРИАТА
+    // ИСПРАВЛЕНА РАБОТА ШАБЛОНОВ
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
@@ -266,7 +260,7 @@
             let inputId = fieldId;
             if (fieldId === 'district') inputId = 'districtName';
             if (fieldId === 'region') inputId = 'regionName';
-            if (fieldId === 'commissariat') inputId = 'commissariatAddress'; // <-- ВОТ ТУТ БЫЛА ОШИБКА
+            if (fieldId === 'commissariat') inputId = 'commissariatAddress';
             
             const input = document.getElementById(inputId);
             
@@ -285,7 +279,7 @@
     function initMonths() {
         const dateMonthSelect = document.getElementById('dateMonth');
         const dobMonthSelect = document.getElementById('dobMonth');
-        MONTHS_GENITIVE.forEach((month) => {
+        MONTHS_NUMERIC.forEach((month) => {
             dateMonthSelect.add(new Option(month, month));
             dobMonthSelect.add(new Option(month, month));
         });
@@ -294,7 +288,7 @@
     function initAutoDate() {
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
-        document.getElementById('dateMonth').value = MONTHS_GENITIVE[today.getMonth()];
+        document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
         document.getElementById('dateYear').value = today.getFullYear();
         document.getElementById('docNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
     }
@@ -419,7 +413,7 @@
 
         } catch (error) {
             console.error(error);
-            alert("Ошибка: " + error.message + "\nНе забудьте загрузить povestka.pdf на GitHub!");
+            alert("Ошибка: " + error.message + "\nУбедитесь, что povestka.pdf загружен на GitHub!");
         } finally {
             btn.disabled = false;
             btn.textContent = 'Сгенерировать и сохранить PDF';
