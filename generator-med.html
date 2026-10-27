@@ -138,12 +138,12 @@
             </div>
             <div class="form-group">
                 <label>Анализ крови</label>
-                <select id="template-bloodtest" class="form-select"><option value="">-- Шаблон --</option></select>
+                <select id="template-bloodTest" class="form-select"><option value="">-- Шаблон --</option></select>
                 <input type="text" id="bloodTest" required>
             </div>
             <div class="form-group">
                 <label>Анализ мочи</label>
-                <select id="template-urinetest" class="form-select"><option value="">-- Шаблон --</option></select>
+                <select id="template-urineTest" class="form-select"><option value="">-- Шаблон --</option></select>
                 <input type="text" id="urineTest" required>
             </div>
         </div>
@@ -186,6 +186,7 @@
 
         <div class="form-group">
             <label>Особые отметки</label>
+            <select id="template-specialNotes" class="form-select"><option value="">-- Шаблон --</option></select>
             <textarea id="specialNotes" placeholder="Ограничения, режим ношения и т.п."></textarea>
         </div>
 
@@ -205,6 +206,7 @@
 
         <div class="form-group">
             <label>Служебные отметки</label>
+            <select id="template-serviceNotes" class="form-select"><option value="">-- Шаблон --</option></select>
             <textarea id="serviceNotes" placeholder="Служебная информация"></textarea>
         </div>
 
@@ -234,17 +236,15 @@
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
     // =====================================================================
-    // ⚠️ ТВОИ КООРДИНАТЫ (ВСТАВЛЕНЫ ПОЛНОСТЬЮ) ⚠️
+    // ⚠️ ТВОИ КООРДИНАТЫ ⚠️
     // =====================================================================
     const COORDS = {
-        // --- СТРАНИЦА 1 ---
         date: { 
             day: { xStart: 35, xEnd: 50, y: 684 },   
             month: { xStart: 63, xEnd: 149, y: 684 }, 
             year: { xStart: 184, xEnd: 198, y: 684 }  
         },
         docNumber: { xStart: 496, xEnd: 546, y: 684 },
-        
         firstName: { x: 75, y: 652 },
         patronymic: { x: 353, y: 652 },
         dob: { 
@@ -256,12 +256,10 @@
         address: { x: 148, y: 626 },
         passSeries: { xStart: 128, xEnd: 155, y: 612 },
         passNumber: { xStart: 171, xEnd: 226, y: 612 },
-
         bloodType: { x: 120, y: 600 },
         rhFactor: { x: 368, y: 600 },
         allergies: { x: 99, y: 585 },
         chronicDiseases: { x: 177, y: 572 },
-
         doctors: {
             terapevt: { status: { xStart: 184, xEnd: 354, y: 503 }, date: { xStart: 354, xEnd: 418, y: 503 } },
             hirurg: { status: { xStart: 184, xEnd: 354, y: 473 }, date: { xStart: 354, xEnd: 418, y: 473 } },
@@ -270,7 +268,6 @@
             lor: { status: { xStart: 184, xEnd: 354, y: 383 }, date: { xStart: 354, xEnd: 418, y: 383 } },
             psihiatr: { status: { xStart: 184, xEnd: 354, y: 353 }, date: { xStart: 354, xEnd: 418, y: 353 } }
         },
-
         ecg: { 
             normal: { xStart: 201, xEnd: 230, y: 313 },
             abnormal: { xStart: 240, xEnd: 293, y: 313 }
@@ -282,19 +279,14 @@
         },
         bloodTest: { x: 173, y: 296 },
         urineTest: { x: 128, y: 282 },
-
-        // ⚠️ НОВЫЕ КООРДИНАТЫ ДЛЯ ДНЯ ОКОНЧАНИЯ (000-999) ⚠️
         expirationDayCount: { xStart: 291, xEnd: 332, y: 274 },
-
         conclusionName: { x: 379, y: 248 },
-
         permissions: {
             drive: { x: 59, y: 221 },
             license: { x: 59, y: 208 },
             military: { x: 59, y: 195 },
             state: { x: 59, y: 182 },
             work: { x: 59, y: 169 },
-            
             subPermissions: {
                 driveA: { x: 319, y: 221 },   
                 driveA1: { x: 340, y: 221 },  
@@ -303,18 +295,13 @@
                 driveB1: { x: 411, y: 221 },  
                 driveC: { x: 438, y: 221 },   
                 driveD: { x: 458, y: 221 },   
-
                 licenseTaxi: { x: 174, y: 208 },   
                 licenseWeapon: { x: 229, y: 208 }, 
-
                 stateEss: { x: 250, y: 182 }, 
                 stateMvd: { x: 282, y: 182 }  
             }
         },
-
         specialNotes: { x: 53, y: 154, maxWidth: 558, lineHeight: 13, indent: 274 },
-
-        // --- СТРАНИЦА 2 ---
         page2: {
             date: { 
                 day: { xStart: 298, xEnd: 313, y: 810 }, 
@@ -333,13 +320,16 @@
         }
     };
 
+    // ⚠️ ШАБЛОНЫ (Добавлены для отметок) ⚠️
     const TEMPLATES = {
         blood: ["Н/У"],
         rh: ["Н/У"],
         allergy: ["не выявлено"],
         chronic: ["отсутствуют"],
         bloodTest: ["без патологий"],
-        urineTest: ["без патологий"]
+        urineTest: ["без патологий"],
+        specialNotes: ["Отсутствуют"],
+        serviceNotes: ["Отсутствуют"]
     };
 
     const DOCTORS_LIST = [
@@ -368,26 +358,39 @@
         });
     }
 
+    // ⚠️ ИСПРАВЛЕННАЯ ЛОГИКА ШАБЛОНОВ ⚠️
     function initTemplates() {
+        const map = {
+            blood: 'bloodType', rh: 'rhFactor', allergy: 'allergies', 
+            chronic: 'chronicDiseases', bloodTest: 'bloodTest', urineTest: 'urineTest',
+            specialNotes: 'specialNotes', serviceNotes: 'serviceNotes'
+        };
+
         for (const [key, values] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${key}`);
-            const input = document.getElementById(key === 'blood' ? 'bloodType' : key === 'rh' ? 'rhFactor' : key === 'allergy' ? 'allergies' : key === 'chronic' ? 'chronicDiseases' : key === 'bloodTest' ? 'bloodTest' : 'urineTest');
+            const input = document.getElementById(map[key]);
             
-            values.forEach((val, i) => {
+            if (!select || !input) continue; // Защита от ошибок
+
+            values.forEach((val) => {
                 const opt = document.createElement('option');
                 opt.value = val;
                 opt.textContent = val;
                 select.appendChild(opt);
             });
-            select.addEventListener('change', (e) => { if (e.target.value && input) input.value = e.target.value; });
+            
+            select.addEventListener('change', (e) => { 
+                if (e.target.value && input) input.value = e.target.value; 
+            });
         }
     }
 
+    // ⚠️ ЗАГРУЗКА ГРАЖДАН ⚠️
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
         const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
         if (!citizens) return;
-        select.innerHTML = '<option value="none">-- Без гражданина --</option>';
+        select.innerHTML = '<option value="none">-- Без гражданина (В архив) --</option>';
         citizens.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id;
@@ -399,7 +402,12 @@
 
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const opt = e.target.options[e.target.selectedIndex];
-        if (!opt.value || opt.value === 'none') return;
+        if (!opt.value || opt.value === 'none') {
+            // Очистка полей
+            ['firstName', 'patronymic', 'pob', 'address', 'passSeries', 'passNumber', 'dobDay', 'dobYear'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('dobMonth').value = MONTHS_NUMERIC[0];
+            return;
+        }
         
         const c = JSON.parse(opt.dataset.citizen);
         document.getElementById('firstName').value = c.first_name || '';
@@ -417,21 +425,29 @@
         }
     });
 
+    // ⚠️ АВТОПОДСТАНОВКА РЕАЛЬНОЙ ДАТЫ ⚠️
     function initDates() {
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
-        document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
         document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
         
         document.getElementById('docNumber').value = `0405${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
         document.getElementById('regNumber').value = `ЕСС-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
         
+        const dateMonthSelect = document.getElementById('dateMonth');
+        const dobMonthSelect = document.getElementById('dobMonth');
+        
+        dateMonthSelect.innerHTML = '';
+        dobMonthSelect.innerHTML = '';
+        
         MONTHS_NUMERIC.forEach((m, i) => {
-            document.getElementById('dateMonth').add(new Option(m, m));
-            document.getElementById('dobMonth').add(new Option(m, m));
+            dateMonthSelect.add(new Option(m, m));
+            dobMonthSelect.add(new Option(m, m));
         });
-        document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
-        document.getElementById('dobMonth').value = MONTHS_NUMERIC[0];
+        
+        // Выставляем текущий месяц по умолчанию
+        dateMonthSelect.value = MONTHS_NUMERIC[today.getMonth()];
+        dobMonthSelect.value = MONTHS_NUMERIC[0];
     }
 
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
@@ -483,6 +499,9 @@
     document.getElementById('medForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
+        const citizenVal = document.getElementById('patientSelect').value;
+        const actualCitizenId = (citizenVal === 'none') ? null : citizenVal; // Привязка
+
         btn.disabled = true;
         btn.textContent = 'Генерация...';
 
@@ -508,7 +527,6 @@
             const dateYear = getVal('dateYear');
             const dateMonthGenitive = MONTHS_GENITIVE[parseInt(dateMonth) - 1];
 
-            // Считаем дату окончания (+50 дней)
             const issueDate = new Date(2000 + parseInt(dateYear), parseInt(dateMonth) - 1, parseInt(dateDay));
             issueDate.setDate(issueDate.getDate() + 50);
             const expDay = String(issueDate.getDate()).padStart(2, '0');
@@ -544,7 +562,6 @@
                 const status = document.querySelector(`input[name="doc-${doc.id}"]:checked`).value;
                 const coord = COORDS.doctors[doc.id];
                 drawCenteredInRange(firstPage, status, coord.status.xStart, coord.status.xEnd, coord.status.y, textOptions);
-                // ТУТ ДАТА ЦИФРАМИ (ДД.ММ.ГГ)
                 drawCenteredInRange(firstPage, `${dateDay}.${dateMonth}.${dateYear}`, coord.date.xStart, coord.date.xEnd, coord.date.y, textOptions);
             });
 
@@ -555,7 +572,6 @@
                 firstPage.drawLine({ start: {x: COORDS.ecg.abnormal.xStart, y: COORDS.ecg.abnormal.y}, end: {x: COORDS.ecg.abnormal.xEnd, y: COORDS.ecg.abnormal.y}, thickness: 1, color: PDFLib.rgb(0,0,0) });
             }
 
-            // ФЛЮОРОГРАФИЯ (МЕСЯЦ СЛОВОМ)
             drawCenteredInRange(firstPage, dateDay, COORDS.fluorography.day.xStart, COORDS.fluorography.day.xEnd, COORDS.fluorography.day.y, textOptions);
             drawCenteredInRange(firstPage, dateMonthGenitive, COORDS.fluorography.month.xStart, COORDS.fluorography.month.xEnd, COORDS.fluorography.month.y, textOptions);
             drawCenteredInRange(firstPage, dateYear, COORDS.fluorography.year.xStart, COORDS.fluorography.year.xEnd, COORDS.fluorography.year.y, textOptions);
@@ -563,8 +579,6 @@
             firstPage.drawText(getVal('bloodTest'), { x: COORDS.bloodTest.x, y: COORDS.bloodTest.y, ...textOptions });
             firstPage.drawText(getVal('urineTest'), { x: COORDS.urineTest.x, y: COORDS.urineTest.y, ...textOptions });
 
-            // ДЕНЬ ОКОНЧАНИЯ (000-999)
-            // Вставляем количество дней (50) или день месяца. Если там написано "день", скорее всего это число.
             drawCenteredInRange(firstPage, "50", COORDS.expirationDayCount.xStart, COORDS.expirationDayCount.xEnd, COORDS.expirationDayCount.y, textOptions); 
 
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')} (${getVal('passSeries')} ${getVal('passNumber')})`;
@@ -596,10 +610,7 @@
             if (document.getElementById('perm-state-mvd').checked) drawCross(firstPage, COORDS.permissions.subPermissions.stateMvd.x, COORDS.permissions.subPermissions.stateMvd.y);
 
             drawParagraph(firstPage, getVal('specialNotes'), COORDS.specialNotes.x, COORDS.specialNotes.y, { 
-                ...textOptions, 
-                maxWidth: COORDS.specialNotes.maxWidth, 
-                lineHeight: COORDS.specialNotes.lineHeight,
-                indent: COORDS.specialNotes.indent
+                ...textOptions, maxWidth: COORDS.specialNotes.maxWidth, lineHeight: COORDS.specialNotes.lineHeight, indent: COORDS.specialNotes.indent
             });
 
             // --- СТРАНИЦА 2 ---
@@ -617,10 +628,7 @@
                 drawCenteredInRange(page2, getVal('regNumber'), COORDS.page2.regNumber.xStart, COORDS.page2.regNumber.xEnd, COORDS.page2.regNumber.y, textOptions);
                 
                 drawParagraph(page2, getVal('serviceNotes'), COORDS.page2.serviceNotes.x, COORDS.page2.serviceNotes.y, { 
-                    ...textOptions, 
-                    maxWidth: COORDS.page2.serviceNotes.maxWidth, 
-                    lineHeight: COORDS.page2.serviceNotes.lineHeight,
-                    indent: COORDS.page2.serviceNotes.indent
+                    ...textOptions, maxWidth: COORDS.page2.serviceNotes.maxWidth, lineHeight: COORDS.page2.serviceNotes.lineHeight, indent: COORDS.page2.serviceNotes.indent
                 });
             }
 
@@ -629,9 +637,10 @@
             
             const fileName = `${Date.now()}_MED_${getVal('docNumber')}.pdf`;
 
+            // СОХРАНЯЕМ С ПРИВЯЗКОЙ К ГРАЖДАНИНУ
             await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
             await supabaseClient.from('documents').insert({
-                patient_id: null,
+                patient_id: actualCitizenId,
                 organization_id: currentOrgId,
                 doc_number: getVal('docNumber'),
                 document_type: 'Медицинская справка',
