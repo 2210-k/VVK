@@ -136,7 +136,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ВАШИ ТОЧНЫЕ КООРДИНАТЫ (без переворотов, как вы и замерили)
+    // ВАШИ КООРДИНАТЫ. ТОЧКА.
     const COORDS = {
         nameAndPassport: { x: 113, y: 251 }, 
         address: { x: 112, y: 231 },
@@ -298,24 +298,23 @@
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
             
-            // ИСПОЛЬЗУЕМ СТАБИЛЬНУЮ ССЫЛКУ НА ШРИФТ
+            // Стабильный шрифт
             const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Regular.ttf';
             const fontRes = await fetch(fontUrl);
-            if (!fontRes.ok) throw new Error("Не удалось загрузить шрифт. Проверьте интернет.");
             const fontBytes = await fontRes.arrayBuffer();
-            
             const customFont = await pdfDoc.embedFont(fontBytes);
+            
             const firstPage = pdfDoc.getPages()[0];
-            const { width, height } = firstPage.getSize();
 
             const getVal = (id) => document.getElementById(id).value;
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            // --- ОТЛАДКА: РИСУЕМ РАМКУ (Чтобы точно увидеть, что PDF работает) ---
-            firstPage.drawRectangle({ x: 0, y: 0, width: width, height: height, borderColor: PDFLib.rgb(1, 0, 0), borderWidth: 2 });
+            // --- ОТЛАДКА: РИСУЕМ РАМКУ (ПОКАЖЕТ, ЧТО PDF РАБОТАЕТ) ---
+            const { width, height } = firstPage.getSize();
+            firstPage.drawRectangle({ x: 0, y: 0, width: width, height: height, borderColor: PDFLib.rgb(1, 0, 0), borderWidth: 3 });
             
-            // --- РИСОВАНИЕ ТЕКСТА ---
+            // --- РИСОВАНИЕ ТЕКСТА (КООРДИНАТЫ СТРОГО КАК ВЫ НАПИСАЛИ) ---
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
             firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
