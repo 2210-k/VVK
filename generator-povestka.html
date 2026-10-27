@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор Повестки (Отладка)</title>
+    <title>Генератор Повестки</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
@@ -118,7 +118,7 @@
 <div id="preview-modal">
     <div class="preview-container">
         <div class="preview-header">
-            <h3>Предпросмотр</h3>
+            <h3>Предпросмотр повестки</h3>
             <div>
                 <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
                 <button class="btn-preview btn-close" id="close-preview-btn">Закрыть</button>
@@ -136,8 +136,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ВАШИ КООРДИНАТЫ (как вы замерили)
-    const RAW_COORDS = {
+    // ВАШИ ТОЧНЫЕ КООРДИНАТЫ (без переворотов, как вы и замерили)
+    const COORDS = {
         nameAndPassport: { x: 113, y: 251 }, 
         address: { x: 112, y: 231 },
         date: { 
@@ -154,9 +154,6 @@
         region: { xStart: 337, xEnd: 445, y: 78 },
         rank: { x: 161, y: 57 }
     };
-
-    // Сюда запишем перевернутые координаты
-    let COORDS = {}; 
 
     const TEMPLATES = {
         commissariat: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"],
@@ -243,7 +240,7 @@
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
         const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
-        page.drawText(text, { ...options, x: startX, y: y });
+        page.drawText(text, { ...options, x: startX, y });
     }
 
     function drawParagraph(page, text, x, y, options) {
@@ -301,42 +298,24 @@
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
             
-            // ИСПОЛЬЗУЕМ СТАБИЛЬНЫЙ ШРИФТ ОТ GOOGLE
-            const fontBytes = await fetch('https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf').then(res => res.arrayBuffer());
-            const customFont = await pdfDoc.embedFont(fontBytes);
+            // ИСПОЛЬЗУЕМ СТАБИЛЬНУЮ ССЫЛКУ НА ШРИФТ
+            const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Regular.ttf';
+            const fontRes = await fetch(fontUrl);
+            if (!fontRes.ok) throw new Error("Не удалось загрузить шрифт. Проверьте интернет.");
+            const fontBytes = await fontRes.arrayBuffer();
             
+            const customFont = await pdfDoc.embedFont(fontBytes);
             const firstPage = pdfDoc.getPages()[0];
-            // УЗНАЕМ РЕАЛЬНЫЙ РАЗМЕР СТРАНИЦЫ
             const { width, height } = firstPage.getSize();
-
-            // ПЕРЕВОРАЧИВАЕМ КООРДИНАТЫ (вычитаем из реальной высоты)
-            COORDS = {
-                nameAndPassport: { x: RAW_COORDS.nameAndPassport.x, y: height - RAW_COORDS.nameAndPassport.y },
-                address: { x: RAW_COORDS.address.x, y: height - RAW_COORDS.address.y },
-                date: { 
-                    day: { xStart: RAW_COORDS.date.day.xStart, xEnd: RAW_COORDS.date.day.xEnd, y: height - RAW_COORDS.date.day.y }, 
-                    month: { xStart: RAW_COORDS.date.month.xStart, xEnd: RAW_COORDS.date.month.xEnd, y: height - RAW_COORDS.date.month.y }, 
-                    year: { xStart: RAW_COORDS.date.year.xStart, xEnd: RAW_COORDS.date.year.xEnd, y: height - RAW_COORDS.date.year.y } 
-                },
-                docNumber: { xStart: RAW_COORDS.docNumber.xStart, xEnd: RAW_COORDS.docNumber.xEnd, y: height - RAW_COORDS.docNumber.y },
-                appearDay: { xStart: RAW_COORDS.appearDay.xStart, xEnd: RAW_COORDS.appearDay.xEnd, y: height - RAW_COORDS.appearDay.y },
-                appearTime: { xStart: RAW_COORDS.appearTime.xStart, xEnd: RAW_COORDS.appearTime.xEnd, y: height - RAW_COORDS.appearTime.y },
-                commissariat: { x: RAW_COORDS.commissariat.x, y: height - RAW_COORDS.commissariat.y },
-                bringWith: { x: RAW_COORDS.bringWith.x, y: height - RAW_COORDS.bringWith.y, maxWidth: RAW_COORDS.bringWith.maxWidth, lineHeight: RAW_COORDS.bringWith.lineHeight, indent: RAW_COORDS.bringWith.indent },
-                district: { xStart: RAW_COORDS.district.xStart, xEnd: RAW_COORDS.district.xEnd, y: height - RAW_COORDS.district.y },
-                region: { xStart: RAW_COORDS.region.xStart, xEnd: RAW_COORDS.region.xEnd, y: height - RAW_COORDS.region.y },
-                rank: { x: RAW_COORDS.rank.x, y: height - RAW_COORDS.rank.y }
-            };
 
             const getVal = (id) => document.getElementById(id).value;
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
 
-            // --- ОТЛАДКА: Рисуем красную рамку по краям листа ---
+            // --- ОТЛАДКА: РИСУЕМ РАМКУ (Чтобы точно увидеть, что PDF работает) ---
             firstPage.drawRectangle({ x: 0, y: 0, width: width, height: height, borderColor: PDFLib.rgb(1, 0, 0), borderWidth: 2 });
-            firstPage.drawText(`Размер: ${width}x${height}`, { x: 10, y: height - 20, size: 12, font: customFont, color: PDFLib.rgb(1, 0, 0) });
             
-            // --- РИСОВАНИЕ ДАННЫХ (БЕЗ УСЛОВИЙ, ВСЕГДА) ---
+            // --- РИСОВАНИЕ ТЕКСТА ---
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
             firstPage.drawText(nameStr, { x: COORDS.nameAndPassport.x, y: COORDS.nameAndPassport.y, ...textOptions });
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...textOptions });
