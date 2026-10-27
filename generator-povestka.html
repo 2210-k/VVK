@@ -131,12 +131,12 @@
 
         <div class="row">
             <div class="form-group">
-                <label>Район (Соль-Илецкого)</label>
+                <label>Район</label>
                 <select id="template-district" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
                 <input type="text" id="districtName" class="center-input" required>
             </div>
             <div class="form-group">
-                <label>Область (Оренбургской)</label>
+                <label>Область</label>
                 <select id="template-region" class="form-select"><option value="">-- Выбрать шаблон --</option></select>
                 <input type="text" id="regionName" class="center-input" required>
             </div>
@@ -174,7 +174,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
-    // ВАШИ КООРДИНАТЫ
     const COORDS = {
         nameAndPassport: { x: 113, y: 251 }, 
         address: { x: 112, y: 231 },
@@ -191,13 +190,11 @@
         
         commissariat: { x: 194, y: 143 },
         
-        // ИСПРАВЛЕНА ШИРИНА maxWidth (243 вместо 556)
-        bringWith: { x: 33, y: 117, maxWidth: 523, lineHeight: 15, indent: 341 },
+        bringWith: { x: 337, y: 117, maxWidth: 243, lineHeight: 15, indent: 0 },
         
-        // Район и Область РАЗДЕЛЕНЫ
-        district: { xStart: 253, xEnd: 338, y: 77 }, 
-        region: { xStart: 375, xEnd: 444, y: 77 },
-        rank: { x: 161, y: 56 } 
+        district: { xStart: 320, xEnd: 400, y: 75 }, 
+        region: { xStart: 440, xEnd: 520, y: 75 },
+        rank: { x: 250, y: 50 } 
     };
 
     const TEMPLATES = {
@@ -211,6 +208,7 @@
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
     let currentPdfBlob = null;
 
+    // ИСПРАВЛЕНА ЗАГРУЗКА ГРАЖДАН (удален фильтр по организации)
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
         const { data: citizens, error } = await supabaseClient
@@ -219,7 +217,13 @@
             .eq('role', 'patient')
             .order('last_name');
 
-        if (error) { console.error(error); return; }
+        if (error) { 
+            console.error(error); 
+            alert("Ошибка загрузки граждан: " + error.message);
+            return; 
+        }
+        
+        select.innerHTML = '<option value="none">-- Без гражданина (В архив) --</option>';
         
         citizens.forEach(p => {
             const opt = document.createElement('option');
@@ -255,7 +259,6 @@
     function initTemplates() {
         for (const [fieldId, options] of Object.entries(TEMPLATES)) {
             const select = document.getElementById(`template-${fieldId}`);
-            // Для полей район/область ID в HTML немного другие
             const input = document.getElementById(fieldId === 'district' ? 'districtName' : fieldId === 'region' ? 'regionName' : fieldId);
             
             options.forEach((text, index) => {
@@ -378,7 +381,6 @@
                 lineHeight: COORDS.bringWith.lineHeight 
             });
 
-            // Отрисовка района и области отдельно
             drawCenteredInRange(firstPage, getVal('districtName'), COORDS.district.xStart, COORDS.district.xEnd, COORDS.district.y, textOptions);
             drawCenteredInRange(firstPage, getVal('regionName'), COORDS.region.xStart, COORDS.region.xEnd, COORDS.region.y, textOptions);
 
