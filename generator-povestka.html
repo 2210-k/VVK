@@ -49,7 +49,7 @@
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
     <div class="patient-selector">
-        <label>👤 Выберите гражданина</label>
+        <label>👤 Выберите гражданина (глобальная база)</label>
         <select id="patientSelect" class="form-select">
             <option value="none">-- Без гражданина (В архив) --</option>
         </select>
@@ -174,6 +174,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
+    // ВАШИ КООРДИНАТЫ
     const COORDS = {
         nameAndPassport: { x: 113, y: 251 }, 
         address: { x: 112, y: 231 },
@@ -197,18 +198,19 @@
         rank: { x: 250, y: 50 } 
     };
 
+    // ИСПРАВЛЕННЫЕ ШАБЛОНЫ (теперь они знают свои ID в HTML)
     const TEMPLATES = {
-        commissariat: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"],
-        bringWith: ["медицинскую справку, военный билет (при наличии), иные документы по требованию военного комиссариата."],
-        district: ["Соль-Илецкого"],
-        region: ["Оренбургской"],
-        rank: ["генерал-майор воинской части №205"]
+        commissariat: { targetId: 'commissariatAddress', options: ["г. Соль-Илецк, ул. Васильковая, д. 40/8"] },
+        bringWith: { targetId: 'bringWith', options: ["медицинскую справку, военный билет (при наличии), иные документы по требованию военного комиссариата."] },
+        district: { targetId: 'districtName', options: ["Соль-Илецкого"] },
+        region: { targetId: 'regionName', options: ["Оренбургской"] },
+        rank: { targetId: 'rank', options: ["генерал-майор воинской части №205"] }
     };
 
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
     let currentPdfBlob = null;
 
-    // ИСПРАВЛЕНА ЗАГРУЗКА ГРАЖДАН (удален фильтр по организации)
+    // Загрузка глобальной базы граждан
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
         const { data: citizens, error } = await supabaseClient
@@ -234,6 +236,7 @@
         });
     }
 
+    // Автозаполнение при выборе гражданина
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (!selectedOption.value || selectedOption.value === 'none') {
@@ -256,12 +259,15 @@
         document.getElementById('address').value = citizen.address || '';
     });
 
+    // ИСПРАВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ ШАБЛОНОВ
     function initTemplates() {
-        for (const [fieldId, options] of Object.entries(TEMPLATES)) {
-            const select = document.getElementById(`template-${fieldId}`);
-            const input = document.getElementById(fieldId === 'district' ? 'districtName' : fieldId === 'region' ? 'regionName' : fieldId);
+        for (const [key, data] of Object.entries(TEMPLATES)) {
+            const select = document.getElementById(`template-${key}`);
+            const input = document.getElementById(data.targetId);
             
-            options.forEach((text, index) => {
+            if (!select || !input) continue; 
+
+            data.options.forEach((text, index) => {
                 const opt = document.createElement('option');
                 opt.value = text;
                 opt.textContent = `Вариант ${index + 1}`;
@@ -348,7 +354,11 @@
 
         try {
             const url = './povestka.pdf'; 
-            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+            const existingPdfBytes = await fetch(url).then(res => {
+                if (!res.ok) throw new Error("Файл povestka.pdf не найден на GitHub!");
+                return res.arrayBuffer();
+            });
+            
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
             const fontBytes = await fetch('https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf').then(res => res.arrayBuffer());
@@ -410,7 +420,7 @@
 
         } catch (error) {
             console.error(error);
-            alert("Ошибка: " + error.message + "\nНе забудьте загрузить povestka.pdf на GitHub!");
+            alert("Ошибка: " + error.message);
         } finally {
             btn.disabled = false;
             btn.textContent = 'Сгенерировать и сохранить PDF';
