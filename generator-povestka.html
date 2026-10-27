@@ -21,8 +21,8 @@
         .date-group { display: flex; gap: 5px; }
         .date-group input, .date-group select, .center-input { text-align: center; }
         .date-group .day { width: 30%; }
-        .date-group .month { width: 70%; }
-        .date-group .year { width: 40%; }
+        .date-group .month { width: 40%; }
+        .date-group .year { width: 30%; }
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
 
@@ -61,7 +61,7 @@
                 <div class="date-group">
                     <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2">
                     <select id="dobMonth" class="month"></select>
-                    <input type="text" id="dobYear" class="year" placeholder="ГГГГ" maxlength="4">
+                    <input type="text" id="dobYear" class="year" placeholder="ГГ" maxlength="2">
                 </div>
             </div>
         </div>
@@ -75,7 +75,8 @@
                 <div class="date-group">
                     <input type="text" id="dateDay" class="day" maxlength="2" required>
                     <select id="dateMonth" class="month" required></select>
-                    <input type="text" id="dateYear" class="year" maxlength="4" required>
+                    <!-- ТУТ ИЗМЕНЕНО НА ГГ -->
+                    <input type="text" id="dateYear" class="year" maxlength="2" required>
                 </div>
             </div>
             <div class="form-group"><label>№ повестки</label><input type="text" id="docNumber" class="center-input" required></div>
@@ -197,7 +198,7 @@
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
             document.getElementById('dobMonth').value = MONTHS_NUMERIC[parseInt(month) - 1];
-            document.getElementById('dobYear').value = year;
+            document.getElementById('dobYear').value = year.slice(-2); // Берем 2 цифры года
         }
         document.getElementById('address').value = citizen.address || '';
     });
@@ -234,7 +235,7 @@
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
         document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
-        document.getElementById('dateYear').value = today.getFullYear();
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2); // 2 цифры года
         document.getElementById('docNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
     }
 
@@ -306,12 +307,12 @@
             
             const firstPage = pdfDoc.getPages()[0];
             
-            // ⚠️ ТВОЯ ФОРМУЛА В ДЕЙСТВИИ ⚠️
+            // ТВОЯ ФОРМУЛА + ОПУСКАНИЕ НА 10 ПУНКТОВ
             const { width, height } = firstPage.getSize();
             const CROP_HEIGHT = 293;
             function convertY(y) {
-                const z = CROP_HEIGHT - y; // Расстояние от верха картинки
-                return height - z;         // Вычитаем из реальной высоты листа
+                const z = CROP_HEIGHT - y; 
+                return (height - z) - 10; // Вычитаем 10, чтобы опустить текст вниз
             }
 
             // Пересчитываем все координаты
@@ -336,9 +337,6 @@
             const getVal = (id) => document.getElementById(id).value;
             const textOptions = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const paraOptions = { ...textOptions }; 
-
-            // --- РИСУЕМ КРАСНУЮ РАМКУ ПО ВСЕМУ ЛИСТУ А4 (для проверки) ---
-            firstPage.drawRectangle({ x: 0, y: 0, width: width, height: height, borderColor: PDFLib.rgb(1, 0, 0), borderWidth: 3 });
 
             // --- РИСОВАНИЕ ТЕКСТА ---
             const nameStr = `${getVal('firstName')} ${getVal('patronymic')}, № ${getVal('passNumber')}, ${getVal('dobDay')}.${getVal('dobMonth')}.${getVal('dobYear')} г.`;
