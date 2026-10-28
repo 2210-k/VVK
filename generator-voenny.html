@@ -616,7 +616,7 @@
             const pdfBytes = await pdfDoc.save();
             currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
             
-            const fileName = `${Date.now()}_VOEN_${getVal('firstNameAndPatronymic').replace(/\s/g, '_')}.pdf`;
+            const fileName = `${Date.now()}_VOEN.pdf`;
 
             await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
             await supabaseClient.from('documents').insert({
