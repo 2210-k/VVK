@@ -21,11 +21,13 @@
         #dashboard-screen { display: none; min-height: 100vh; }
         .sidebar { width: 260px; background: var(--primary); color: white; position: fixed; height: 100%; overflow-y: auto; z-index: 100; transition: 0.3s; }
         .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
-        .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; }
-        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; }
+        
+        .menu-label { padding: 15px 20px 5px 20px; font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #e2e8f0; }
+        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; color: white; }
         
         .main-content { margin-left: 260px; padding: 30px; }
-        .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .workspace-title h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); }
         .workspace-title p { margin: 0; color: #64748b; font-size: 14px; }
         
@@ -38,7 +40,13 @@
         .tab:hover { color: var(--primary); }
         .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* Поиск */
+        /* Статистика */
+        .stats-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .stat-box { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); flex: 1; min-width: 150px; }
+        .stat-box h4 { margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase; }
+        .stat-box .num { font-size: 24px; font-weight: bold; color: var(--primary); margin-top: 5px; }
+
+        /* Поиск и Таблицы */
         .search-bar { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
         .search-bar:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1); }
 
@@ -48,19 +56,21 @@
         th { background: #f8fafc; color: #64748b; font-weight: bold; font-size: 13px; text-transform: uppercase; cursor: pointer; user-select: none; transition: 0.2s; }
         th:hover { background: #e2e8f0; color: var(--primary); }
         th span { font-size: 10px; margin-left: 5px; color: #94a3b8; }
-        tbody tr:hover { background: #f8fafc; }
+        tbody tr:hover { background: #f8fafc; cursor: pointer; }
         
         .btn-action { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 4px; margin-right: 4px; }
         .btn-edit { background: #eab308; }
         .btn-delete { background: var(--danger); }
         .btn-download { background: #64748b; }
         .btn-view { background: var(--primary); }
+        .btn-back { background: #64748b; padding: 10px 20px; font-size: 14px; margin-bottom: 15px; display: inline-block; border-radius: 6px; color: white; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
 
+        /* Модалки */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; }
         .modal-content h3 { margin-top: 0; color: var(--primary); }
         .modal-content label { display: block; margin-top: 12px; font-weight: bold; font-size: 13px; }
-        .modal-content input { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
         .modal-actions { margin-top: 25px; display: flex; gap: 10px; }
         .modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; }
         .btn-save { background: var(--success); color: white; }
@@ -71,9 +81,6 @@
         .template-card h4 { margin: 0 0 8px 0; color: var(--primary); font-size: 18px; }
         .template-card p { margin: 0; color: #64748b; font-size: 14px; }
 
-        /* Модалка документов гражданина */
-        #citizen-docs-modal .modal-content { max-width: 800px; }
-        
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
@@ -88,14 +95,15 @@
             .sidebar { display: none; }
             .main-content { margin-left: 0; padding: 15px; }
             
-            .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
-            .mobile-nav .menu-item { flex: 1; flex-direction: column; padding: 10px 5px; font-size: 12px; border-left: none; border-top: 3px solid transparent; text-align: center; gap: 4px; color: #64748b; }
+            .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
+            .mobile-nav .menu-item { flex: 1; flex-direction: column; padding: 10px 5px; font-size: 12px; border-left: none; border-top: 3px solid transparent; text-align: center; gap: 4px; color: #64748b; white-space: nowrap; }
             .mobile-nav .menu-item.active { border-top-color: var(--primary); color: var(--primary); background: transparent; }
             
             .workspace-header { flex-direction: column; align-items: flex-start; padding: 15px; }
             .actions-area { width: 100%; flex-direction: column; align-items: stretch; }
             .btn-create { justify-content: center; }
             .modal-content { width: 95%; padding: 20px; }
+            .tabs { overflow-x: auto; }
         }
     </style>
 </head>
@@ -115,52 +123,75 @@
     </div>
 
     <div id="dashboard-screen">
+        <!-- САЙДБАР -->
         <div class="sidebar">
-            <h2>Организации</h2>
-            <div class="menu-item active org-tab" data-org="1" onclick="switchOrg(1, 'Единая Служба Спасения', this)">🚑 ЕСС</div>
-            <div class="menu-item org-tab" data-org="2" onclick="switchOrg(2, 'Министерство Внутренних Дел', this)">🚓 МВД</div>
-            <div class="menu-item org-tab" data-org="3" onclick="switchOrg(3, 'Правительство', this)">🏛️ Правительство</div>
-            <div class="menu-item org-tab" data-org="4" onclick="switchOrg(4, 'Воинская часть', this)">🪖 ВЧ</div>
+            <h2>Меню</h2>
+            
+            <div class="menu-label">Организации</div>
+            <div class="menu-item org-tab" data-org="1" onclick="switchView('org', 1, 'Единая Служба Спасения', this)">🚑 ЕСС</div>
+            <div class="menu-item org-tab" data-org="2" onclick="switchView('org', 2, 'Министерство Внутренних Дел', this)">🚓 МВД</div>
+            <div class="menu-item org-tab" data-org="3" onclick="switchView('org', 3, 'Правительство', this)">🏛️ Правительство</div>
+            <div class="menu-item org-tab" data-org="4" onclick="switchView('org', 4, 'Воинская часть', this)">🪖 ВЧ</div>
+
+            <div class="menu-label" style="margin-top: 20px;">Общее</div>
+            <div class="menu-item" id="menu-all-docs" onclick="switchView('all_docs')">📄 Все документы</div>
+            <div class="menu-item" id="menu-manage-citizens" onclick="switchView('manage_citizens')">👥 Граждане (Ред.)</div>
         </div>
 
+        <!-- НИЖНЕЕ МЕНЮ (Мобилки) -->
         <div class="mobile-nav">
-            <div class="menu-item active org-tab" data-org="1" onclick="switchOrg(1, 'ЕСС', this)">🚑<br>ЕСС</div>
-            <div class="menu-item org-tab" data-org="2" onclick="switchOrg(2, 'МВД', this)">🚓<br>МВД</div>
-            <div class="menu-item org-tab" data-org="3" onclick="switchOrg(3, 'Прав-во', this)">🏛️<br>Прав-во</div>
-            <div class="menu-item org-tab" data-org="4" onclick="switchOrg(4, 'ВЧ', this)">🪖<br>ВЧ</div>
+            <div class="menu-item org-tab" data-org="1" onclick="switchView('org', 1, 'ЕСС', this)">🚑<br>ЕСС</div>
+            <div class="menu-item org-tab" data-org="4" onclick="switchView('org', 4, 'ВЧ', this)">🪖<br>ВЧ</div>
+            <div class="menu-item" onclick="switchView('all_docs')">📄<br>Все</div>
+            <div class="menu-item" onclick="switchView('manage_citizens')">👥<br>Граждане</div>
         </div>
 
+        <!-- ОСНОВНОЙ КОНТЕНТ -->
         <div class="main-content">
+            
+            <!-- ШАПКА -->
             <div class="workspace-header">
                 <div class="workspace-title">
-                    <h1 id="org-title">Единая Служба Спасения</h1>
-                    <p>Управление документами и гражданами</p>
+                    <h1 id="page-title">Единая Служба Спасения</h1>
+                    <p id="page-subtitle">Управление документами и гражданами</p>
                 </div>
-                <div class="actions-area">
-                    <button class="btn-create" onclick="openCreateDocModal()">➕ Создать документ</button>
+                <div class="actions-area" id="header-actions">
+                    <button class="btn-create" onclick="openCreateDocModal()" id="btn-create-doc">➕ Создать документ</button>
                     <button class="btn-login" id="logout-btn" style="padding:12px 20px; width:auto; cursor:pointer; background:#ef4444; color:white; border:none; border-radius:6px; font-weight:bold;">Выйти</button>
                 </div>
             </div>
 
             <!-- СТАТИСТИКА -->
-            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
-                <div style="background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); flex: 1; min-width: 150px;">
-                    <h4 style="margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase;">Всего документов</h4>
-                    <div id="stat-docs" style="font-size: 24px; font-weight: bold; color: var(--primary); margin-top: 5px;">0</div>
+            <div class="stats-bar" id="stats-bar">
+                <div class="stat-box">
+                    <h4 id="stat-docs-title">Всего документов</h4>
+                    <div class="num" id="stat-docs">0</div>
                 </div>
-                <div style="background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--success); flex: 1; min-width: 150px;">
-                    <h4 style="margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase;">Всего граждан</h4>
-                    <div id="stat-citizens" style="font-size: 24px; font-weight: bold; color: var(--success); margin-top: 5px;">0</div>
+                <div class="stat-box" style="border-left-color: var(--success);">
+                    <h4>Всего граждан в базе</h4>
+                    <div class="num" id="stat-citizens">0</div>
                 </div>
             </div>
 
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('docs', this)">📄 Документы</div>
-                <div class="tab" onclick="switchTab('citizens', this)">👥 Граждане</div>
+            <!-- ВКЛАДКИ ОРГАНИЗАЦИИ (Документы / Граждане) -->
+            <div id="view-org-tabs" style="display: none;">
+                <div class="tabs">
+                    <div class="tab active" id="tab-org-docs" onclick="switchOrgTab('docs', this)">📄 Документы организации</div>
+                    <div class="tab" id="tab-org-citizens" onclick="switchOrgTab('citizens', this)">👥 Граждане (Просмотр)</div>
+                </div>
             </div>
 
-            <div id="docs-tab">
-                <input type="text" id="search-docs" class="search-bar" placeholder="🔍 Поиск по номеру документа или ФИО получателя..." oninput="renderDocs()">
+            <!-- ВКЛАДКИ ВСЕ ДОКУМЕНТЫ (Документы / Граждане) -->
+            <div id="view-all-tabs" style="display: none;">
+                <div class="tabs">
+                    <div class="tab active" id="tab-all-docs" onclick="switchAllTab('docs', this)">📄 Все документы (Глобально)</div>
+                    <div class="tab" id="tab-all-citizens" onclick="switchAllTab('citizens', this)">👥 Все граждане (Просмотр)</div>
+                </div>
+            </div>
+
+            <!-- КОНТЕНТ: ДОКУМЕНТЫ -->
+            <div id="content-docs" style="display: none;">
+                <input type="text" id="search-docs" class="search-bar" placeholder="🔍 Поиск по номеру или ФИО получателя..." oninput="renderDocs()">
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -177,29 +208,68 @@
                 </div>
             </div>
 
-            <div id="citizens-tab" style="display:none;">
-                <div style="margin-bottom: 15px; text-align: right;">
-                    <button class="btn-action btn-edit" style="background:#10b981; padding:10px 20px;" onclick="openAddCitizenModal()">+ Добавить гражданина</button>
-                </div>
-                <input type="text" id="search-citizens" class="search-bar" placeholder="🔍 Поиск по ФИО или паспорту..." oninput="renderCitizens()">
+            <!-- КОНТЕНТ: ГРАЖДАНЕ (ПРОСМОТР) -->
+            <div id="content-citizens-view" style="display: none;">
+                <input type="text" id="search-citizens-view" class="search-bar" placeholder="🔍 Поиск по ФИО или паспорту..." oninput="renderCitizensView()">
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th onclick="sortCitizens('last_name')">ФИО <span id="sort-last_name">▲</span></th>
-                                <th onclick="sortCitizens('dob')">Дата рождения <span id="sort-dob"></span></th>
-                                <th onclick="sortCitizens('pass_series')">Паспорт <span id="sort-pass_series"></span></th>
+                                <th>ФИО</th>
+                                <th>Дата рождения</th>
+                                <th>Паспорт</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
-                        <tbody id="citizens-table-body"></tbody>
+                        <tbody id="citizens-view-table-body"></tbody>
                     </table>
                 </div>
             </div>
+
+            <!-- КОНТЕНТ: УПРАВЛЕНИЕ ГРАЖДАНАМИ (РЕДАКТИРОВАНИЕ) -->
+            <div id="content-manage-citizens" style="display: none;">
+                <div style="margin-bottom: 15px; text-align: right;">
+                    <button class="btn-create" onclick="openAddCitizenModal()">+ Добавить гражданина</button>
+                </div>
+                <input type="text" id="search-manage-citizens" class="search-bar" placeholder="🔍 Поиск по ФИО..." oninput="renderManageCitizens()">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ФИО</th>
+                                <th>Дата рождения</th>
+                                <th>Паспорт</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="manage-citizens-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- КОНТЕНТ: ДОКУМЕНТЫ ВЫБРАННОГО ГРАЖДАНИНА -->
+            <div id="content-citizen-details" style="display: none;">
+                <button class="btn-back" onclick="goBack()">← Назад</button>
+                <h2 id="citizen-details-name" style="color: var(--primary); margin-bottom: 20px;"></h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Номер</th>
+                                <th>Тип</th>
+                                <th>Дата</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="citizen-details-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- МОДАЛКА ВЫБОРА ДОКУМЕНТА -->
+    <!-- МОДАЛКИ (без изменений) -->
     <div id="create-doc-modal" class="modal">
         <div class="modal-content">
             <h3 id="create-doc-title">Выберите документ</h3>
@@ -210,7 +280,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА РЕДАКТИРОВАНИЯ ГРАЖДАНИНА -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <h3>Редактировать гражданина</h3>
@@ -230,7 +299,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ДОБАВЛЕНИЯ ГРАЖДАНИНА -->
     <div id="add-modal" class="modal">
         <div class="modal-content">
             <h3>Новый гражданин</h3>
@@ -248,30 +316,6 @@
         </div>
     </div>
 
-    <!-- НОВАЯ МОДАЛКА: ДОКУМЕНТЫ ГРАЖДАНИНА -->
-    <div id="citizen-docs-modal" class="modal">
-        <div class="modal-content">
-            <h3 id="citizen-docs-title">Документы гражданина</h3>
-            <div class="table-responsive" style="margin-top: 15px; box-shadow: none; border: 1px solid #eee;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Тип документа</th>
-                            <th>Номер</th>
-                            <th>Дата</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="citizen-docs-body"></tbody>
-                </table>
-            </div>
-            <div class="modal-actions" style="margin-top: 20px;">
-                <button class="btn-cancel" onclick="closeModal('citizen-docs-modal')">Закрыть</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- МОДАЛКА ПРОСМОТРА PDF -->
     <div id="preview-modal">
         <div class="preview-container">
             <div class="preview-header">
@@ -290,14 +334,22 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        let currentOrgId = 1; 
-        let currentOrgName = 'Единая Служба Спасения';
-        
+        // Глобальное состояние
+        let currentState = {
+            view: 'org', // 'org', 'all_docs', 'manage_citizens', 'citizen_details'
+            orgId: 1,
+            orgName: 'Единая Служба Спасения',
+            orgTab: 'docs', // 'docs', 'citizens'
+            allTab: 'docs', // 'docs', 'citizens'
+            selectedCitizenId: null,
+            selectedCitizenName: ''
+        };
+
         let allDocs = [];
         let allCitizens = [];
-        
+        let currentCitizenDocs = [];
+
         let docSort = { col: 'created_at', asc: false };
-        let citizenSort = { col: 'last_name', asc: true };
 
         // --- АВТОРИЗАЦИЯ ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -332,7 +384,9 @@
                 }
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
-                refreshData();
+                
+                // По умолчанию загружаем ЕСС
+                switchView('org', 1, 'Единая Служба Спасения');
             } else {
                 document.getElementById('auth-screen').style.display = 'flex';
                 document.getElementById('dashboard-screen').style.display = 'none';
@@ -341,98 +395,127 @@
             }
         });
 
-        // --- ПЕРЕКЛЮЧЕНИЕ ОРГАНИЗАЦИЙ ---
-        function switchOrg(orgId, orgName, element) {
-            document.querySelectorAll('.org-tab').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll(`.org-tab[data-org="${orgId}"]`).forEach(el => el.classList.add('active'));
+        // --- НАВИГАЦИЯ И ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
+        function switchView(viewType, orgId, orgName, element) {
+            currentState.view = viewType;
             
-            currentOrgId = orgId;
-            currentOrgName = orgName;
-            document.getElementById('org-title').textContent = orgName === 'ЕСС' ? 'Единая Служба Спасения' : orgName;
-            
-            document.getElementById('search-docs').value = '';
-            document.getElementById('search-citizens').value = '';
-            
-            refreshData();
-        }
-
-        function switchTab(tab, element) {
-            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            
-            if (tab === 'docs') {
-                document.getElementById('docs-tab').style.display = 'block';
-                document.getElementById('citizens-tab').style.display = 'none';
+            // Сброс выделения в меню
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            if (element) {
+                element.classList.add('active');
             } else {
-                document.getElementById('docs-tab').style.display = 'none';
-                document.getElementById('citizens-tab').style.display = 'block';
+                // Если вызвано программно, ищем нужный элемент
+                if (viewType === 'all_docs') document.getElementById('menu-all-docs').classList.add('active');
+                if (viewType === 'manage_citizens') document.getElementById('menu-manage-citizens').classList.add('active');
             }
-        }
 
-        // --- КАТАЛОГ ДОКУМЕНТОВ ---
-        async function openCreateDocModal() {
-            document.getElementById('create-doc-title').textContent = `Создать документ (${currentOrgName})`;
-            document.getElementById('create-doc-modal').style.display = 'flex';
+            // Прячем все контенты
+            document.getElementById('content-docs').style.display = 'none';
+            document.getElementById('content-citizens-view').style.display = 'none';
+            document.getElementById('content-manage-citizens').style.display = 'none';
+            document.getElementById('content-citizen-details').style.display = 'none';
+            document.getElementById('view-org-tabs').style.display = 'none';
+            document.getElementById('view-all-tabs').style.display = 'none';
             
-            const list = document.getElementById('templates-list');
-            list.innerHTML = '<p>Загрузка...</p>';
-            
-            const { data: templates, error } = await supabaseClient
-                .from('document_templates')
-                .select('*')
-                .eq('organization_id', currentOrgId);
+            // Настройка шапки
+            const btnCreate = document.getElementById('btn-create-doc');
+
+            if (viewType === 'org') {
+                currentState.orgId = orgId;
+                currentState.orgName = orgName;
+                document.getElementById('page-title').textContent = orgName === 'Единая Служба Спасения' ? 'Единая Служба Спасения' : orgName;
+                document.getElementById('page-subtitle').textContent = 'Управление документами и гражданами';
+                document.getElementById('view-org-tabs').style.display = 'block';
+                btnCreate.style.display = 'flex';
                 
-            if (error) { list.innerHTML = `<p style="color:red;">Ошибка: ${error.message}</p>`; return; }
-            
-            list.innerHTML = '';
-            if (!templates || templates.length === 0) {
-                list.innerHTML = '<p style="color:#888;">Нет доступных шаблонов.</p>';
-                return;
+                // Восстанавливаем активную вкладку внутри организации
+                switchOrgTab(currentState.orgTab, document.getElementById(`tab-org-${currentState.orgTab}`));
+                
+            } else if (viewType === 'all_docs') {
+                document.getElementById('page-title').textContent = 'Все документы';
+                document.getElementById('page-subtitle').textContent = 'Глобальный архив';
+                document.getElementById('view-all-tabs').style.display = 'block';
+                btnCreate.style.display = 'none'; // Нельзя создать документ без привязки к орг
+                
+                switchAllTab(currentState.allTab, document.getElementById(`tab-all-${currentState.allTab}`));
+                
+            } else if (viewType === 'manage_citizens') {
+                document.getElementById('page-title').textContent = 'База граждан';
+                document.getElementById('page-subtitle').textContent = 'Добавление и редактирование профилей';
+                document.getElementById('content-manage-citizens').style.display = 'block';
+                btnCreate.style.display = 'none';
+                loadCitizens(); // Загружаем базу
+                
+            } else if (viewType === 'citizen_details') {
+                // Обрабатывается отдельно в openCitizenDocs
             }
-            
-            templates.forEach(tpl => {
-                const div = document.createElement('div');
-                div.className = 'template-card';
-                div.innerHTML = `<h4>${tpl.name}</h4><p>${tpl.description || 'Документ'}</p>`;
-                div.onclick = () => {
-                    if (tpl.url === '#') alert('В разработке');
-                    else window.location.href = `${tpl.url}?org=${currentOrgId}&t=${Date.now()}`;
-                };
-                list.appendChild(div);
-            });
+
+            // Загружаем статистику для текущего вида
+            updateStats();
         }
 
-        // --- ЗАГРУЗКА ДАННЫХ ---
-        function refreshData() {
-            loadDocs();
-            loadCitizens();
+        function switchOrgTab(tab, element) {
+            currentState.orgTab = tab;
+            document.querySelectorAll('#view-org-tabs .tab').forEach(el => el.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            document.getElementById('content-docs').style.display = 'none';
+            document.getElementById('content-citizens-view').style.display = 'none';
+
+            if (tab === 'docs') {
+                document.getElementById('content-docs').style.display = 'block';
+                loadOrgDocs();
+            } else {
+                document.getElementById('content-citizens-view').style.display = 'block';
+                loadOrgCitizens();
+            }
         }
 
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function closePreview() { document.getElementById('preview-modal').style.display = 'none'; document.getElementById('preview-frame').src = ''; }
-        function previewDoc(url) {
-            document.getElementById('preview-frame').src = url;
-            document.getElementById('preview-download-btn').href = url;
-            document.getElementById('preview-modal').style.display = 'flex';
+        function switchAllTab(tab, element) {
+            currentState.allTab = tab;
+            document.querySelectorAll('#view-all-tabs .tab').forEach(el => el.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            document.getElementById('content-docs').style.display = 'none';
+            document.getElementById('content-citizens-view').style.display = 'none';
+
+            if (tab === 'docs') {
+                document.getElementById('content-docs').style.display = 'block';
+                loadAllDocs();
+            } else {
+                document.getElementById('content-citizens-view').style.display = 'block';
+                loadAllCitizens();
+            }
         }
 
-        // --- ДОКУМЕНТЫ (Общая таблица) ---
-        async function loadDocs() {
-            const { data, error } = await supabaseClient
-                .from('documents')
-                .select(`*, profiles(last_name, first_name, patronymic)`)
-                .eq('organization_id', currentOrgId);
+        // --- ЗАГРУЗКА И ОТОБРАЖЕНИЕ ДОКУМЕНТОВ ---
+        
+        // Вспомогательная функция для склейки данных (избегаем 400 ошибки)
+        async function fetchDocumentsData(filterOrgId = null) {
+            let query = supabaseClient.from('documents').select('*');
+            if (filterOrgId) query = query.eq('organization_id', filterOrgId);
             
-            if (error) return console.error(error);
-            
-            allDocs = data.map(doc => {
-                const recipient = doc.profiles 
-                    ? `${doc.profiles.last_name} ${doc.profiles.first_name} ${doc.profiles.patronymic || ''}`.trim() 
-                    : 'В архиве';
-                return { ...doc, recipient };
-            });
-            
-            document.getElementById('stat-docs').textContent = allDocs.length;
+            const { data: docs, error } = await query.order('created_at', { ascending: false });
+            if (error) { console.error(error); return []; }
+
+            // Загружаем профили отдельно
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, last_name, first_name, patronymic');
+            const profileMap = {};
+            if(profiles) profiles.forEach(p => profileMap[p.id] = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`.trim());
+
+            return docs.map(d => ({
+                ...d,
+                recipient: d.patient_id ? (profileMap[d.patient_id] || 'Неизвестный') : 'В архиве'
+            }));
+        }
+
+        async function loadOrgDocs() {
+            allDocs = await fetchDocumentsData(currentState.orgId);
+            renderDocs();
+        }
+
+        async function loadAllDocs() {
+            allDocs = await fetchDocumentsData(null);
             renderDocs();
         }
 
@@ -459,12 +542,10 @@
             filtered.sort((a, b) => {
                 let valA = a[docSort.col];
                 let valB = b[docSort.col];
-                
                 if (docSort.col === 'created_at') {
                     valA = new Date(valA).getTime();
                     valB = new Date(valB).getTime();
                 }
-                
                 if (valA < valB) return docSort.asc ? -1 : 1;
                 if (valA > valB) return docSort.asc ? 1 : -1;
                 return 0;
@@ -475,7 +556,6 @@
 
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-                
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${doc.doc_number}</b></td>
@@ -496,36 +576,33 @@
             await supabaseClient.storage.from('documents').remove([filePath]);
             const { error } = await supabaseClient.from('documents').delete().eq('id', docId);
             if (error) alert("Ошибка: " + error.message);
-            else { loadDocs(); /* Можно обновить и модалку, если она открыта */ }
+            else {
+                if (currentState.view === 'org') loadOrgDocs();
+                else loadAllDocs();
+            }
         }
 
-        // --- ГРАЖДАНЕ ---
-        async function loadCitizens() {
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('role', 'patient');
-            
-            if (error) return console.error(error);
-            
-            allCitizens = data;
-            document.getElementById('stat-citizens').textContent = allCitizens.length;
-            renderCitizens();
+        // --- ЗАГРУЗКА ГРАЖДАН ---
+
+        async function fetchCitizensData() {
+            const { data, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+            return error ? [] : data;
         }
 
-        function sortCitizens(col) {
-            if (citizenSort.col === col) citizenSort.asc = !citizenSort.asc;
-            else { citizenSort.col = col; citizenSort.asc = true; }
-            
-            document.querySelectorAll('th span').forEach(el => el.textContent = '');
-            document.getElementById(`sort-${col}`).textContent = citizenSort.asc ? '▲' : '▼';
-            
-            renderCitizens();
+        async function loadOrgCitizens() {
+            allCitizens = await fetchCitizensData();
+            renderCitizensView();
         }
 
-        function renderCitizens() {
-            const tbody = document.getElementById('citizens-table-body');
-            const query = document.getElementById('search-citizens').value.toLowerCase();
+        async function loadAllCitizens() {
+            allCitizens = await fetchCitizensData();
+            renderCitizensView();
+        }
+
+        // Для вкладок просмотра (в организациях и все)
+        function renderCitizensView() {
+            const tbody = document.getElementById('citizens-view-table-body');
+            const query = document.getElementById('search-citizens-view').value.toLowerCase();
             
             let filtered = allCitizens.filter(p => {
                 const fio = `${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`.toLowerCase();
@@ -533,73 +610,192 @@
                 return fio.includes(query) || pass.includes(query);
             });
             
-            filtered.sort((a, b) => {
-                let valA = a[citizenSort.col] || '';
-                let valB = b[citizenSort.col] || '';
-                
-                if (valA < valB) return citizenSort.asc ? -1 : 1;
-                if (valA > valB) return citizenSort.asc ? 1 : -1;
-                return 0;
+            tbody.innerHTML = '';
+            if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет граждан</td></tr>';
+
+            filtered.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
+                        <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
+                        <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
+                        <td><button class="btn-action btn-view" onclick="openCitizenDocs('${p.id}', '${p.last_name} ${p.first_name} ${p.patronymic || ''}')">Документы</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- УПРАВЛЕНИЕ ГРАЖДАНАМИ (РЕДАКТИРОВАНИЕ) ---
+        async function loadCitizens() {
+            allCitizens = await fetchCitizensData();
+            renderManageCitizens();
+        }
+
+        function renderManageCitizens() {
+            const tbody = document.getElementById('manage-citizens-table-body');
+            const query = document.getElementById('search-manage-citizens').value.toLowerCase();
+            
+            let filtered = allCitizens.filter(p => {
+                const fio = `${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`.toLowerCase();
+                return fio.includes(query);
             });
             
             tbody.innerHTML = '';
             if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет граждан</td></tr>';
 
             filtered.forEach(p => {
-                const fio = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
                 tbody.innerHTML += `
                     <tr>
-                        <td style="cursor:pointer; color:var(--primary); font-weight:bold;" onclick="openCitizenDocs('${p.id}', '${fio}')">${fio}</td>
+                        <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
                         <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
                         <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
                         <td>
-                            <button class="btn-action btn-view" onclick="openCitizenDocs('${p.id}', '${fio}')">📄 Документы</button>
-                            <button class="btn-action btn-edit" onclick="openEdit('${p.id}')">✏️ Ред.</button>
+                            <button class="btn-action btn-edit" onclick="openEdit('${p.id}')">Редактировать</button>
                         </td>
                     </tr>
                 `;
             });
         }
 
-        // --- ПРОСМОТР ДОКУМЕНТОВ КОНКРЕТНОГО ГРАЖДАНИНА ---
+        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА ---
         async function openCitizenDocs(citizenId, citizenName) {
-            document.getElementById('citizen-docs-title').textContent = `Документы: ${citizenName}`;
-            document.getElementById('citizen-docs-modal').style.display = 'flex';
+            currentState.view = 'citizen_details';
+            currentState.selectedCitizenId = citizenId;
+            currentState.selectedCitizenName = citizenName;
+
+            document.getElementById('page-title').textContent = 'Документы гражданина';
+            document.getElementById('page-subtitle').textContent = citizenName;
             
-            const tbody = document.getElementById('citizen-docs-body');
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Загрузка...</td></tr>';
+            document.getElementById('content-docs').style.display = 'none';
+            document.getElementById('content-citizens-view').style.display = 'none';
+            document.getElementById('content-manage-citizens').style.display = 'none';
+            document.getElementById('view-org-tabs').style.display = 'none';
+            document.getElementById('view-all-tabs').style.display = 'none';
+            document.getElementById('btn-create-doc').style.display = 'none';
+            
+            document.getElementById('content-citizen-details').style.display = 'block';
+            document.getElementById('citizen-details-name').textContent = citizenName;
 
-            const { data: docs, error } = await supabaseClient
-                .from('documents')
-                .select('*')
-                .eq('patient_id', citizenId)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Ошибка: ${error.message}</td></tr>`;
-                return;
+            // Загружаем документы этого человека
+            let query = supabaseClient.from('documents').select('*').eq('patient_id', citizenId);
+            
+            // Если мы в контексте организации - фильтруем
+            if (currentState.orgTab && (document.getElementById('tab-org-docs').classList.contains('active') || document.getElementById('tab-org-citizens').classList.contains('active'))) {
+                // Проверяем, какая вкладка была активна до перехода
+                if (document.getElementById('view-org-tabs').style.display !== 'none' || document.getElementById('tab-org-docs').classList.contains('active')) {
+                     // Находим активную организацию по сайдбару
+                     const activeOrg = document.querySelector('.org-tab.active');
+                     if(activeOrg) {
+                        const orgId = activeOrg.getAttribute('data-org');
+                        query = query.eq('organization_id', orgId);
+                     }
+                }
             }
 
-            if (docs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">У этого гражданина пока нет документов.</td></tr>';
-                return;
-            }
+            const { data: docs } = await query.order('created_at', { ascending: false });
+            currentCitizenDocs = docs || [];
 
+            const tbody = document.getElementById('citizen-details-table-body');
             tbody.innerHTML = '';
-            docs.forEach(doc => {
+            
+            if (currentCitizenDocs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">У этого гражданина нет документов в данной категории.</td></tr>';
+                return;
+            }
+
+            currentCitizenDocs.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 tbody.innerHTML += `
                     <tr>
+                        <td><b>${doc.doc_number}</b></td>
                         <td>${doc.document_type}</td>
-                        <td>${doc.doc_number}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
-                        <td><button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button></td>
+                        <td>
+                            <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
+                        </td>
                     </tr>
                 `;
             });
         }
 
-        // --- РЕДАКТИРОВАНИЕ (Только по кнопке) ---
+        function goBack() {
+            // Возвращаемся к тому виду, откуда пришли
+            if (currentState.view === 'citizen_details') {
+                if (document.getElementById('tab-all-docs').classList.contains('active') || document.getElementById('tab-all-citizens').classList.contains('active')) {
+                    switchView('all_docs');
+                } else {
+                    const activeOrg = document.querySelector('.org-tab.active');
+                    const orgId = activeOrg ? activeOrg.getAttribute('data-org') : 1;
+                    const orgName = activeOrg ? activeOrg.textContent.replace(/[^\w\sА-Яа-я]/g, '').trim() : 'ЕСС';
+                    switchView('org', orgId, orgName);
+                }
+            }
+        }
+
+        // --- СТАТИСТИКА ---
+        async function updateStats() {
+            // Граждане
+            const { count: citizensCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'patient');
+            document.getElementById('stat-citizens').textContent = citizensCount || 0;
+
+            // Документы
+            if (currentState.view === 'org') {
+                const { count: docsCount } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('organization_id', currentState.orgId);
+                document.getElementById('stat-docs').textContent = docsCount || 0;
+                document.getElementById('stat-docs-title').textContent = 'Документов в организации';
+            } else if (currentState.view === 'all_docs') {
+                const { count: docsCount } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true });
+                document.getElementById('stat-docs').textContent = docsCount || 0;
+                document.getElementById('stat-docs-title').textContent = 'Всего документов в базе';
+            } else {
+                document.getElementById('stat-docs').textContent = '-';
+                document.getElementById('stat-docs-title').textContent = 'Документы';
+            }
+        }
+
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closePreview() { document.getElementById('preview-modal').style.display = 'none'; document.getElementById('preview-frame').src = ''; }
+        function previewDoc(url) {
+            document.getElementById('preview-frame').src = url;
+            document.getElementById('preview-download-btn').href = url;
+            document.getElementById('preview-modal').style.display = 'flex';
+        }
+
+        // Модалка создания документа
+        async function openCreateDocModal() {
+            document.getElementById('create-doc-title').textContent = `Создать документ (${currentState.orgName})`;
+            document.getElementById('create-doc-modal').style.display = 'flex';
+            
+            const list = document.getElementById('templates-list');
+            list.innerHTML = '<p>Загрузка...</p>';
+            
+            const { data: templates, error } = await supabaseClient
+                .from('document_templates')
+                .select('*')
+                .eq('organization_id', currentState.orgId);
+                
+            if (error) { list.innerHTML = `<p style="color:red;">Ошибка: ${error.message}</p>`; return; }
+            
+            list.innerHTML = '';
+            if (!templates || templates.length === 0) {
+                list.innerHTML = '<p style="color:#888;">Нет доступных шаблонов.</p>';
+                return;
+            }
+            
+            templates.forEach(tpl => {
+                const div = document.createElement('div');
+                div.className = 'template-card';
+                div.innerHTML = `<h4>${tpl.name}</h4><p>${tpl.description || 'Документ'}</p>`;
+                div.onclick = () => {
+                    if (tpl.url === '#') alert('В разработке');
+                    else window.location.href = `${tpl.url}?org=${currentState.orgId}&t=${Date.now()}`;
+                };
+                list.appendChild(div);
+            });
+        }
+
+        // Редактирование
         async function openEdit(id) {
             const { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
             if (error) return alert("Ошибка загрузки: " + error.message);
@@ -634,7 +830,7 @@
             else { closeModal('edit-modal'); loadCitizens(); }
         }
 
-        // --- ДОБАВЛЕНИЕ ---
+        // Добавление
         function openAddCitizenModal() {
             document.getElementById('add-email').value = '';
             document.getElementById('add-last-name').value = '';
@@ -688,11 +884,11 @@
             btn.textContent = 'Создать';
 
             if (profileError) {
-                alert("Пользователь создан в Auth, но данные не сохранились в профиль: " + profileError.message);
+                alert("Пользователь создан, но данные не сохранились: " + profileError.message);
             } else { 
                 alert("Гражданин добавлен!"); 
                 closeModal('add-modal'); 
-                refreshData(); 
+                loadCitizens(); 
             }
         }
     </script>
