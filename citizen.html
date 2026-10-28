@@ -45,18 +45,11 @@
         .stat-card .value { font-size: 28px; font-weight: bold; color: var(--text); margin-top: 10px; }
 
         .section-title { font-size: 20px; margin-bottom: 20px; color: var(--text); }
-        
-        /* Фильтры */
-        .filters { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .filters select { padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; outline: none; cursor: pointer; flex: 1; min-width: 200px; }
-        .filters select:focus { border-color: var(--primary); }
-        
         .docs-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .doc-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid #e5e7eb; }
         .doc-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .doc-info h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--text); }
         .doc-info p { margin: 0; color: #6b7280; font-size: 14px; }
-        .doc-org { display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; }
         
         .doc-actions { display: flex; gap: 10px; }
         .btn-view, .btn-dl { padding: 10px 15px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; text-decoration: none; border: none; cursor: pointer; }
@@ -85,7 +78,6 @@
             .sidebar { display: none; }
             .main-content { margin-left: 0; padding: 15px; }
             
-            /* Нижнее меню */
             .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
             .mobile-nav .menu-item { flex: 1; flex-direction: column; padding: 10px 5px; font-size: 12px; border-left: none; border-top: 3px solid transparent; text-align: center; gap: 4px; color: #64748b; }
             .mobile-nav .menu-item.active { border-top-color: var(--primary); color: var(--primary); background: transparent; }
@@ -100,7 +92,6 @@
             .preview-header { flex-direction: column; align-items: flex-start; }
             .preview-header > div { display: flex; width: 100%; gap: 10px; margin-top: 10px; }
             .preview-header > div > a, .preview-header > div > button { flex: 1; text-align: center; }
-            .filters { flex-direction: column; }
         }
     </style>
 </head>
@@ -151,7 +142,7 @@
             <div id="tab-home">
                 <div class="welcome-banner">
                     <h1 id="welcome-text">Здравствуйте!</h1>
-                    <p>Здесь вы можете просматривать и скачивать свои медицинские документы.</p>
+                    <p>Здесь вы можете просматривать и скачивать свои документы.</p>
                 </div>
 
                 <div class="stats-grid">
@@ -174,18 +165,6 @@
             <!-- ВКЛАДКА: ВСЕ ДОКУМЕНТЫ -->
             <div id="tab-docs" style="display:none;">
                 <h2 class="section-title">Все мои документы</h2>
-                
-                <div class="filters">
-                    <select id="filter-org" onchange="renderFilteredDocs()">
-                        <option value="all">Все организации</option>
-                        <!-- Заполняется через JS -->
-                    </select>
-                    <select id="filter-type" onchange="renderFilteredDocs()">
-                        <option value="all">Все типы документов</option>
-                        <!-- Заполняется через JS -->
-                    </select>
-                </div>
-
                 <div class="docs-grid" id="all-docs-list">
                     <p style="color: #888;">Загрузка...</p>
                 </div>
@@ -224,7 +203,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let globalDocs = []; // Сюда сохраняем все документы пользователя
+        let globalDocs = [];
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -289,11 +268,11 @@
             document.getElementById('preview-modal').style.display = 'flex';
         }
 
+        // ПРОСТАЯ ЗАГРУЗКА БЕЗ ОБЪЕДИНЕНИЯ ТАБЛИЦ
         async function loadMyDocs(userId) {
-            // Запрашиваем документы вместе с названиями организаций
             const { data: docs, error } = await supabaseClient
                 .from('documents')
-                .select(`*, organizations(name)`)
+                .select('*')
                 .eq('patient_id', userId)
                 .order('created_at', { ascending: false });
 
@@ -304,64 +283,20 @@
             
             globalDocs = docs || [];
             
-            // Обновляем статистику
             document.getElementById('stat-total-docs').textContent = globalDocs.length;
             if (globalDocs.length > 0) {
                 document.getElementById('stat-last-doc').textContent = new Date(globalDocs[0].created_at).toLocaleDateString('ru-RU');
             }
 
-            // Заполняем фильтры
-            initFilters();
-            
-            // Рендерим списки
-            renderFilteredDocs();
+            renderDocsList('all-docs-list', globalDocs);
             renderDocsList('home-recent-docs', globalDocs.slice(0, 3));
         }
 
-        // Функция заполнения выпадающих списков фильтров
-        function initFilters() {
-            const orgSelect = document.getElementById('filter-org');
-            const typeSelect = document.getElementById('filter-type');
-
-            // Собираем уникальные организации и типы
-            const uniqueOrgs = [...new Set(globalDocs.map(d => d.organizations?.name).filter(Boolean))];
-            const uniqueTypes = [...new Set(globalDocs.map(d => d.document_type).filter(Boolean))];
-
-            // Очищаем и заполняем
-            orgSelect.innerHTML = '<option value="all">Все организации</option>';
-            uniqueOrgs.forEach(org => {
-                orgSelect.innerHTML += `<option value="${org}">${org}</option>`;
-            });
-
-            typeSelect.innerHTML = '<option value="all">Все типы документов</option>';
-            uniqueTypes.forEach(type => {
-                typeSelect.innerHTML += `<option value="${type}">${type}</option>`;
-            });
-        }
-
-        // Функция фильтрации и отрисовки (для вкладки "Мои документы")
-        function renderFilteredDocs() {
-            const orgFilter = document.getElementById('filter-org').value;
-            const typeFilter = document.getElementById('filter-type').value;
-
-            let filtered = globalDocs;
-
-            if (orgFilter !== 'all') {
-                filtered = filtered.filter(d => d.organizations?.name === orgFilter);
-            }
-            if (typeFilter !== 'all') {
-                filtered = filtered.filter(d => d.document_type === typeFilter);
-            }
-
-            renderDocsList('all-docs-list', filtered);
-        }
-
-        // Универсальная функция отрисовки карточек
         function renderDocsList(containerId, docs) {
             const container = document.getElementById(containerId);
             
             if (docs.length === 0) {
-                container.innerHTML = '<div class="empty-state">Нет документов по выбранным фильтрам.</div>';
+                container.innerHTML = '<div class="empty-state">У вас пока нет документов.</div>';
                 return;
             }
 
@@ -369,12 +304,10 @@
             docs.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 const dateStr = new Date(doc.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-                const orgName = doc.organizations ? doc.organizations.name : 'Архив';
 
                 container.innerHTML += `
                     <div class="doc-card">
                         <div class="doc-info">
-                            <div class="doc-org">${orgName}</div>
                             <h4>${doc.document_type}</h4>
                             <p>Номер: <b>${doc.doc_number}</b> &nbsp;|&nbsp; Дата: ${dateStr}</p>
                         </div>
