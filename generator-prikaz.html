@@ -30,6 +30,11 @@
         
         .section-title { background: #e2e8f0; padding: 10px; border-radius: 4px; margin-top: 20px; margin-bottom: 15px; font-weight: bold; color: #1e3a8a; }
         .type-block { display: none; background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px dashed #ccc; margin-top: 10px; }
+        
+        /* Стиль для галочки */
+        .checkbox-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .checkbox-row input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        .checkbox-row label { margin: 0; cursor: pointer; font-size: 16px; }
 
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -151,6 +156,13 @@
                 <label>Причина увольнения</label>
                 <input type="text" id="reason3" class="form-select" value="Окончание срока военной службы по призыву">
             </div>
+            
+            <!-- ГАЛОЧКА ВЫДАЧИ ВОЕННОГО БИЛЕТА -->
+            <div class="checkbox-row">
+                <input type="checkbox" id="issueBilet" checked>
+                <label for="issueBilet">Выдать военный билет (с отметкой об увольнении)</label>
+            </div>
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">Если снять галочку, то пункт про военкомат изменится, а пункт про выдачу билета удалится.</p>
         </div>
 
         <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
@@ -179,18 +191,18 @@
     const currentOrgId = parseInt(urlParams.get('org')) || 4;
 
     // =====================================================================
-    // ⚠️ ТВОИ КООРДИНАТЫ (С ИЗМЕНЕНИЯМИ) ⚠️
+    // ⚠️ ТВОИ КООРДИНАТЫ ⚠️
     // =====================================================================
     const COORDS = {
         qrCode: { x: 43, y: 738, width: 85, height: 85 },
-        barcode: { x: 461, y: 773, width: 85, height: 35 }, // Высота изменена на 35
+        barcode: { x: 461, y: 773, width: 85, height: 35 },
         date: { 
-            day: { xStart: 42, xEnd: 57, y: 678.5}, // +1 pt
-            month: { xStart: 71, xEnd: 157, y: 678.5}, // +1 pt
-            year: { xStart: 192, xEnd: 206, y: 678.5} // +1 pt
+            day: { xStart: 42, xEnd: 57, y: 678.5}, 
+            month: { xStart: 71, xEnd: 157, y: 678.5}, 
+            year: { xStart: 192, xEnd: 206, y: 678.5} 
         },
-        dayNumber: { xStart: 229, xEnd: 260, y: 679 }, // +1 pt
-        docNumber: { xStart: 496, xEnd: 546, y: 679 }, // +1 pt
+        dayNumber: { xStart: 229, xEnd: 260, y: 679 },
+        docNumber: { xStart: 496, xEnd: 546, y: 679 },
         orderTypeText: { y: 702, maxWidth: 592 },
         bodyText: { x: 34, y: 651, maxWidth: 525, lineHeight: 13 }
     };
@@ -270,7 +282,6 @@
         page.drawText(text, { ...options, x: startX, y });
     }
 
-    // Функция для рисования одного абзаца и возврата новой координаты Y
     function drawTextBlockAndGetY(page, text, x, y, font, size, color, maxWidth, lineHeight) {
         if (!text) return y;
         const words = text.split(' ');
@@ -369,7 +380,7 @@
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt9);
             drawCenteredInRange(firstPage, docNum, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt9);
 
-            // Формирование заголовка
+            // Заголовок
             let typeTitle = "";
             if (type === '1') typeTitle = "О ЗАЧИСЛЕНИИ В СПИСКИ ЧАСТИ";
             else if (type === '2') typeTitle = "О ПРИСВОЕНИИ ВОИНСКОГО ЗВАНИЯ";
@@ -382,12 +393,12 @@
                 font: boldFont, size: 10, color: color
             });
 
-            // Блочное рисование основного текста (для правильных отступов)
+            // Блочное рисование
             let currentY = COORDS.bodyText.y;
             const fio = getVal('citizenName');
             const year = getVal('citizenYear');
 
-            // 1. Вводная часть (обычный шрифт)
+            // 1. Вводная часть
             let introText = "";
             if (type === '1') introText = "В соответствии с Федеральным законом «О воинской обязанности и военной службе» и на основании прибытия гражданина из военного комиссариата Соль-Илецкого района,";
             else if (type === '2') introText = `В соответствии с Уставом внутренней службы Вооруженных Сил Российской Федерации, на основании ${getVal('basis2')},`;
@@ -395,36 +406,40 @@
 
             currentY = drawTextBlockAndGetY(firstPage, introText, COORDS.bodyText.x, currentY, customFont, 10, color, COORDS.bodyText.maxWidth, 13);
             
-            // Отступ сверху для ПРИКАЗЫВАЮ
+            // Отступ для ПРИКАЗЫВАЮ
             currentY -= 10;
-
-            // 2. ПРИКАЗЫВАЮ (жирный шрифт)
             firstPage.drawText("ПРИКАЗЫВАЮ:", { x: COORDS.bodyText.x, y: currentY, font: boldFont, size: 10, color: color });
-            currentY -= 13;
+            currentY -= 23; // Отступ после
 
-            // Отступ снизу для ПРИКАЗЫВАЮ
-            currentY -= 10;
-
-            // 3. Основная часть
+            // 2. Основная часть
             let bodyText = "";
             if (type === '1') {
                 bodyText = `1. Зачислить с «${dateStr}» в списки войсковой части № 205 гражданина: ${fio}, ${year} года рождения.\n2. Присвоить воинское звание «Рядовой».\n3. Назначить на воинскую должность ${getVal('pos1')}.\n4. Зачислить в ${getVal('platoon1')} взвод.\n5. Поставить на все виды довольствия.`;
             } else if (type === '2') {
                 bodyText = `1. Присвоить воинское звание «${getVal('rank2')}» гражданину: ${fio}, ${year} года рождения.\n2. Внести соответствующую запись в военный билет.`;
             } else if (type === '3') {
-                bodyText = `1. Уволить с военной службы и исключить из списков войсковой части № 205 гражданина: ${fio}, ${year} года рождения.\n2. Направить гражданина в военный комиссариат Соль-Илецкого района для постановки на воинский учёт.\n3. Выдать военный билет с отметкой об увольнении.`;
+                const issueBilet = document.getElementById('issueBilet').checked;
+                
+                let p2 = issueBilet 
+                    ? "2. Направить гражданина в военный комиссариат Соль-Илецкого района для постановки на воинский учёт." 
+                    : "2. Исключить из списков личного состава части и снять со всех видов довольствия.";
+                let p3 = issueBilet 
+                    ? "\n3. Выдать военный билет с отметкой об увольнении." 
+                    : "";
+
+                bodyText = `1. Уволить с военной службы и исключить из списков войсковой части № 205 гражданина: ${fio}, ${year} года рождения.\n${p2}${p3}`;
             }
 
-            // Разбиваем текст на строки, чтобы сохранить принудительные \n
+            // Рисуем построчно, чтобы сохранить \n
             const bodyLines = bodyText.split('\n');
             for (let i = 0; i < bodyLines.length; i++) {
                 currentY = drawTextBlockAndGetY(firstPage, bodyLines[i], COORDS.bodyText.x, currentY, customFont, 10, color, COORDS.bodyText.maxWidth, 13);
             }
 
-            // Отступ сверху для Основания
+            // Отступ для Основания
             currentY -= 15;
 
-            // 4. Основание
+            // 3. Основание
             let basisText = "";
             if (type === '1') basisText = `Основание: Повестка военного комиссариата Соль-Илецкого района № ${getVal('summons1')}.`;
             else if (type === '2') basisText = `Основание: Рапорт командира взвода.`;
