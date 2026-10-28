@@ -269,7 +269,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКИ (без изменений) -->
+    <!-- МОДАЛКИ -->
     <div id="create-doc-modal" class="modal">
         <div class="modal-content">
             <h3 id="create-doc-title">Выберите документ</h3>
@@ -334,6 +334,8 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
+        const orgNames = { 1: 'Единая Служба Спасения', 2: 'Министерство Внутренних Дел', 3: 'Правительство', 4: 'Воинская часть' };
+
         // Глобальное состояние
         let currentState = {
             view: 'org', // 'org', 'all_docs', 'manage_citizens', 'citizen_details'
@@ -341,8 +343,12 @@
             orgName: 'Единая Служба Спасения',
             orgTab: 'docs', // 'docs', 'citizens'
             allTab: 'docs', // 'docs', 'citizens'
-            selectedCitizenId: null,
-            selectedCitizenName: ''
+            
+            // Для возврата из карточки гражданина
+            originView: 'org',
+            originOrgId: 1,
+            
+            selectedCitizenId: null
         };
 
         let allDocs = [];
@@ -385,7 +391,6 @@
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
                 
-                // По умолчанию загружаем ЕСС
                 switchView('org', 1, 'Единая Служба Спасения');
             } else {
                 document.getElementById('auth-screen').style.display = 'flex';
@@ -395,21 +400,18 @@
             }
         });
 
-        // --- НАВИГАЦИЯ И ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
+        // --- НАВИГАЦИЯ ---
         function switchView(viewType, orgId, orgName, element) {
             currentState.view = viewType;
             
-            // Сброс выделения в меню
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            if (element) {
-                element.classList.add('active');
-            } else {
-                // Если вызвано программно, ищем нужный элемент
+            if (element) element.classList.add('active');
+            else {
                 if (viewType === 'all_docs') document.getElementById('menu-all-docs').classList.add('active');
                 if (viewType === 'manage_citizens') document.getElementById('menu-manage-citizens').classList.add('active');
             }
 
-            // Прячем все контенты
+            // Прячем все
             document.getElementById('content-docs').style.display = 'none';
             document.getElementById('content-citizens-view').style.display = 'none';
             document.getElementById('content-manage-citizens').style.display = 'none';
@@ -417,25 +419,23 @@
             document.getElementById('view-org-tabs').style.display = 'none';
             document.getElementById('view-all-tabs').style.display = 'none';
             
-            // Настройка шапки
             const btnCreate = document.getElementById('btn-create-doc');
 
             if (viewType === 'org') {
                 currentState.orgId = orgId;
                 currentState.orgName = orgName;
-                document.getElementById('page-title').textContent = orgName === 'Единая Служба Спасения' ? 'Единая Служба Спасения' : orgName;
+                document.getElementById('page-title').textContent = orgName;
                 document.getElementById('page-subtitle').textContent = 'Управление документами и гражданами';
                 document.getElementById('view-org-tabs').style.display = 'block';
                 btnCreate.style.display = 'flex';
                 
-                // Восстанавливаем активную вкладку внутри организации
                 switchOrgTab(currentState.orgTab, document.getElementById(`tab-org-${currentState.orgTab}`));
                 
             } else if (viewType === 'all_docs') {
                 document.getElementById('page-title').textContent = 'Все документы';
                 document.getElementById('page-subtitle').textContent = 'Глобальный архив';
                 document.getElementById('view-all-tabs').style.display = 'block';
-                btnCreate.style.display = 'none'; // Нельзя создать документ без привязки к орг
+                btnCreate.style.display = 'none'; 
                 
                 switchAllTab(currentState.allTab, document.getElementById(`tab-all-${currentState.allTab}`));
                 
@@ -444,13 +444,9 @@
                 document.getElementById('page-subtitle').textContent = 'Добавление и редактирование профилей';
                 document.getElementById('content-manage-citizens').style.display = 'block';
                 btnCreate.style.display = 'none';
-                loadCitizens(); // Загружаем базу
-                
-            } else if (viewType === 'citizen_details') {
-                // Обрабатывается отдельно в openCitizenDocs
+                loadCitizens();
             }
 
-            // Загружаем статистику для текущего вида
             updateStats();
         }
 
@@ -488,9 +484,7 @@
             }
         }
 
-        // --- ЗАГРУЗКА И ОТОБРАЖЕНИЕ ДОКУМЕНТОВ ---
-        
-        // Вспомогательная функция для склейки данных (избегаем 400 ошибки)
+        // --- ДОКУМЕНТЫ ---
         async function fetchDocumentsData(filterOrgId = null) {
             let query = supabaseClient.from('documents').select('*');
             if (filterOrgId) query = query.eq('organization_id', filterOrgId);
@@ -498,7 +492,6 @@
             const { data: docs, error } = await query.order('created_at', { ascending: false });
             if (error) { console.error(error); return []; }
 
-            // Загружаем профили отдельно
             const { data: profiles } = await supabaseClient.from('profiles').select('id, last_name, first_name, patronymic');
             const profileMap = {};
             if(profiles) profiles.forEach(p => profileMap[p.id] = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`.trim());
@@ -579,11 +572,11 @@
             else {
                 if (currentState.view === 'org') loadOrgDocs();
                 else loadAllDocs();
+                updateStats();
             }
         }
 
-        // --- ЗАГРУЗКА ГРАЖДАН ---
-
+        // --- ГРАЖДАНЕ ---
         async function fetchCitizensData() {
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
             return error ? [] : data;
@@ -599,7 +592,6 @@
             renderCitizensView();
         }
 
-        // Для вкладок просмотра (в организациях и все)
         function renderCitizensView() {
             const tbody = document.getElementById('citizens-view-table-body');
             const query = document.getElementById('search-citizens-view').value.toLowerCase();
@@ -625,7 +617,7 @@
             });
         }
 
-        // --- УПРАВЛЕНИЕ ГРАЖДАНАМИ (РЕДАКТИРОВАНИЕ) ---
+        // --- УПРАВЛЕНИЕ ГРАЖДАНАМИ ---
         async function loadCitizens() {
             allCitizens = await fetchCitizensData();
             renderManageCitizens();
@@ -657,11 +649,14 @@
             });
         }
 
-        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА ---
+        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА (ИСПРАВЛЕНО!) ---
         async function openCitizenDocs(citizenId, citizenName) {
+            // Запоминаем ОТКУДА пришли
+            currentState.originView = currentState.view;
+            currentState.originOrgId = currentState.orgId;
+
             currentState.view = 'citizen_details';
             currentState.selectedCitizenId = citizenId;
-            currentState.selectedCitizenName = citizenName;
 
             document.getElementById('page-title').textContent = 'Документы гражданина';
             document.getElementById('page-subtitle').textContent = citizenName;
@@ -676,20 +671,12 @@
             document.getElementById('content-citizen-details').style.display = 'block';
             document.getElementById('citizen-details-name').textContent = citizenName;
 
-            // Загружаем документы этого человека
+            // Загружаем документы
             let query = supabaseClient.from('documents').select('*').eq('patient_id', citizenId);
             
-            // Если мы в контексте организации - фильтруем
-            if (currentState.orgTab && (document.getElementById('tab-org-docs').classList.contains('active') || document.getElementById('tab-org-citizens').classList.contains('active'))) {
-                // Проверяем, какая вкладка была активна до перехода
-                if (document.getElementById('view-org-tabs').style.display !== 'none' || document.getElementById('tab-org-docs').classList.contains('active')) {
-                     // Находим активную организацию по сайдбару
-                     const activeOrg = document.querySelector('.org-tab.active');
-                     if(activeOrg) {
-                        const orgId = activeOrg.getAttribute('data-org');
-                        query = query.eq('organization_id', orgId);
-                     }
-                }
+            // ⚠️ ГЛАВНЫЙ ФИКС: Если пришли из организации, фильтруем по её ID
+            if (currentState.originView === 'org') {
+                query = query.eq('organization_id', currentState.originOrgId);
             }
 
             const { data: docs } = await query.order('created_at', { ascending: false });
@@ -719,26 +706,19 @@
         }
 
         function goBack() {
-            // Возвращаемся к тому виду, откуда пришли
-            if (currentState.view === 'citizen_details') {
-                if (document.getElementById('tab-all-docs').classList.contains('active') || document.getElementById('tab-all-citizens').classList.contains('active')) {
-                    switchView('all_docs');
-                } else {
-                    const activeOrg = document.querySelector('.org-tab.active');
-                    const orgId = activeOrg ? activeOrg.getAttribute('data-org') : 1;
-                    const orgName = activeOrg ? activeOrg.textContent.replace(/[^\w\sА-Яа-я]/g, '').trim() : 'ЕСС';
-                    switchView('org', orgId, orgName);
-                }
+            if (currentState.originView === 'all_docs') {
+                switchView('all_docs');
+            } else {
+                const orgName = orgNames[currentState.originOrgId] || 'ЕСС';
+                switchView('org', currentState.originOrgId, orgName);
             }
         }
 
         // --- СТАТИСТИКА ---
         async function updateStats() {
-            // Граждане
             const { count: citizensCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'patient');
             document.getElementById('stat-citizens').textContent = citizensCount || 0;
 
-            // Документы
             if (currentState.view === 'org') {
                 const { count: docsCount } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('organization_id', currentState.orgId);
                 document.getElementById('stat-docs').textContent = docsCount || 0;
@@ -753,7 +733,7 @@
             }
         }
 
-        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+        // --- ВСПОМОГАТЕЛЬНЫЕ ---
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function closePreview() { document.getElementById('preview-modal').style.display = 'none'; document.getElementById('preview-frame').src = ''; }
         function previewDoc(url) {
@@ -762,7 +742,6 @@
             document.getElementById('preview-modal').style.display = 'flex';
         }
 
-        // Модалка создания документа
         async function openCreateDocModal() {
             document.getElementById('create-doc-title').textContent = `Создать документ (${currentState.orgName})`;
             document.getElementById('create-doc-modal').style.display = 'flex';
@@ -795,7 +774,6 @@
             });
         }
 
-        // Редактирование
         async function openEdit(id) {
             const { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
             if (error) return alert("Ошибка загрузки: " + error.message);
@@ -830,7 +808,6 @@
             else { closeModal('edit-modal'); loadCitizens(); }
         }
 
-        // Добавление
         function openAddCitizenModal() {
             document.getElementById('add-email').value = '';
             document.getElementById('add-last-name').value = '';
@@ -856,14 +833,7 @@
             const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
             
             if (authError) {
-                alert("ОШИБКА СОЗДАНИЯ: " + authError.message + "\n\nУбедитесь, что в Supabase (Authentication -> Providers -> Email) выключено подтверждение почты (Confirm email)!");
-                btn.disabled = false;
-                btn.textContent = 'Создать';
-                return;
-            }
-
-            if (!authData.user) {
-                alert("Пользователь не создан. Проверьте настройки Supabase.");
+                alert("ОШИБКА СОЗДАНИЯ: " + authError.message);
                 btn.disabled = false;
                 btn.textContent = 'Создать';
                 return;
