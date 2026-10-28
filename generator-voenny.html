@@ -31,7 +31,7 @@
         .radio-group { display: flex; gap: 15px; margin-top: 5px; flex-wrap: wrap; }
         .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 
-        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(00,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
         .preview-header h3 { margin: 0; color: #333; }
@@ -117,7 +117,6 @@
             </div>
         </div>
         
-        <!-- Звание военкома (Страница 2) -->
         <div class="form-group">
             <label>Звание военного комиссара</label>
             <select id="commissarRank" class="form-select">
@@ -159,7 +158,6 @@
             </div>
         </div>
 
-        <!-- Звание гражданина (Страница 3) -->
         <div class="form-group">
             <label>Воинское звание гражданина</label>
             <select id="citizenRank" class="form-select">
@@ -279,10 +277,9 @@
     const currentOrgId = parseInt(urlParams.get('org')) || 1;
 
     // =====================================================================
-    // ⚠️ ТВОИ КООРДИНАТЫ (ВСТАВЛЕНЫ БЕЗ ИЗМЕНЕНИЙ) ⚠️
+    // ⚠️ ТВОИ КООРДИНАТЫ ⚠️
     // =====================================================================
     const COORDS = {
-        // --- СТРАНИЦА 2 ---
         page2: {
             docNumber: { xStart: 0, xEnd: 243, y: 256 }, 
             firstNameAndPatronymic: { x: 71, y: 234.8 },
@@ -302,62 +299,36 @@
                 month: { xStart: 136, xEnd: 197, y: 118 }, 
                 year: { xStart: 207, xEnd: 217, y: 118 } 
             },
-            rank: { x: 111, y: 58.6 } // Звание комиссара
+            rank: { x: 111, y: 58.6 } 
         },
-
-        // --- СТРАНИЦА 3 ---
         page3: {
             fitnessText: { x: 89, y: 299.5 }, 
             vus: { x: 127, y: 287.5 }, 
-            rank: { x: 82, y: 275.8 }, // Звание гражданина
+            rank: { x: 82, y: 275.8 }, 
             
             service1: {
-                date: { 
-                    day: { xStart: 24, xEnd: 34, y: 244.5 }, 
-                    month: { xStart: 40, xEnd: 85, y: 244.5 }, 
-                    year: { xStart: 94, xEnd: 104, y: 244.5 } 
-                },
+                date: { day: { xStart: 24, xEnd: 34, y: 244.5 }, month: { xStart: 40, xEnd: 85, y: 244.5 }, year: { xStart: 94, xEnd: 104, y: 244.5 } },
                 dayNum: { xStart: 117, xEnd: 127, y: 244.5 },
                 order: { xStart: 49, xEnd: 84, y: 221.4 }
             },
             service2: {
-                date: { 
-                    day: { xStart: 24.5, xEnd: 34, y: 205.5 }, 
-                    month: { xStart: 40.5, xEnd: 85, y: 205.5 }, 
-                    year: { xStart: 94.5, xEnd: 104, y: 205.5 } 
-                },
+                date: { day: { xStart: 24.5, xEnd: 34, y: 205.5 }, month: { xStart: 40.5, xEnd: 85, y: 205.5 }, year: { xStart: 94.5, xEnd: 104, y: 205.5 } },
                 dayNum: { xStart: 117, xEnd: 127, y: 205.5 },
                 order: { xStart: 49.5, xEnd: 84, y: 182 }
             },
             service3: {
-                date: { 
-                    day: { xStart: 24.5, xEnd: 34, y: 166 }, 
-                    month: { xStart: 40.5, xEnd: 85, y: 166 }, 
-                    year: { xStart: 94.5, xEnd: 104, y: 166 } 
-                },
+                date: { day: { xStart: 24.5, xEnd: 34, y: 166 }, month: { xStart: 40.5, xEnd: 85, y: 166 }, year: { xStart: 94.5, xEnd: 104, y: 166 } },
                 dayNum: { xStart: 117, xEnd: 127, y: 166 },
                 order: { xStart: 49, xEnd: 84, y: 131 }
             }
         },
-
-        // --- СТРАНИЦА 4 ---
         page4: {
-            dischargeDate: { 
-                day: { xStart: 110, xEnd: 120, y: 299 }, 
-                month: { xStart: 127, xEnd: 191, y: 299 }, 
-                year: { xStart: 200, xEnd: 210, y: 299 } 
-            },
+            dischargeDate: { day: { xStart: 110, xEnd: 120, y: 299 }, month: { xStart: 127, xEnd: 191, y: 299 }, year: { xStart: 200, xEnd: 210, y: 299 } },
             dischargeDayNum: { xStart: 18, xEnd: 57, y: 288.5 },
             dischargeReason: { x: 14, y: 276, maxWidth: 212, lineHeight: 11, indent: 80 }, 
-            
             region: { xStart: 35, xEnd: 154, y: 104.3 },
             area: { xStart: 14, xEnd: 85, y: 93 },
-            
-            issueDate: { 
-                day: { xStart: 77, xEnd: 87, y: 81 }, 
-                month: { xStart: 94, xEnd: 144, y: 81 }, 
-                year: { xStart: 154, xEnd: 164, y: 81 } 
-            }
+            issueDate: { day: { xStart: 77, xEnd: 87, y: 81 }, month: { xStart: 94, xEnd: 144, y: 81 }, year: { xStart: 154, xEnd: 164, y: 81 } }
         }
     };
 
@@ -365,7 +336,6 @@
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
     let currentPdfBlob = null;
 
-    // Инициализация выпадающих списков месяцев
     function initMonths() {
         const selects = document.querySelectorAll('.month');
         selects.forEach(select => {
@@ -375,16 +345,10 @@
         });
     }
 
-    // Шаблон для причины увольнения
     function initTemplates() {
         const select = document.getElementById('template-reason');
         const textarea = document.getElementById('dischargeReason');
-        const options = [
-            "Окончание срока военной службы по призыву",
-            "Достижение предельного возраста пребывания на военной службе",
-            "Невыполнение условий контракта",
-            "Лишение воинского звания"
-        ];
+        const options = ["Окончание срока военной службы по призыву", "Достижение предельного возраста пребывания на военной службе", "Невыполнение условий контракта", "Лишение воинского звания"];
         options.forEach(opt => {
             const o = document.createElement('option');
             o.value = opt; o.textContent = opt;
@@ -395,7 +359,6 @@
         });
     }
 
-    // Загрузка граждан
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
         const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
@@ -410,7 +373,6 @@
         });
     }
 
-    // Автозаполнение при выборе гражданина
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const opt = e.target.options[e.target.selectedIndex];
         if (!opt.value || opt.value === 'none') return;
@@ -430,19 +392,16 @@
         }
     });
 
-    // Установка текущей даты
     function initDates() {
         const today = new Date();
         const d = String(today.getDate()).padStart(2, '0');
         const m = MONTHS_NUMERIC[today.getMonth()];
         const y = String(today.getFullYear()).slice(-2);
-        
         document.getElementById('issueDateDay').value = d;
         document.getElementById('issueDateMonth').value = m;
         document.getElementById('issueDateYear').value = y;
     }
 
-    // Вспомогательные функции рисования
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
@@ -475,7 +434,6 @@
         }
     }
 
-    // Обработчики модалки
     document.getElementById('close-preview-btn').addEventListener('click', () => {
         document.getElementById('preview-modal').style.display = 'none';
         document.getElementById('pdf-preview-frame').src = '';
@@ -490,7 +448,6 @@
         link.click();
     });
 
-    // Генерация
     document.getElementById('voenForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -541,7 +498,6 @@
             page2.drawText(getVal('maritalStatus'), { x: COORDS.page2.maritalStatus.x, y: COORDS.page2.maritalStatus.y, ...opt9 });
             page2.drawText(getVal('education'), { x: COORDS.page2.education.x, y: COORDS.page2.education.y, ...opt9 });
             
-            // Звание комиссара
             page2.drawText(getVal('commissarRank'), { x: COORDS.page2.rank.x, y: COORDS.page2.rank.y, ...opt9 });
 
             const issueDay = getVal('issueDateDay');
@@ -552,17 +508,13 @@
             drawCenteredInRange(page2, issueMonthStr, COORDS.page2.issueDate.month.xStart, COORDS.page2.issueDate.month.xEnd, COORDS.page2.issueDate.month.y, opt9);
             drawCenteredInRange(page2, issueYear, COORDS.page2.issueDate.year.xStart, COORDS.page2.issueDate.year.xEnd, COORDS.page2.issueDate.year.y, opt9);
 
-
             // --- СТРАНИЦА 3 ---
             const fitnessVal = document.querySelector('input[name="fitness"]:checked').value;
             page3.drawText(fitnessVal, { x: COORDS.page3.fitnessText.x, y: COORDS.page3.fitnessText.y, ...opt9 });
 
             page3.drawText(getVal('vus'), { x: COORDS.page3.vus.x, y: COORDS.page3.vus.y, ...opt9 });
-            
-            // Звание гражданина
             page3.drawText(getVal('citizenRank'), { x: COORDS.page3.rank.x, y: COORDS.page3.rank.y, ...opt9 });
 
-            // Отметки о службе (1, 2, 3)
             const serviceData = [
                 { id: '1', coords: COORDS.page3.service1 },
                 { id: '2', coords: COORDS.page3.service2 },
@@ -587,7 +539,6 @@
                 }
             });
 
-
             // --- СТРАНИЦА 4 ---
             const disDay = getVal('dischargeDay');
             const disMonth = getVal('dischargeMonth');
@@ -611,12 +562,13 @@
             drawCenteredInRange(page4, issueMonthStr, COORDS.page4.issueDate.month.xStart, COORDS.page4.issueDate.month.xEnd, COORDS.page4.issueDate.month.y, opt9);
             drawCenteredInRange(page4, issueYear, COORDS.page4.issueDate.year.xStart, COORDS.page4.issueDate.year.xEnd, COORDS.page4.issueDate.year.y, opt9);
 
-
-            // --- СОХРАНЕНИЕ ---
             const pdfBytes = await pdfDoc.save();
             currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
             
-            const fileName = `${Date.now()}_VOEN.pdf`;
+            // ⚠️ ИСПРАВЛЕНИЕ ОШИБКИ InvalidKey (Убираем кириллицу из имени файла)
+            // Теперь файл называется только латинскими буквами и цифрами
+            const safeDocNum = docNum.replace(/[^a-zA-Z0-9]/g, '_');
+            const fileName = `${Date.now()}_VOEN_${safeDocNum}.pdf`;
 
             await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
             await supabaseClient.from('documents').insert({
@@ -640,7 +592,6 @@
         }
     });
 
-    // Запуск
     initMonths();
     initTemplates();
     initDates();
