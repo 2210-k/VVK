@@ -95,7 +95,7 @@
             <option value="">-- Выберите тип --</option>
             <option value="1">1. О зачислении в списки части</option>
             <option value="2">2. О присвоении воинского звания</option>
-            <option value="3">3. Об увольнении в запас</option>
+            <option value="3">3. Об увольнении</option>
         </select>
 
         <!-- Блок 1: Зачисление -->
@@ -162,7 +162,7 @@
                 <input type="checkbox" id="issueBilet" checked>
                 <label for="issueBilet">Выдать военный билет (с отметкой об увольнении)</label>
             </div>
-            <p style="color: #666; font-size: 12px; margin-top: 5px;">Если снять галочку, то пункт про военкомат изменится, а пункт про выдачу билета удалится.</p>
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">Если снять галочку, то изменится название приказа, пункт про военкомат, и удалится пункт про билет.</p>
         </div>
 
         <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
@@ -197,12 +197,12 @@
         qrCode: { x: 43, y: 738, width: 85, height: 85 },
         barcode: { x: 461, y: 773, width: 85, height: 35 },
         date: { 
-            day: { xStart: 42, xEnd: 57, y: 680}, 
-            month: { xStart: 71, xEnd: 157, y: 680}, 
-            year: { xStart: 192, xEnd: 206, y: 680} 
+            day: { xStart: 42, xEnd: 57, y: 678.5}, 
+            month: { xStart: 71, xEnd: 157, y: 678.5}, 
+            year: { xStart: 192, xEnd: 206, y: 678.5} 
         },
-        dayNumber: { xStart: 229, xEnd: 260, y: 680 },
-        docNumber: { xStart: 496, xEnd: 546, y: 680 },
+        dayNumber: { xStart: 229, xEnd: 260, y: 679 },
+        docNumber: { xStart: 496, xEnd: 546, y: 679 },
         orderTypeText: { y: 702, maxWidth: 592 },
         bodyText: { x: 34, y: 651, maxWidth: 525, lineHeight: 13 }
     };
@@ -380,11 +380,20 @@
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt9);
             drawCenteredInRange(firstPage, docNum, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt9);
 
-            // Заголовок
+            // --- ИЗМЕНЕННЫЙ БЛОК ЗАГОЛОВКА ---
             let typeTitle = "";
-            if (type === '1') typeTitle = "О ЗАЧИСЛЕНИИ В СПИСКИ ЧАСТИ";
-            else if (type === '2') typeTitle = "О ПРИСВОЕНИИ ВОИНСКОГО ЗВАНИЯ";
-            else if (type === '3') typeTitle = "ОБ УВОЛЬНЕНИИ В ЗАПАС";
+            if (type === '1') {
+                typeTitle = "О ЗАЧИСЛЕНИИ В СПИСКИ ЧАСТИ";
+            } else if (type === '2') {
+                typeTitle = "О ПРИСВОЕНИИ ВОИНСКОГО ЗВАНИЯ";
+            } else if (type === '3') {
+                const issueBilet = document.getElementById('issueBilet').checked;
+                if (issueBilet) {
+                    typeTitle = "ОБ УВОЛЬНЕНИИ В ЗАПАС";
+                } else {
+                    typeTitle = "ОБ УВОЛЬНЕНИИ С ВОЕННОЙ СЛУЖБЫ";
+                }
+            }
 
             const titleWidth = boldFont.widthOfTextAtSize(typeTitle, 10);
             firstPage.drawText(typeTitle, {
