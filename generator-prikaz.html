@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Генератор Приказов ВЧ</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Библиотеки для генерации кодов -->
+    <!-- Оставляем только штрих-код -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
@@ -30,8 +29,6 @@
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
         
         .section-title { background: #e2e8f0; padding: 10px; border-radius: 4px; margin-top: 20px; margin-bottom: 15px; font-weight: bold; color: #1e3a8a; }
-
-        /* Скрытые блоки для разных типов приказов */
         .type-block { display: none; background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px dashed #ccc; margin-top: 10px; }
 
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
@@ -60,7 +57,6 @@
     
     <form id="prikazForm">
         
-        <!-- ОБЩИЕ ДАННЫЕ -->
         <div class="row">
             <div class="form-group">
                 <label>Дата приказа</label>
@@ -89,7 +85,6 @@
             <input type="text" id="citizenYear" placeholder="Например: 1990" required>
         </div>
 
-        <!-- ВЫБОР ТИПА ПРИКАЗА -->
         <div class="section-title">Тип приказа</div>
         <select id="orderType" class="form-select" onchange="switchOrderType()" required>
             <option value="">-- Выберите тип --</option>
@@ -98,7 +93,6 @@
             <option value="3">3. Об увольнении в запас</option>
         </select>
 
-        <!-- БЛОК 1: ЗАЧИСЛЕНИЕ -->
         <div id="block-1" class="type-block">
             <div class="row">
                 <div class="form-group">
@@ -123,7 +117,6 @@
             </div>
         </div>
 
-        <!-- БЛОК 2: ПРИСВОЕНИЕ ЗВАНИЯ -->
         <div id="block-2" class="type-block">
             <div class="row">
                 <div class="form-group">
@@ -143,7 +136,6 @@
             </div>
         </div>
 
-        <!-- БЛОК 3: УВОЛЬНЕНИЕ -->
         <div id="block-3" class="type-block">
             <p style="color: #555; margin: 0;">Этот тип приказа не требует дополнительных данных (текст формируется автоматически).</p>
         </div>
@@ -152,7 +144,6 @@
     </form>
 </div>
 
-<!-- Модалка предпросмотра -->
 <div id="preview-modal">
     <div class="preview-container">
         <div class="preview-header">
@@ -172,38 +163,26 @@
 <script>
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
     const urlParams = new URLSearchParams(window.location.search);
-    const currentOrgId = parseInt(urlParams.get('org')) || 4; // По умолчанию ВЧ (ID=4)
+    const currentOrgId = parseInt(urlParams.get('org')) || 4;
 
-    // =====================================================================
-    // ⚠️ КООРДИНАТЫ ДЛЯ ПРИКАЗА ⚠️
-    // Размер А4 (595 x 842 pt)
-    // =====================================================================
     const COORDS = {
-        // Коды
-        qrCode: { x: 30, y: 700, width: 85, height: 85 }, // Левый верхний угол (3х3 см)
-        barcode: { x: 450, y: 700, width: 85, height: 50 }, // Правый верхний угол
-
-        // Шапка (дата и номер сверху)
+        qrCode: { x: 30, y: 700, width: 85, height: 85 },
+        barcode: { x: 450, y: 700, width: 85, height: 50 },
         date: { 
-            day: { xStart: 42, xEnd: 57, y: 678 }, 
-            month: { xStart: 71, xEnd: 156, y: 678 }, 
-            year: { xStart: 192, xEnd: 206, y: 678 } 
+            day: { xStart: 50, xEnd: 65, y: 760 }, 
+            month: { xStart: 70, xEnd: 120, y: 760 }, 
+            year: { xStart: 125, xEnd: 140, y: 760 } 
         },
-        dayNumber: { xStart: 228, xEnd: 260, y: 678 },
-        docNumber: { xStart: 496, xEnd: 546, y: 678 },
-
-        // Заголовок (Тип приказа) - по центру
-        orderTypeText: { y: 705, maxWidth: 593 },
-
-        // Основной текст приказа
-        bodyText: { x: 34, y: 651, maxWidth: 525, lineHeight: 13 }
+        dayNumber: { xStart: 150, xEnd: 180, y: 760 },
+        docNumber: { xStart: 200, xEnd: 250, y: 760 },
+        orderTypeText: { y: 650, maxWidth: 500 },
+        bodyText: { x: 50, y: 600, maxWidth: 495, lineHeight: 14 }
     };
 
     const MONTHS_NUMERIC = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
     const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
     let currentPdfBlob = null;
 
-    // Показ нужного блока при выборе типа
     function switchOrderType() {
         const type = document.getElementById('orderType').value;
         document.getElementById('block-1').style.display = (type === '1') ? 'block' : 'none';
@@ -211,7 +190,6 @@
         document.getElementById('block-3').style.display = (type === '3') ? 'block' : 'none';
     }
 
-    // Инициализация месяцев
     function initMonths() {
         const selects = document.querySelectorAll('.month');
         selects.forEach(select => {
@@ -221,7 +199,6 @@
         });
     }
 
-    // Загрузка граждан
     async function loadCitizens() {
         const select = document.getElementById('patientSelect');
         const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
@@ -236,7 +213,6 @@
         });
     }
 
-    // Автозаполнение при выборе гражданина
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const opt = e.target.options[e.target.selectedIndex];
         if (!opt.value || opt.value === 'none') return;
@@ -248,17 +224,15 @@
         }
     });
 
-    // Установка текущей даты и номеров
     function initDates() {
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
         document.getElementById('dateMonth').value = MONTHS_NUMERIC[today.getMonth()];
         document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
-        
         document.getElementById('docNumber').value = `0513${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
     }
 
-    // --- ФУНКЦИИ ГЕНЕРАЦИИ КОДОВ ---
+    // --- ГЕНЕРАЦИЯ ШТРИХ-КОДА ---
     async function createBarcodeImage(text) {
         const canvas = document.createElement('canvas');
         JsBarcode(canvas, text, {
@@ -268,14 +242,13 @@
         return await fetch(dataUrl).then(res => res.arrayBuffer());
     }
 
+    // --- ГЕНЕРАЦИЯ QR-КОДА (ЧЕРЕЗ API) ---
     async function createQrImage(text) {
-        const canvas = document.createElement('canvas');
-        await QRCode.toCanvas(canvas, text, { width: 300, margin: 1 });
-        const dataUrl = canvas.toDataURL("image/png");
-        return await fetch(dataUrl).then(res => res.arrayBuffer());
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+        const response = await fetch(url);
+        return await response.arrayBuffer();
     }
 
-    // Вспомогательные функции рисования
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const textWidth = options.font.widthOfTextAtSize(text, options.size);
@@ -308,7 +281,6 @@
         }
     }
 
-    // Закрытие модалки
     document.getElementById('close-preview-btn').addEventListener('click', () => {
         document.getElementById('preview-modal').style.display = 'none';
         document.getElementById('pdf-preview-frame').src = '';
@@ -323,7 +295,6 @@
         link.click();
     });
 
-    // --- ГЕНЕРАЦИЯ ПРИКАЗА ---
     document.getElementById('prikazForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -335,8 +306,7 @@
         btn.textContent = 'Генерация...';
 
         try {
-            // 1. Загружаем шаблон (твоя шапка)
-            const url = './prikaz_vch.pdf'; // Убедись, что файл так называется на GitHub
+            const url = './prikaz_vch.pdf'; 
             const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
@@ -351,10 +321,9 @@
             const opt9 = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const optBold = { size: 14, font: customFont, color: PDFLib.rgb(0, 0, 0) };
 
-            // --- 2. ГЕНЕРАЦИЯ И ВСТАВКА КОДОВ ---
             const docNum = getVal('docNumber');
             
-            // Штрих-код
+            // Вставляем штрих-код
             const barcodeBytes = await createBarcodeImage(docNum);
             const barcodeImage = await pdfDoc.embedPng(barcodeBytes);
             firstPage.drawImage(barcodeImage, {
@@ -362,9 +331,10 @@
                 width: COORDS.barcode.width, height: COORDS.barcode.height
             });
 
-            // QR-код
+            // Вставляем QR-код
             const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.${getVal('dateYear')}`;
-            const qrText = `ВОИНСКАЯ ЧАСТЬ 205.\nПриказ № ${docNum} о ${document.getElementById('orderType').options[document.getElementById('orderType').selectedIndex].text}.\n${getVal('citizenName')}\nДата: ${dateStr}`;
+            const orderTypeName = document.getElementById('orderType').options[document.getElementById('orderType').selectedIndex].text;
+            const qrText = `ВОИНСКАЯ ЧАСТЬ 205.\nПриказ № ${docNum} ${orderTypeName}.\n${getVal('citizenName')}\nДата: ${dateStr}`;
             const qrBytes = await createQrImage(qrText);
             const qrImage = await pdfDoc.embedPng(qrBytes);
             firstPage.drawImage(qrImage, {
@@ -372,7 +342,6 @@
                 width: COORDS.qrCode.width, height: COORDS.qrCode.height
             });
 
-            // --- 3. РИСОВАНИЕ ДАТЫ И НОМЕРА В ШАПКЕ ---
             const dateMonthStr = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(getVal('dateMonth'))];
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt9);
             drawCenteredInRange(firstPage, dateMonthStr, COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt9);
@@ -380,7 +349,6 @@
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt9);
             drawCenteredInRange(firstPage, docNum, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt9);
 
-            // --- 4. ФОРМИРОВАНИЕ ТЕКСТА ПРИКАЗА ---
             let typeTitle = "";
             let bodyText = "";
             const fio = getVal('citizenName');
@@ -397,7 +365,6 @@
                 bodyText = `В связи с окончанием срока военной службы по призыву, в соответствии с Федеральным законом «О воинской обязанности и военной службе»,\nПРИКАЗЫВАЮ:\n1) Уволить с военной службы и исключить из списков войсковой части № 205 гражданина ${fio}, ${year} года рождения.\n2) Направить гражданина в военный комиссариат Соль-Илецкого района для постановки на воинский учёт.\n3) Выдать военный билет с отметкой об увольнении.\n\nОснование: Истечение срока военной службы по призыву.`;
             }
 
-            // Рисуем заголовок (жирным, по центру)
             const titleWidth = customFont.widthOfTextAtSize(typeTitle, 14);
             firstPage.drawText(typeTitle, {
                 x: (595 - titleWidth) / 2, 
@@ -405,7 +372,6 @@
                 ...optBold
             });
 
-            // Рисуем основной текст с переносами
             drawParagraph(firstPage, bodyText, COORDS.bodyText.x, COORDS.bodyText.y, {
                 ...opt9, 
                 maxWidth: COORDS.bodyText.maxWidth, 
@@ -413,7 +379,6 @@
                 indent: 0
             });
 
-            // --- 5. СОХРАНЕНИЕ ---
             const pdfBytes = await pdfDoc.save();
             currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
             
@@ -441,7 +406,6 @@
         }
     });
 
-    // Запуск
     initMonths();
     initDates();
     loadCitizens();
