@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Генератор Приказов ВЧ</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Оставляем только штрих-код -->
+    <!-- Библиотека для штрих-кода -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     
     <style>
@@ -93,6 +93,7 @@
             <option value="3">3. Об увольнении в запас</option>
         </select>
 
+        <!-- Блок 1: Зачисление -->
         <div id="block-1" class="type-block">
             <div class="row">
                 <div class="form-group">
@@ -103,7 +104,6 @@
                         <option value="радист (связист)">радист (связист)</option>
                         <option value="пулемётчик">пулемётчик</option>
                         <option value="гранатомётчик">гранатомётчик</option>
-                        <option value="водитель">водитель</option>
                         <option value="механик-водитель">механик-водитель</option>
                         <option value="разведчик">разведчик</option>
                         <option value="снайпер">снайпер</option>
@@ -125,6 +125,7 @@
             </div>
         </div>
 
+        <!-- Блок 2: Звание -->
         <div id="block-2" class="type-block">
             <div class="row">
                 <div class="form-group">
@@ -144,6 +145,7 @@
             </div>
         </div>
 
+        <!-- Блок 3: Увольнение -->
         <div id="block-3" class="type-block">
             <p style="color: #555; margin: 0;">Этот тип приказа не требует дополнительных данных (текст формируется автоматически).</p>
         </div>
@@ -173,13 +175,16 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentOrgId = parseInt(urlParams.get('org')) || 4;
 
+    // =====================================================================
+    // ⚠️ ТВОИ ЗАПОМНЕННЫЕ КООРДИНАТЫ ⚠️
+    // =====================================================================
     const COORDS = {
-        qrCode: { x: 43, y: 823, width: 85, height: 85 },
-        barcode: { x: 461, y: 823, width: 85, height: 50 },
+        qrCode: { x: 43, y: 738, width: 85, height: 85 },
+        barcode: { x: 461, y: 773, width: 85, height: 50 },
         date: { 
-            day: { xStart: 42, xEnd: 57, y: 678 }, 
-            month: { xStart: 71, xEnd: 157, y: 678 }, 
-            year: { xStart: 192, xEnd: 206, y: 678 } 
+            day: { xStart: 42, xEnd: 57, y: 677.5}, 
+            month: { xStart: 71, xEnd: 157, y: 677.5}, 
+            year: { xStart: 192, xEnd: 206, y: 677.5} 
         },
         dayNumber: { xStart: 229, xEnd: 260, y: 678 },
         docNumber: { xStart: 496, xEnd: 546, y: 678 },
@@ -240,7 +245,7 @@
         document.getElementById('docNumber').value = `0513${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
     }
 
-    // --- ГЕНЕРАЦИЯ ШТРИХ-КОДА ---
+    // Генерация штрих-кода
     async function createBarcodeImage(text) {
         const canvas = document.createElement('canvas');
         JsBarcode(canvas, text, {
@@ -250,7 +255,7 @@
         return await fetch(dataUrl).then(res => res.arrayBuffer());
     }
 
-    // --- ГЕНЕРАЦИЯ QR-КОДА (ЧЕРЕЗ API) ---
+    // Генерация QR-кода (через внешний API)
     async function createQrImage(text) {
         const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
         const response = await fetch(url);
@@ -264,29 +269,41 @@
         page.drawText(text, { ...options, x: startX, y });
     }
 
+    // ⚠️ ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕРЕНОСА СТРОК (теперь обрабатывает \n) ⚠️
     function drawParagraph(page, text, x, y, options) {
         if (!text) return;
         const { font, size, color, maxWidth, lineHeight, indent } = options;
-        const words = text.split(' ');
-        let lines = [], currentLine = '', isFirstLine = true;
-        for (let word of words) {
-            const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
-            const testLine = currentLine === '' ? word : currentLine + ' ' + word;
-            if (font.widthOfTextAtSize(testLine, size) <= availableWidth) {
-                currentLine = testLine;
-            } else {
-                lines.push({ text: currentLine, isFirst: isFirstLine });
-                currentLine = word;
-                isFirstLine = false;
-            }
-        }
-        if (currentLine !== '') lines.push({ text: currentLine, isFirst: isFirstLine });
+        
+        // Разбиваем текст по символу переноса строки
+        const paragraphs = text.split('\n');
         let currentY = y;
-        for (let line of lines) {
-            const currentX = line.isFirst ? x + indent : x;
-            page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
-            currentY -= lineHeight;
-        }
+
+        paragraphs.forEach(pText => {
+            const words = pText.split(' ');
+            let currentLine = '';
+            let isFirstLine = true;
+            let lines = [];
+
+            for (let word of words) {
+                const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
+                const testLine = currentLine === '' ? word : currentLine + ' ' + word;
+                if (font.widthOfTextAtSize(testLine, size) <= availableWidth) {
+                    currentLine = testLine;
+                } else {
+                    lines.push({ text: currentLine, isFirst: isFirstLine });
+                    currentLine = word;
+                    isFirstLine = false;
+                }
+            }
+            if (currentLine !== '') lines.push({ text: currentLine, isFirst: isFirstLine });
+
+            // Рисуем строки текущего абзаца
+            lines.forEach(line => {
+                const currentX = line.isFirst ? x + indent : x;
+                page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
+                currentY -= lineHeight;
+            });
+        });
     }
 
     document.getElementById('close-preview-btn').addEventListener('click', () => {
@@ -319,19 +336,26 @@
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
             
-            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
-            const fontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
-            const customFont = await pdfDoc.embedFont(fontBytes);
+            // Загружаем обычный и ЖИРНЫЙ шрифт
+            const fontUrlReg = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontUrlBold = 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf';
+            
+            const fontBytesReg = await fetch(fontUrlReg).then(res => res.arrayBuffer());
+            const fontBytesBold = await fetch(fontUrlBold).then(res => res.arrayBuffer());
+            
+            const customFont = await pdfDoc.embedFont(fontBytesReg);
+            const boldFont = await pdfDoc.embedFont(fontBytesBold);
             
             const firstPage = pdfDoc.getPages()[0];
             const getVal = (id) => document.getElementById(id).value;
             
             const opt9 = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
-            const optBold = { size: 14, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+            // ⚠️ ЗАГОЛОВОК 11 РАЗМЕРА И ЖИРНЫЙ ⚠️
+            const optTitle = { size: 11, font: boldFont, color: PDFLib.rgb(0, 0, 0) };
 
             const docNum = getVal('docNumber');
             
-            // Вставляем штрих-код
+            // Штрих-код
             const barcodeBytes = await createBarcodeImage(docNum);
             const barcodeImage = await pdfDoc.embedPng(barcodeBytes);
             firstPage.drawImage(barcodeImage, {
@@ -339,7 +363,7 @@
                 width: COORDS.barcode.width, height: COORDS.barcode.height
             });
 
-            // Вставляем QR-код
+            // QR-код
             const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.${getVal('dateYear')}`;
             const orderTypeName = document.getElementById('orderType').options[document.getElementById('orderType').selectedIndex].text;
             const qrText = `ВОИНСКАЯ ЧАСТЬ 205.\nПриказ № ${docNum} ${orderTypeName}.\n${getVal('citizenName')}\nДата: ${dateStr}`;
@@ -373,13 +397,15 @@
                 bodyText = `В связи с окончанием срока военной службы по призыву, в соответствии с Федеральным законом «О воинской обязанности и военной службе»,\nПРИКАЗЫВАЮ:\n1) Уволить с военной службы и исключить из списков войсковой части № 205 гражданина ${fio}, ${year} года рождения.\n2) Направить гражданина в военный комиссариат Соль-Илецкого района для постановки на воинский учёт.\n3) Выдать военный билет с отметкой об увольнении.\n\nОснование: Истечение срока военной службы по призыву.`;
             }
 
-            const titleWidth = customFont.widthOfTextAtSize(typeTitle, 14);
+            // Рисуем заголовок (11 размер, Жирный, по центру)
+            const titleWidth = boldFont.widthOfTextAtSize(typeTitle, 11);
             firstPage.drawText(typeTitle, {
                 x: (595 - titleWidth) / 2, 
                 y: COORDS.orderTypeText.y, 
-                ...optBold
+                ...optTitle
             });
 
+            // Рисуем основной текст (с правильными переносами \n)
             drawParagraph(firstPage, bodyText, COORDS.bodyText.x, COORDS.bodyText.y, {
                 ...opt9, 
                 maxWidth: COORDS.bodyText.maxWidth, 
