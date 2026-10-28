@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор Военного билета</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        textarea { resize: vertical; height: 60px; }
+        .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        button[type="submit"]:hover { background: #004494; }
+        button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 150px; }
+        .date-group { display: flex; gap: 5px; }
+        .date-group input, .date-group select { text-align: center; }
+        .date-group .day { width: 25%; }
+        .date-group .month { width: 45%; }
+        .date-group .year { width: 25%; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
+        
+        .section-title { background: #e2e8f0; padding: 10px; border-radius: 4px; margin-top: 30px; margin-bottom: 15px; font-weight: bold; color: #1e3a8a; }
+        
+        .radio-group { display: flex; gap: 15px; margin-top: 5px; flex-wrap: wrap; }
+        .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
+        .preview-header h3 { margin: 0; color: #333; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-close { background: #ef4444; color: white; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Вернуться на портал</a>
+    
+    <div class="patient-selector">
+        <label>👤 Выберите гражданина (данные подставятся)</label>
+        <select id="patientSelect" class="form-select">
+            <option value="none">-- Без гражданина (В архив) --</option>
+        </select>
+    </div>
+
+    <h2>Военный билет</h2>
+    <form id="voenForm">
+        
+        <div class="section-title">Страница 2 (Сведения о человеке)</div>
+        
+        <div class="row">
+            <div class="form-group">
+                <label>Дата выдачи</label>
+                <div class="date-group">
+                    <input type="text" id="issueDateDay" class="day" placeholder="ДД" maxlength="2" required>
+                    <select id="issueDateMonth" class="month" required></select>
+                    <input type="text" id="issueDateYear" class="year" placeholder="ГГ" maxlength="2" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Имя, Отчество</label>
+                <input type="text" id="firstNameAndPatronymic" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Дата рождения</label>
+                <div class="date-group">
+                    <input type="text" id="dobDay" class="day" placeholder="ДД" maxlength="2">
+                    <select id="dobMonth" class="month"></select>
+                    <input type="text" id="dobYear" class="year" placeholder="ГГ" maxlength="2">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Место рождения</label>
+                <input type="text" id="pob">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Адрес регистрации</label>
+            <input type="text" id="address">
+        </div>
+
+        <div class="row">
+            <div class="form-group"><label>Паспорт (Серия)</label><input type="text" id="passSeries" maxlength="4"></div>
+            <div class="form-group"><label>Паспорт (Номер)</label><input type="text" id="passNumber" maxlength="6"></div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Семейное положение</label>
+                <select id="maritalStatus" class="form-select">
+                    <option value="Женат">Женат</option>
+                    <option value="Холост">Холост</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Образование</label>
+                <select id="education" class="form-select">
+                    <option value="Основное общее">Основное общее</option>
+                    <option value="Среднее общее">Среднее общее</option>
+                    <option value="Среднее профессиональное">Среднее профессиональное</option>
+                    <option value="Высшее">Высшее</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Воинское звание</label>
+            <select id="rank" class="form-select">
+                <option value="рядовой">рядовой</option>
+                <option value="ефрейтор">ефрейтор</option>
+                <option value="младший сержант">младший сержант</option>
+                <option value="сержант">сержант</option>
+                <option value="старший сержант">старший сержант</option>
+                <option value="старшина">старшина</option>
+                <option value="прапорщик">прапорщик</option>
+                <option value="лейтенант">лейтенант</option>
+                <option value="генерал-майор">генерал-майор</option>
+            </select>
+        </div>
+
+        <div class="section-title">Страница 3 (Служба)</div>
+        
+        <div class="form-group">
+            <label>Категория годности</label>
+            <div class="radio-group">
+                <label><input type="radio" name="fitness" value="А" required> А</label>
+                <label><input type="radio" name="fitness" value="Б"> Б</label>
+                <label><input type="radio" name="fitness" value="В"> В</label>
+                <label><input type="radio" name="fitness" value="Г"> Г</label>
+                <label><input type="radio" name="fitness" value="Д"> Д</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Военно-учётная специальность (ВУС)</label>
+                <select id="vus" class="form-select">
+                    <option value="Стрелок">Стрелок</option>
+                    <option value="Пулемётчик">Пулемётчик</option>
+                    <option value="Гранатомётчик">Гранатомётчик</option>
+                    <option value="Водитель">Водитель</option>
+                    <option value="Механик-водитель">Механик-водитель</option>
+                    <option value="Радист (Связист)">Радист (Связист)</option>
+                    <option value="Разведчик">Разведчик</option>
+                    <option value="Снайпер">Снайпер</option>
+                    <option value="Санитар">Санитар</option>
+                    <option value="Повар">Повар</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Служба 1 -->
+        <div style="background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+            <strong>1. Принятие</strong>
+            <div class="row" style="margin-top: 10px;">
+                <div class="form-group">
+                    <label>Дата</label>
+                    <div class="date-group">
+                        <input type="text" id="serv1Day" class="day" placeholder="ДД" maxlength="2">
+                        <select id="serv1Month" class="month"></select>
+                        <input type="text" id="serv1Year" class="year" placeholder="ГГ" maxlength="2">
+                    </div>
+                </div>
+                <div class="form-group"><label>Номер дня</label><input type="text" id="serv1DayNum" class="center-input"></div>
+                <div class="form-group"><label>Номер приказа</label><input type="text" id="serv1Order" class="center-input"></div>
+            </div>
+        </div>
+
+        <!-- Служба 2 -->
+        <div style="background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+            <strong>2. Повышение 1</strong>
+            <div class="row" style="margin-top: 10px;">
+                <div class="form-group">
+                    <label>Дата</label>
+                    <div class="date-group">
+                        <input type="text" id="serv2Day" class="day" placeholder="ДД" maxlength="2">
+                        <select id="serv2Month" class="month"></select>
+                        <input type="text" id="serv2Year" class="year" placeholder="ГГ" maxlength="2">
+                    </div>
+                </div>
+                <div class="form-group"><label>Номер дня</label><input type="text" id="serv2DayNum" class="center-input"></div>
+                <div class="form-group"><label>Номер приказа</label><input type="text" id="serv2Order" class="center-input"></div>
+            </div>
+        </div>
+
+        <!-- Служба 3 -->
+        <div style="background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 20px;">
+            <strong>3. Повышение 2</strong>
+            <div class="row" style="margin-top: 10px;">
+                <div class="form-group">
+                    <label>Дата</label>
+                    <div class="date-group">
+                        <input type="text" id="serv3Day" class="day" placeholder="ДД" maxlength="2">
+                        <select id="serv3Month" class="month"></select>
+                        <input type="text" id="serv3Year" class="year" placeholder="ГГ" maxlength="2">
+                    </div>
+                </div>
+                <div class="form-group"><label>Номер дня</label><input type="text" id="serv3DayNum" class="center-input"></div>
+                <div class="form-group"><label>Номер приказа</label><input type="text" id="serv3Order" class="center-input"></div>
+            </div>
+        </div>
+
+        <div class="section-title">Страница 4 (Увольнение)</div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Дата увольнения</label>
+                <div class="date-group">
+                    <input type="text" id="dischargeDay" class="day" placeholder="ДД" maxlength="2">
+                    <select id="dischargeMonth" class="month"></select>
+                    <input type="text" id="dischargeYear" class="year" placeholder="ГГ" maxlength="2">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер дня (увольнения)</label>
+                <input type="text" id="dischargeDayNum" class="center-input">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Причина увольнения</label>
+            <select id="template-reason" class="form-select"><option value="">-- Шаблон --</option></select>
+            <textarea id="dischargeReason">Окончание срока военной службы по призыву</textarea>
+        </div>
+
+        <div class="row">
+            <div class="form-group"><label>Район (Соль-Илецким)</label><input type="text" id="region" class="center-input" value="Соль-Илецким"></div>
+            <div class="form-group"><label>Область (Оренбургской)</label><input type="text" id="area" class="center-input" value="Оренбургской"></div>
+        </div>
+
+        <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
+    </form>
+</div>
+
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Предпросмотр билета</h3>
+            <div>
+                <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-preview btn-close" id="close-preview-btn">Закрыть</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentOrgId = parseInt(urlParams.get('org')) || 1;
+
+    // =====================================================================
+    // ⚠️ ТВОИ КООРДИНАТЫ ⚠️
+    // =====================================================================
+    const COORDS = {
+        // --- СТРАНИЦА 2 (Вставлены твои координаты) ---
+        page2: {
+            docNumber: { xStart: 0, xEnd: 243, y: 256 }, 
+            firstNameAndPatronymic: { x: 70, y: 234 },
+            dob: { 
+                day: { xStart: 80, xEnd: 90, y: 223 }, 
+                month: { xStart: 97, xEnd: 155, y: 223 }, 
+                year: { xStart: 165, xEnd: 175, y: 223 } 
+            },
+            pob: { x: 80, y: 209 },
+            address: { x: 14, y: 197, maxWidth: 212, lineHeight: 13, indent: 74 }, 
+            passSeries: { xStart: 72, xEnd: 110, y: 173 },
+            passNumber: { xStart: 121, xEnd: 173, y: 173 },
+            maritalStatus: { x: 94, y: 161 },
+            education: { x: 68, y: 148 },
+            issueDate: { 
+                day: { xStart: 120, xEnd: 130, y: 117 }, 
+                month: { xStart: 136, xEnd: 197, y: 117 }, 
+                // ИСПРАВЛЕНА ОПЕЧАТКА В КООРДИНАТАХ ГОДА (было xEnd: 140, y: 217)
+                year: { xStart: 206, xEnd: 216, y: 117 } 
+            },
+            rank: { x: 111, y: 57 }
+        },
+
+        // --- СТРАНИЦА 3 (Текст категории годности) ---
+        page3: {
+            // Координаты для вывода буквы категории (А, Б, В и т.д.)
+            fitnessText: { x: 89, y: 298 }, 
+            
+            vus: { x: 127, y: 286 }, 
+            rank: { x: 82, y: 274 }, 
+            
+            service1: {
+                date: { 
+                    day: { xStart: 24, xEnd: 34, y: 243 }, 
+                    month: { xStart: 40, xEnd: 85, y: 243 }, 
+                    year: { xStart: 94, xEnd: 104, y: 243 } 
+                },
+                dayNum: { xStart: 117, xEnd: 127, y: 243 },
+                order: { xStart: 49, xEnd: 84, y: 220 }
+            },
+            service2: {
+                date: { 
+                    day: { xStart: 24, xEnd: 34, y: 204 }, 
+                    month: { xStart: 40, xEnd: 85, y: 204 }, 
+                    year: { xStart: 94, xEnd: 104, y: 204 } 
+                },
+                dayNum: { xStart: 117, xEnd: 127, y: 204 },
+                order: { xStart: 49, xEnd: 84, y: 180 }
+            },
+            service3: {
+                date: { 
+                    day: { xStart: 24, xEnd: 34, y: 164 }, 
+                    month: { xStart: 40, xEnd: 85, y: 164 }, 
+                    year: { xStart: 94, xEnd: 104, y: 164 } 
+                },
+                dayNum: { xStart: 117, xEnd: 127, y: 164 },
+                order: { xStart: 49, xEnd: 84, y: 129 }
+            }
+        },
+
+        // --- СТРАНИЦА 4 ---
+        page4: {
+            dischargeDate: { 
+                day: { xStart: 110, xEnd: 120, y: 298 }, 
+                month: { xStart: 127, xEnd: 191, y: 298 }, 
+                year: { xStart: 200, xEnd: 210, y: 298 } 
+            },
+            dischargeDayNum: { xStart: 18, xEnd: 57, y: 286 },
+            dischargeReason: { x: 14, y: 275, maxWidth: 212, lineHeight: 13, indent: 80 }, 
+            
+            region: { xStart: 35, xEnd: 154, y: 103 },
+            area: { xStart: 14, xEnd: 85, y: 91 },
+            
+            issueDate: { 
+                day: { xStart: 77, xEnd: 87, y: 80 }, 
+                month: { xStart: 94, xEnd: 144, y: 80 }, 
+                year: { xStart: 154, xEnd: 164, y: 80 } 
+            }
+        }
+    };
+
+    const MONTHS_NUMERIC = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+    let currentPdfBlob = null;
+
+    // Инициализация выпадающих списков месяцев
+    function initMonths() {
+        const selects = document.querySelectorAll('.month');
+        selects.forEach(select => {
+            MONTHS_NUMERIC.forEach((m, i) => {
+                select.add(new Option(MONTHS_GENITIVE[i], MONTHS_NUMERIC[i]));
+            });
+        });
+    }
+
+    // Шаблон для причины увольнения
+    function initTemplates() {
+        const select = document.getElementById('template-reason');
+        const textarea = document.getElementById('dischargeReason');
+        const options = [
+            "Окончание срока военной службы по призыву",
+            "Достижение предельного возраста пребывания на военной службе",
+            "Невыполнение условий контракта",
+            "Лишение воинского звания"
+        ];
+        options.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt; o.textContent = opt;
+            select.appendChild(o);
+        });
+        select.addEventListener('change', (e) => {
+            if (e.target.value) textarea.value = e.target.value;
+        });
+    }
+
+    // Загрузка граждан
+    async function loadCitizens() {
+        const select = document.getElementById('patientSelect');
+        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (!citizens) return;
+        select.innerHTML = '<option value="none">-- Без гражданина --</option>';
+        citizens.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.dataset.citizen = JSON.stringify(p);
+            opt.textContent = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
+            select.appendChild(opt);
+        });
+    }
+
+    // Автозаполнение при выборе гражданина
+    document.getElementById('patientSelect').addEventListener('change', (e) => {
+        const opt = e.target.options[e.target.selectedIndex];
+        if (!opt.value || opt.value === 'none') return;
+        
+        const c = JSON.parse(opt.dataset.citizen);
+        document.getElementById('firstNameAndPatronymic').value = `${c.first_name || ''} ${c.patronymic || ''}`.trim();
+        document.getElementById('pob').value = c.pob || '';
+        document.getElementById('address').value = c.address || '';
+        document.getElementById('passSeries').value = c.pass_series || '';
+        document.getElementById('passNumber').value = c.pass_number || '';
+
+        if (c.dob) {
+            const [year, month, day] = c.dob.split('-');
+            document.getElementById('dobDay').value = day;
+            document.getElementById('dobMonth').value = MONTHS_NUMERIC[parseInt(month) - 1];
+            document.getElementById('dobYear').value = year.slice(-2);
+        }
+    });
+
+    // Установка текущей даты
+    function initDates() {
+        const today = new Date();
+        const d = String(today.getDate()).padStart(2, '0');
+        const m = MONTHS_NUMERIC[today.getMonth()];
+        const y = String(today.getFullYear()).slice(-2);
+        
+        document.getElementById('issueDateDay').value = d;
+        document.getElementById('issueDateMonth').value = m;
+        document.getElementById('issueDateYear').value = y;
+    }
+
+    // Вспомогательные функции рисования
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const textWidth = options.font.widthOfTextAtSize(text, options.size);
+        const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
+        page.drawText(text, { ...options, x: startX, y });
+    }
+
+    function drawParagraph(page, text, x, y, options) {
+        if (!text) return;
+        const { font, size, color, maxWidth, lineHeight, indent } = options;
+        const words = text.split(' ');
+        let lines = [], currentLine = '', isFirstLine = true;
+        for (let word of words) {
+            const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
+            const testLine = currentLine === '' ? word : currentLine + ' ' + word;
+            if (font.widthOfTextAtSize(testLine, size) <= availableWidth) {
+                currentLine = testLine;
+            } else {
+                lines.push({ text: currentLine, isFirst: isFirstLine });
+                currentLine = word;
+                isFirstLine = false;
+            }
+        }
+        if (currentLine !== '') lines.push({ text: currentLine, isFirst: isFirstLine });
+        let currentY = y;
+        for (let line of lines) {
+            const currentX = line.isFirst ? x + indent : x;
+            page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
+            currentY -= lineHeight;
+        }
+    }
+
+    // Обработчики модалки
+    document.getElementById('close-preview-btn').addEventListener('click', () => {
+        document.getElementById('preview-modal').style.display = 'none';
+        document.getElementById('pdf-preview-frame').src = '';
+        window.location.href = 'index.html';
+    });
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+        if (!currentPdfBlob) return;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(currentPdfBlob);
+        link.download = `Военный_билет.pdf`;
+        link.click();
+    });
+
+    // Генерация
+    document.getElementById('voenForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const citizenVal = document.getElementById('patientSelect').value;
+        const actualCitizenId = (citizenVal === 'none') ? null : citizenVal;
+
+        btn.disabled = true;
+        btn.textContent = 'Генерация...';
+
+        try {
+            const url = './voenny_bilet.pdf';
+            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytes);
+            
+            const pages = pdfDoc.getPages();
+            const page2 = pages[1];
+            const page3 = pages[2];
+            const page4 = pages[3];
+
+            const getVal = (id) => document.getElementById(id).value;
+            
+            const opt9 = { size: 9, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+            const opt10 = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+            const darkRed = PDFLib.rgb(0.6, 0.1, 0.1);
+
+            // --- СТРАНИЦА 2 ---
+            const docNum = `ВЧ № 205${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+            drawCenteredInRange(page2, docNum, COORDS.page2.docNumber.xStart, COORDS.page2.docNumber.xEnd, COORDS.page2.docNumber.y, { ...opt10, color: darkRed });
+
+            page2.drawText(getVal('firstNameAndPatronymic'), { x: COORDS.page2.firstNameAndPatronymic.x, y: COORDS.page2.firstNameAndPatronymic.y, ...opt9 });
+            
+            const dobMonthStr = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(getVal('dobMonth'))];
+            drawCenteredInRange(page2, getVal('dobDay'), COORDS.page2.dob.day.xStart, COORDS.page2.dob.day.xEnd, COORDS.page2.dob.day.y, opt9);
+            drawCenteredInRange(page2, dobMonthStr, COORDS.page2.dob.month.xStart, COORDS.page2.dob.month.xEnd, COORDS.page2.dob.month.y, opt9);
+            drawCenteredInRange(page2, getVal('dobYear'), COORDS.page2.dob.year.xStart, COORDS.page2.dob.year.xEnd, COORDS.page2.dob.year.y, opt9);
+
+            page2.drawText(getVal('pob'), { x: COORDS.page2.pob.x, y: COORDS.page2.pob.y, ...opt9 });
+            drawParagraph(page2, getVal('address'), COORDS.page2.address.x, COORDS.page2.address.y, { ...opt9, maxWidth: COORDS.page2.address.maxWidth, lineHeight: COORDS.page2.address.lineHeight, indent: COORDS.page2.address.indent });
+
+            drawCenteredInRange(page2, getVal('passSeries'), COORDS.page2.passSeries.xStart, COORDS.page2.passSeries.xEnd, COORDS.page2.passSeries.y, opt9);
+            drawCenteredInRange(page2, getVal('passNumber'), COORDS.page2.passNumber.xStart, COORDS.page2.passNumber.xEnd, COORDS.page2.passNumber.y, opt9);
+
+            page2.drawText(getVal('maritalStatus'), { x: COORDS.page2.maritalStatus.x, y: COORDS.page2.maritalStatus.y, ...opt9 });
+            page2.drawText(getVal('education'), { x: COORDS.page2.education.x, y: COORDS.page2.education.y, ...opt9 });
+            page2.drawText(getVal('rank'), { x: COORDS.page2.rank.x, y: COORDS.page2.rank.y, ...opt9 });
+
+            const issueDay = getVal('issueDateDay');
+            const issueMonthStr = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(getVal('issueDateMonth'))];
+            const issueYear = getVal('issueDateYear');
+            
+            drawCenteredInRange(page2, issueDay, COORDS.page2.issueDate.day.xStart, COORDS.page2.issueDate.day.xEnd, COORDS.page2.issueDate.day.y, opt9);
+            drawCenteredInRange(page2, issueMonthStr, COORDS.page2.issueDate.month.xStart, COORDS.page2.issueDate.month.xEnd, COORDS.page2.issueDate.month.y, opt9);
+            drawCenteredInRange(page2, issueYear, COORDS.page2.issueDate.year.xStart, COORDS.page2.issueDate.year.xEnd, COORDS.page2.issueDate.year.y, opt9);
+
+
+            // --- СТРАНИЦА 3 ---
+            // ВЫВОДИМ ТЕКСТ КАТЕГОРИИ ГОДНОСТИ (вместо крестика)
+            const fitnessVal = document.querySelector('input[name="fitness"]:checked').value;
+            page3.drawText(fitnessVal, { x: COORDS.page3.fitnessText.x, y: COORDS.page3.fitnessText.y, ...opt9 });
+
+            page3.drawText(getVal('vus'), { x: COORDS.page3.vus.x, y: COORDS.page3.vus.y, ...opt9 });
+            page3.drawText(getVal('rank'), { x: COORDS.page3.rank.x, y: COORDS.page3.rank.y, ...opt9 });
+
+            // Отметки о службе (1, 2, 3)
+            const serviceData = [
+                { id: '1', coords: COORDS.page3.service1 },
+                { id: '2', coords: COORDS.page3.service2 },
+                { id: '3', coords: COORDS.page3.service3 }
+            ];
+
+            serviceData.forEach(item => {
+                const d = getVal(`serv${item.id}Day`);
+                const m = getVal(`serv${item.id}Month`);
+                const y = getVal(`serv${item.id}Year`);
+                const dayNum = getVal(`serv${item.id}DayNum`);
+                const order = getVal(`serv${item.id}Order`);
+
+                if (d && m && y) {
+                    const monthStr = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(m)];
+                    drawCenteredInRange(page3, d, item.coords.date.day.xStart, item.coords.date.day.xEnd, item.coords.date.day.y, opt9);
+                    drawCenteredInRange(page3, monthStr, item.coords.date.month.xStart, item.coords.date.month.xEnd, item.coords.date.month.y, opt9);
+                    drawCenteredInRange(page3, y, item.coords.date.year.xStart, item.coords.date.year.xEnd, item.coords.date.year.y, opt9);
+                    
+                    drawCenteredInRange(page3, dayNum, item.coords.dayNum.xStart, item.coords.dayNum.xEnd, item.coords.dayNum.y, opt9);
+                    drawCenteredInRange(page3, order, item.coords.order.xStart, item.coords.order.xEnd, item.coords.order.y, opt9);
+                }
+            });
+
+
+            // --- СТРАНИЦА 4 ---
+            const disDay = getVal('dischargeDay');
+            const disMonth = getVal('dischargeMonth');
+            const disYear = getVal('dischargeYear');
+            const disDayNum = getVal('dischargeDayNum');
+
+            if (disDay && disMonth && disYear) {
+                const disMonthStr = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(disMonth)];
+                drawCenteredInRange(page4, disDay, COORDS.page4.dischargeDate.day.xStart, COORDS.page4.dischargeDate.day.xEnd, COORDS.page4.dischargeDate.day.y, opt9);
+                drawCenteredInRange(page4, disMonthStr, COORDS.page4.dischargeDate.month.xStart, COORDS.page4.dischargeDate.month.xEnd, COORDS.page4.dischargeDate.month.y, opt9);
+                drawCenteredInRange(page4, disYear, COORDS.page4.dischargeDate.year.xStart, COORDS.page4.dischargeDate.year.xEnd, COORDS.page4.dischargeDate.year.y, opt9);
+                drawCenteredInRange(page4, disDayNum, COORDS.page4.dischargeDayNum.xStart, COORDS.page4.dischargeDayNum.xEnd, COORDS.page4.dischargeDayNum.y, opt9);
+            }
+
+            drawParagraph(page4, getVal('dischargeReason'), COORDS.page4.dischargeReason.x, COORDS.page4.dischargeReason.y, { ...opt9, maxWidth: COORDS.page4.dischargeReason.maxWidth, lineHeight: COORDS.page4.dischargeReason.lineHeight, indent: COORDS.page4.dischargeReason.indent });
+
+            drawCenteredInRange(page4, getVal('region'), COORDS.page4.region.xStart, COORDS.page4.region.xEnd, COORDS.page4.region.y, opt9);
+            drawCenteredInRange(page4, getVal('area'), COORDS.page4.area.xStart, COORDS.page4.area.xEnd, COORDS.page4.area.y, opt9);
+
+            drawCenteredInRange(page4, issueDay, COORDS.page4.issueDate.day.xStart, COORDS.page4.issueDate.day.xEnd, COORDS.page4.issueDate.day.y, opt9);
+            drawCenteredInRange(page4, issueMonthStr, COORDS.page4.issueDate.month.xStart, COORDS.page4.issueDate.month.xEnd, COORDS.page4.issueDate.month.y, opt9);
+            drawCenteredInRange(page4, issueYear, COORDS.page4.issueDate.year.xStart, COORDS.page4.issueDate.year.xEnd, COORDS.page4.issueDate.year.y, opt9);
+
+
+            // --- СОХРАНЕНИЕ ---
+            const pdfBytes = await pdfDoc.save();
+            currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            const fileName = `${Date.now()}_VOEN_${getVal('firstNameAndPatronymic').replace(/\s/g, '_')}.pdf`;
+
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            await supabaseClient.from('documents').insert({
+                patient_id: actualCitizenId,
+                organization_id: currentOrgId,
+                doc_number: docNum,
+                document_type: 'Военный билет',
+                file_path: fileName
+            });
+
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl + '#' + Date.now(); 
+            document.getElementById('preview-modal').style.display = 'flex';
+
+        } catch (error) {
+            console.error(error);
+            alert("Ошибка: " + error.message + "\nУбедитесь, что файл voenny_bilet.pdf загружен на GitHub!");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать и сохранить PDF';
+        }
+    });
+
+    // Запуск
+    initMonths();
+    initTemplates();
+    initDates();
+    loadCitizens();
+</script>
+</body>
+</html>
