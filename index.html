@@ -25,14 +25,7 @@
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; }
         
         .main-content { margin-left: 260px; padding: 30px; }
-        
-        /* Статистика */
-        .stats-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .stat-box { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); flex: 1; min-width: 150px; }
-        .stat-box h4 { margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase; }
-        .stat-box .num { font-size: 24px; font-weight: bold; color: var(--primary); margin-top: 5px; }
-
-        .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .workspace-title h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); }
         .workspace-title p { margin: 0; color: #64748b; font-size: 14px; }
         
@@ -78,6 +71,9 @@
         .template-card h4 { margin: 0 0 8px 0; color: var(--primary); font-size: 18px; }
         .template-card p { margin: 0; color: #64748b; font-size: 14px; }
 
+        /* Модалка документов гражданина */
+        #citizen-docs-modal .modal-content { max-width: 800px; }
+        
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
@@ -119,7 +115,6 @@
     </div>
 
     <div id="dashboard-screen">
-        <!-- САЙДБАР ДЛЯ ПК -->
         <div class="sidebar">
             <h2>Организации</h2>
             <div class="menu-item active org-tab" data-org="1" onclick="switchOrg(1, 'Единая Служба Спасения', this)">🚑 ЕСС</div>
@@ -128,7 +123,6 @@
             <div class="menu-item org-tab" data-org="4" onclick="switchOrg(4, 'Воинская часть', this)">🪖 ВЧ</div>
         </div>
 
-        <!-- НИЖНЕЕ МЕНЮ ДЛЯ ТЕЛЕФОНА -->
         <div class="mobile-nav">
             <div class="menu-item active org-tab" data-org="1" onclick="switchOrg(1, 'ЕСС', this)">🚑<br>ЕСС</div>
             <div class="menu-item org-tab" data-org="2" onclick="switchOrg(2, 'МВД', this)">🚓<br>МВД</div>
@@ -149,14 +143,14 @@
             </div>
 
             <!-- СТАТИСТИКА -->
-            <div class="stats-bar">
-                <div class="stat-box">
-                    <h4>Всего документов</h4>
-                    <div class="num" id="stat-docs">0</div>
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                <div style="background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); flex: 1; min-width: 150px;">
+                    <h4 style="margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase;">Всего документов</h4>
+                    <div id="stat-docs" style="font-size: 24px; font-weight: bold; color: var(--primary); margin-top: 5px;">0</div>
                 </div>
-                <div class="stat-box" style="border-left-color: var(--success);">
-                    <h4>Всего граждан в базе</h4>
-                    <div class="num" id="stat-citizens">0</div>
+                <div style="background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--success); flex: 1; min-width: 150px;">
+                    <h4 style="margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase;">Всего граждан</h4>
+                    <div id="stat-citizens" style="font-size: 24px; font-weight: bold; color: var(--success); margin-top: 5px;">0</div>
                 </div>
             </div>
 
@@ -165,7 +159,6 @@
                 <div class="tab" onclick="switchTab('citizens', this)">👥 Граждане</div>
             </div>
 
-            <!-- ВКЛАДКА ДОКУМЕНТОВ -->
             <div id="docs-tab">
                 <input type="text" id="search-docs" class="search-bar" placeholder="🔍 Поиск по номеру документа или ФИО получателя..." oninput="renderDocs()">
                 <div class="table-responsive">
@@ -184,7 +177,6 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКА ГРАЖДАН -->
             <div id="citizens-tab" style="display:none;">
                 <div style="margin-bottom: 15px; text-align: right;">
                     <button class="btn-action btn-edit" style="background:#10b981; padding:10px 20px;" onclick="openAddCitizenModal()">+ Добавить гражданина</button>
@@ -207,7 +199,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКИ (без изменений) -->
+    <!-- МОДАЛКА ВЫБОРА ДОКУМЕНТА -->
     <div id="create-doc-modal" class="modal">
         <div class="modal-content">
             <h3 id="create-doc-title">Выберите документ</h3>
@@ -218,6 +210,7 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА РЕДАКТИРОВАНИЯ ГРАЖДАНИНА -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <h3>Редактировать гражданина</h3>
@@ -237,6 +230,7 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА ДОБАВЛЕНИЯ ГРАЖДАНИНА -->
     <div id="add-modal" class="modal">
         <div class="modal-content">
             <h3>Новый гражданин</h3>
@@ -254,6 +248,30 @@
         </div>
     </div>
 
+    <!-- НОВАЯ МОДАЛКА: ДОКУМЕНТЫ ГРАЖДАНИНА -->
+    <div id="citizen-docs-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="citizen-docs-title">Документы гражданина</h3>
+            <div class="table-responsive" style="margin-top: 15px; box-shadow: none; border: 1px solid #eee;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Тип документа</th>
+                            <th>Номер</th>
+                            <th>Дата</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="citizen-docs-body"></tbody>
+                </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn-cancel" onclick="closeModal('citizen-docs-modal')">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ПРОСМОТРА PDF -->
     <div id="preview-modal">
         <div class="preview-container">
             <div class="preview-header">
@@ -275,11 +293,9 @@
         let currentOrgId = 1; 
         let currentOrgName = 'Единая Служба Спасения';
         
-        // Глобальные массивы для поиска и сортировки
         let allDocs = [];
         let allCitizens = [];
         
-        // Состояние сортировки
         let docSort = { col: 'created_at', asc: false };
         let citizenSort = { col: 'last_name', asc: true };
 
@@ -334,7 +350,6 @@
             currentOrgName = orgName;
             document.getElementById('org-title').textContent = orgName === 'ЕСС' ? 'Единая Служба Спасения' : orgName;
             
-            // Очищаем поиск при смене организации
             document.getElementById('search-docs').value = '';
             document.getElementById('search-citizens').value = '';
             
@@ -387,7 +402,7 @@
             });
         }
 
-        // --- ЗАГРУЗКА И ОТРИСОВКА ДАННЫХ ---
+        // --- ЗАГРУЗКА ДАННЫХ ---
         function refreshData() {
             loadDocs();
             loadCitizens();
@@ -401,7 +416,7 @@
             document.getElementById('preview-modal').style.display = 'flex';
         }
 
-        // --- ДОКУМЕНТЫ ---
+        // --- ДОКУМЕНТЫ (Общая таблица) ---
         async function loadDocs() {
             const { data, error } = await supabaseClient
                 .from('documents')
@@ -410,7 +425,6 @@
             
             if (error) return console.error(error);
             
-            // Преобразуем данные для удобной сортировки
             allDocs = data.map(doc => {
                 const recipient = doc.profiles 
                     ? `${doc.profiles.last_name} ${doc.profiles.first_name} ${doc.profiles.patronymic || ''}`.trim() 
@@ -426,7 +440,6 @@
             if (docSort.col === col) docSort.asc = !docSort.asc;
             else { docSort.col = col; docSort.asc = true; }
             
-            // Обновляем стрелочки
             document.querySelectorAll('th span').forEach(el => el.textContent = '');
             document.getElementById(`sort-${col}`).textContent = docSort.asc ? '▲' : '▼';
             
@@ -437,14 +450,12 @@
             const tbody = document.getElementById('docs-table-body');
             const query = document.getElementById('search-docs').value.toLowerCase();
             
-            // Фильтрация
             let filtered = allDocs.filter(doc => 
                 doc.doc_number.toLowerCase().includes(query) || 
                 doc.recipient.toLowerCase().includes(query) ||
                 doc.document_type.toLowerCase().includes(query)
             );
             
-            // Сортировка
             filtered.sort((a, b) => {
                 let valA = a[docSort.col];
                 let valB = b[docSort.col];
@@ -485,7 +496,7 @@
             await supabaseClient.storage.from('documents').remove([filePath]);
             const { error } = await supabaseClient.from('documents').delete().eq('id', docId);
             if (error) alert("Ошибка: " + error.message);
-            else loadDocs();
+            else { loadDocs(); /* Можно обновить и модалку, если она открыта */ }
         }
 
         // --- ГРАЖДАНЕ ---
@@ -535,18 +546,60 @@
             if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет граждан</td></tr>';
 
             filtered.forEach(p => {
+                const fio = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
                 tbody.innerHTML += `
                     <tr>
-                        <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
+                        <td style="cursor:pointer; color:var(--primary); font-weight:bold;" onclick="openCitizenDocs('${p.id}', '${fio}')">${fio}</td>
                         <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
                         <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
-                        <td><button class="btn-action btn-edit" onclick="openEdit('${p.id}')">Ред.</button></td>
+                        <td>
+                            <button class="btn-action btn-view" onclick="openCitizenDocs('${p.id}', '${fio}')">📄 Документы</button>
+                            <button class="btn-action btn-edit" onclick="openEdit('${p.id}')">✏️ Ред.</button>
+                        </td>
                     </tr>
                 `;
             });
         }
 
-        // --- РЕДАКТИРОВАНИЕ ---
+        // --- ПРОСМОТР ДОКУМЕНТОВ КОНКРЕТНОГО ГРАЖДАНИНА ---
+        async function openCitizenDocs(citizenId, citizenName) {
+            document.getElementById('citizen-docs-title').textContent = `Документы: ${citizenName}`;
+            document.getElementById('citizen-docs-modal').style.display = 'flex';
+            
+            const tbody = document.getElementById('citizen-docs-body');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Загрузка...</td></tr>';
+
+            const { data: docs, error } = await supabaseClient
+                .from('documents')
+                .select('*')
+                .eq('patient_id', citizenId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Ошибка: ${error.message}</td></tr>`;
+                return;
+            }
+
+            if (docs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">У этого гражданина пока нет документов.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            docs.forEach(doc => {
+                const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${doc.document_type}</td>
+                        <td>${doc.doc_number}</td>
+                        <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+                        <td><button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- РЕДАКТИРОВАНИЕ (Только по кнопке) ---
         async function openEdit(id) {
             const { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
             if (error) return alert("Ошибка загрузки: " + error.message);
@@ -607,7 +660,7 @@
             const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
             
             if (authError) {
-                alert("ОШИБКА СОЗДАНИЯ: " + authError.message);
+                alert("ОШИБКА СОЗДАНИЯ: " + authError.message + "\n\nУбедитесь, что в Supabase (Authentication -> Providers -> Email) выключено подтверждение почты (Confirm email)!");
                 btn.disabled = false;
                 btn.textContent = 'Создать';
                 return;
@@ -635,7 +688,7 @@
             btn.textContent = 'Создать';
 
             if (profileError) {
-                alert("Пользователь создан, но данные не сохранились: " + profileError.message);
+                alert("Пользователь создан в Auth, но данные не сохранились в профиль: " + profileError.message);
             } else { 
                 alert("Гражданин добавлен!"); 
                 closeModal('add-modal'); 
