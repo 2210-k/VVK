@@ -147,7 +147,10 @@
 
         <!-- Блок 3: Увольнение -->
         <div id="block-3" class="type-block">
-            <p style="color: #555; margin: 0;">Этот тип приказа не требует дополнительных данных (текст формируется автоматически).</p>
+            <div class="form-group">
+                <label>Причина увольнения</label>
+                <input type="text" id="reason3" class="form-select" value="Окончание срока военной службы по призыву">
+            </div>
         </div>
 
         <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
@@ -176,18 +179,18 @@
     const currentOrgId = parseInt(urlParams.get('org')) || 4;
 
     // =====================================================================
-    // ⚠️ ТВОИ ЗАПОМНЕННЫЕ КООРДИНАТЫ ⚠️
+    // ⚠️ ТВОИ КООРДИНАТЫ (С ИЗМЕНЕНИЯМИ) ⚠️
     // =====================================================================
     const COORDS = {
         qrCode: { x: 43, y: 738, width: 85, height: 85 },
-        barcode: { x: 461, y: 773, width: 85, height: 50 },
+        barcode: { x: 461, y: 773, width: 85, height: 35 }, // Высота изменена на 35
         date: { 
-            day: { xStart: 42, xEnd: 57, y: 677.5}, 
-            month: { xStart: 71, xEnd: 157, y: 677.5}, 
-            year: { xStart: 192, xEnd: 206, y: 677.5} 
+            day: { xStart: 42, xEnd: 57, y: 678.5}, // +1 pt
+            month: { xStart: 71, xEnd: 157, y: 678.5}, // +1 pt
+            year: { xStart: 192, xEnd: 206, y: 678.5} // +1 pt
         },
-        dayNumber: { xStart: 229, xEnd: 260, y: 678 },
-        docNumber: { xStart: 496, xEnd: 546, y: 678 },
+        dayNumber: { xStart: 229, xEnd: 260, y: 679 }, // +1 pt
+        docNumber: { xStart: 496, xEnd: 546, y: 679 }, // +1 pt
         orderTypeText: { y: 702, maxWidth: 592 },
         bodyText: { x: 34, y: 651, maxWidth: 525, lineHeight: 13 }
     };
@@ -245,7 +248,6 @@
         document.getElementById('docNumber').value = `0513${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
     }
 
-    // Генерация штрих-кода
     async function createBarcodeImage(text) {
         const canvas = document.createElement('canvas');
         JsBarcode(canvas, text, {
@@ -255,7 +257,6 @@
         return await fetch(dataUrl).then(res => res.arrayBuffer());
     }
 
-    // Генерация QR-кода (через внешний API)
     async function createQrImage(text) {
         const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
         const response = await fetch(url);
@@ -269,41 +270,29 @@
         page.drawText(text, { ...options, x: startX, y });
     }
 
-    // ⚠️ ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕРЕНОСА СТРОК (теперь обрабатывает \n) ⚠️
-    function drawParagraph(page, text, x, y, options) {
-        if (!text) return;
-        const { font, size, color, maxWidth, lineHeight, indent } = options;
+    // Функция для рисования одного абзаца и возврата новой координаты Y
+    function drawTextBlockAndGetY(page, text, x, y, font, size, color, maxWidth, lineHeight) {
+        if (!text) return y;
+        const words = text.split(' ');
+        let lines = [], currentLine = '';
         
-        // Разбиваем текст по символу переноса строки
-        const paragraphs = text.split('\n');
-        let currentY = y;
-
-        paragraphs.forEach(pText => {
-            const words = pText.split(' ');
-            let currentLine = '';
-            let isFirstLine = true;
-            let lines = [];
-
-            for (let word of words) {
-                const availableWidth = isFirstLine ? (maxWidth - indent) : maxWidth;
-                const testLine = currentLine === '' ? word : currentLine + ' ' + word;
-                if (font.widthOfTextAtSize(testLine, size) <= availableWidth) {
-                    currentLine = testLine;
-                } else {
-                    lines.push({ text: currentLine, isFirst: isFirstLine });
-                    currentLine = word;
-                    isFirstLine = false;
-                }
+        for (let word of words) {
+            const testLine = currentLine === '' ? word : currentLine + ' ' + word;
+            if (font.widthOfTextAtSize(testLine, size) <= maxWidth) {
+                currentLine = testLine;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
             }
-            if (currentLine !== '') lines.push({ text: currentLine, isFirst: isFirstLine });
+        }
+        if (currentLine !== '') lines.push(currentLine);
 
-            // Рисуем строки текущего абзаца
-            lines.forEach(line => {
-                const currentX = line.isFirst ? x + indent : x;
-                page.drawText(line.text, { x: currentX, y: currentY, font, size, color });
-                currentY -= lineHeight;
-            });
-        });
+        let currentY = y;
+        for (let line of lines) {
+            page.drawText(line, { x: x, y: currentY, font: font, size: size, color: color });
+            currentY -= lineHeight;
+        }
+        return currentY;
     }
 
     document.getElementById('close-preview-btn').addEventListener('click', () => {
@@ -336,7 +325,6 @@
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
             
-            // Загружаем обычный и ЖИРНЫЙ шрифт
             const fontUrlReg = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
             const fontUrlBold = 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf';
             
@@ -349,10 +337,7 @@
             const firstPage = pdfDoc.getPages()[0];
             const getVal = (id) => document.getElementById(id).value;
             
-            const opt9 = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
-            // ⚠️ ЗАГОЛОВОК 11 РАЗМЕРА И ЖИРНЫЙ ⚠️
-            const optTitle = { size: 11, font: boldFont, color: PDFLib.rgb(0, 0, 0) };
-
+            const color = PDFLib.rgb(0, 0, 0);
             const docNum = getVal('docNumber');
             
             // Штрих-код
@@ -374,45 +359,80 @@
                 width: COORDS.qrCode.width, height: COORDS.qrCode.height
             });
 
+            // Даты и номер
             const dateMonthStr = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(getVal('dateMonth'))];
+            const opt9 = { size: 10, font: customFont, color };
+            
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt9);
             drawCenteredInRange(firstPage, dateMonthStr, COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt9);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt9);
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt9);
             drawCenteredInRange(firstPage, docNum, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt9);
 
+            // Формирование заголовка
             let typeTitle = "";
-            let bodyText = "";
-            const fio = getVal('citizenName');
-            const year = getVal('citizenYear');
+            if (type === '1') typeTitle = "О ЗАЧИСЛЕНИИ В СПИСКИ ЧАСТИ";
+            else if (type === '2') typeTitle = "О ПРИСВОЕНИИ ВОИНСКОГО ЗВАНИЯ";
+            else if (type === '3') typeTitle = "ОБ УВОЛЬНЕНИИ В ЗАПАС";
 
-            if (type === '1') {
-                typeTitle = "О ЗАЧИСЛЕНИИ В СПИСКИ ЧАСТИ";
-                bodyText = `В соответствии с Федеральным законом «О воинской обязанности и военной службе» и на основании прибытия гражданина из военного комиссариата Соль-Илецкого района,\nПРИКАЗЫВАЮ:\n1. Зачислить с «${dateStr}» в списки войсковой части № 205 гражданина ${fio}, ${year} года рождения.\n2. Присвоить воинское звание «Рядовой».\n3. Назначить на воинскую должность ${getVal('pos1')}.\n4. Зачислить в ${getVal('platoon1')} взвод.\n5. Поставить на все виды довольствия.\n\nОснование: Повестка военного комиссариата Соль-Илецкого района № ${getVal('summons1')}.`;
-            } else if (type === '2') {
-                typeTitle = "О ПРИСВОЕНИИ ВОИНСКОГО ЗВАНИЯ";
-                bodyText = `В соответствии с Уставом внутренней службы Вооруженных Сил Российской Федерации, на основании ${getVal('basis2')},\nПРИКАЗЫВАЮ:\n1) Присвоить воинское звание «${getVal('rank2')}» гражданину ${fio}, ${year} года рождения.\n2) Внести соответствующую запись в военный билет.\n\nОснование: Рапорт командира взвода.`;
-            } else if (type === '3') {
-                typeTitle = "ОБ УВОЛЬНЕНИИ В ЗАПАС";
-                bodyText = `В связи с окончанием срока военной службы по призыву, в соответствии с Федеральным законом «О воинской обязанности и военной службе»,\nПРИКАЗЫВАЮ:\n1) Уволить с военной службы и исключить из списков войсковой части № 205 гражданина ${fio}, ${year} года рождения.\n2) Направить гражданина в военный комиссариат Соль-Илецкого района для постановки на воинский учёт.\n3) Выдать военный билет с отметкой об увольнении.\n\nОснование: Истечение срока военной службы по призыву.`;
-            }
-
-            // Рисуем заголовок (11 размер, Жирный, по центру)
-            const titleWidth = boldFont.widthOfTextAtSize(typeTitle, 11);
+            const titleWidth = boldFont.widthOfTextAtSize(typeTitle, 10);
             firstPage.drawText(typeTitle, {
                 x: (595 - titleWidth) / 2, 
                 y: COORDS.orderTypeText.y, 
-                ...optTitle
+                font: boldFont, size: 10, color: color
             });
 
-            // Рисуем основной текст (с правильными переносами \n)
-            drawParagraph(firstPage, bodyText, COORDS.bodyText.x, COORDS.bodyText.y, {
-                ...opt9, 
-                maxWidth: COORDS.bodyText.maxWidth, 
-                lineHeight: COORDS.bodyText.lineHeight, 
-                indent: 0
-            });
+            // Блочное рисование основного текста (для правильных отступов)
+            let currentY = COORDS.bodyText.y;
+            const fio = getVal('citizenName');
+            const year = getVal('citizenYear');
 
+            // 1. Вводная часть (обычный шрифт)
+            let introText = "";
+            if (type === '1') introText = "В соответствии с Федеральным законом «О воинской обязанности и военной службе» и на основании прибытия гражданина из военного комиссариата Соль-Илецкого района,";
+            else if (type === '2') introText = `В соответствии с Уставом внутренней службы Вооруженных Сил Российской Федерации, на основании ${getVal('basis2')},`;
+            else if (type === '3') introText = `В связи с ${getVal('reason3').toLowerCase()}, в соответствии с Федеральным законом «О воинской обязанности и военной службе»,`;
+
+            currentY = drawTextBlockAndGetY(firstPage, introText, COORDS.bodyText.x, currentY, customFont, 10, color, COORDS.bodyText.maxWidth, 13);
+            
+            // Отступ сверху для ПРИКАЗЫВАЮ
+            currentY -= 10;
+
+            // 2. ПРИКАЗЫВАЮ (жирный шрифт)
+            firstPage.drawText("ПРИКАЗЫВАЮ:", { x: COORDS.bodyText.x, y: currentY, font: boldFont, size: 10, color: color });
+            currentY -= 13;
+
+            // Отступ снизу для ПРИКАЗЫВАЮ
+            currentY -= 10;
+
+            // 3. Основная часть
+            let bodyText = "";
+            if (type === '1') {
+                bodyText = `1. Зачислить с «${dateStr}» в списки войсковой части № 205 гражданина: ${fio}, ${year} года рождения.\n2. Присвоить воинское звание «Рядовой».\n3. Назначить на воинскую должность ${getVal('pos1')}.\n4. Зачислить в ${getVal('platoon1')} взвод.\n5. Поставить на все виды довольствия.`;
+            } else if (type === '2') {
+                bodyText = `1. Присвоить воинское звание «${getVal('rank2')}» гражданину: ${fio}, ${year} года рождения.\n2. Внести соответствующую запись в военный билет.`;
+            } else if (type === '3') {
+                bodyText = `1. Уволить с военной службы и исключить из списков войсковой части № 205 гражданина: ${fio}, ${year} года рождения.\n2. Направить гражданина в военный комиссариат Соль-Илецкого района для постановки на воинский учёт.\n3. Выдать военный билет с отметкой об увольнении.`;
+            }
+
+            // Разбиваем текст на строки, чтобы сохранить принудительные \n
+            const bodyLines = bodyText.split('\n');
+            for (let i = 0; i < bodyLines.length; i++) {
+                currentY = drawTextBlockAndGetY(firstPage, bodyLines[i], COORDS.bodyText.x, currentY, customFont, 10, color, COORDS.bodyText.maxWidth, 13);
+            }
+
+            // Отступ сверху для Основания
+            currentY -= 15;
+
+            // 4. Основание
+            let basisText = "";
+            if (type === '1') basisText = `Основание: Повестка военного комиссариата Соль-Илецкого района № ${getVal('summons1')}.`;
+            else if (type === '2') basisText = `Основание: Рапорт командира взвода.`;
+            else if (type === '3') basisText = `Основание: ${getVal('reason3')}.`;
+
+            drawTextBlockAndGetY(firstPage, basisText, COORDS.bodyText.x, currentY, customFont, 10, color, COORDS.bodyText.maxWidth, 13);
+
+            // СОХРАНЕНИЕ
             const pdfBytes = await pdfDoc.save();
             currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
             
