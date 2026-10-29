@@ -173,6 +173,7 @@
         "Министерство внутренних дел | Подполковник"
     ];
 
+    // ⚠️ ТВОИ КООРДИНАТЫ
     const COORDS = {
         qrCode: { x: 44, y: 747, width: 70, height: 70 },
         barcode: { x: 450, y: 776, width: 100, height: 40 },
@@ -195,11 +196,15 @@
         workPlace: { x: 152, y: 583 },
         validFrom: { xStart: 186, xEnd: 209, y: 559 },
         validTo: { xStart: 245, xEnd: 267, y: 559 },
+        
+        // Нижняя часть (Дата выдачи дублируется + номер дня)
         issueDate: { 
             day: { xStart: 115, xEnd: 130, y: 452 }, 
             month: { xStart: 138, xEnd: 201, y: 452 }, 
             year: { xStart: 215, xEnd: 229, y: 452 } 
         },
+        issueDayNumber: { xStart: 244, xEnd: 261, y: 452 }, // Координаты для нижнего номера дня
+        
         headName: { x: 215, y: 426 }
     };
 
@@ -280,7 +285,6 @@
         if (citizen.dob) {
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
-            // Месяц теперь слово
             const monthIndex = parseInt(month) - 1;
             document.getElementById('dobMonth').value = MONTHS_WORDS[monthIndex];
             document.getElementById('dobYear').value = year.slice(-2);
@@ -292,7 +296,6 @@
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
         document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
         
-        // Заполняем месяцы словами
         const dateMonthSelect = document.getElementById('dateMonth');
         const dobMonthSelect = document.getElementById('dobMonth');
         
@@ -303,9 +306,8 @@
         dateMonthSelect.value = MONTHS_WORDS[today.getMonth()];
         
         document.getElementById('docNumber').value = `0308${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
-        // Верхний номер дня пустой!
         
-        updateValidity(); // Расчет сроков (если день пустой, то и сроки пустые)
+        updateValidity();
         loadCitizens();
     }
 
@@ -395,10 +397,13 @@
             drawCenteredInRange(firstPage, getVal('validFrom'), COORDS.validFrom.xStart, COORDS.validFrom.xEnd, COORDS.validFrom.y, opt9);
             drawCenteredInRange(firstPage, getVal('validTo'), COORDS.validTo.xStart, COORDS.validTo.xEnd, COORDS.validTo.y, opt9);
 
-            // Нижняя дата (без номера дня)
+            // Нижняя дата
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt9);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt9);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt9);
+
+            // НИЖНИЙ НОМЕР ДНЯ (автоматически берется из верхнего поля)
+            drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.issueDayNumber.xStart, COORDS.issueDayNumber.xEnd, COORDS.issueDayNumber.y, opt9);
 
             // Руководитель
             if (getVal('headName')) {
