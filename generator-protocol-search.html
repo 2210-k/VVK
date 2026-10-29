@@ -69,7 +69,7 @@
             </div>
             <div class="form-group">
                 <label>Номер дня (000–999)</label>
-                <input type="text" id="dayNumber" class="center-input" style="text-align:center;" maxlength="3" required>
+                <input type="text" id="dayNumber" style="text-align:center;" maxlength="3" required>
             </div>
             <div class="form-group">
                 <label>№ документа (0152ННН)</label>
@@ -79,7 +79,10 @@
 
         <div class="form-group">
             <label>Должностное лицо (составившее протокол)</label>
-            <input type="text" id="official" placeholder="Например: Оперуполномоченный ОУР МВД России по Соль-Илецкому г.о. лейтенант полиции Иванов И.И." required>
+            <select id="template-official" class="form-select">
+                <option value="">-- Выбрать шаблон --</option>
+            </select>
+            <input type="text" id="official" placeholder="Должность, звание, ФИО" required>
         </div>
 
         <div class="row">
@@ -101,13 +104,16 @@
 
         <div class="form-group">
             <label>Основание (многострочное)</label>
-            <textarea id="basis" placeholder="Например: ст. 27.7 КоАП РФ, ст. 93 УПК РФ..." required></textarea>
+            <select id="template-basis" class="form-select">
+                <option value="">-- Выбрать шаблон --</option>
+            </select>
+            <textarea id="basis" placeholder="Основание производства досмотра..." required></textarea>
         </div>
 
         <div class="section-title">Присутствовавшие лица</div>
 
         <div class="form-group">
-            <label>Понятой №1 (подставка из списка граждан)</label>
+            <label>Понятой №1 (подставка из базы граждан)</label>
             <select id="witness1Select" class="form-select">
                 <option value="none">-- Выбрать из базы --</option>
             </select>
@@ -115,7 +121,7 @@
         </div>
 
         <div class="form-group">
-            <label>Понятой №2 (подставка из списка граждан)</label>
+            <label>Понятой №2 (подставка из базы граждан)</label>
             <select id="witness2Select" class="form-select">
                 <option value="none">-- Выбрать из базы --</option>
             </select>
@@ -218,22 +224,21 @@
     const currentOrgId = parseInt(urlParams.get('org')) || 2;
 
     // =====================================================================
-    // ⚠️ ЗАГЛУШКИ КООРДИНАТ — подгоняй сам ⚠️
-    // (0,0) — левый нижний угол PDF. Y растёт вверх.
+    // ⚠️ КООРДИНАТЫ (откалиброваны пользователем)
     // =====================================================================
     const COORDS = {
         qrCode: { x: 42, y: 740, width: 70, height: 70 },
         barcode: { x: 479, y: 770, width: 70, height: 40 },
 
         date: {
-            day:   { xStart: 54,  xEnd: 59,  y: 717 },
+            day:   { xStart: 55,  xEnd: 69,  y: 717 },
             month: { xStart: 77,  xEnd: 143, y: 717 },
             year:  { xStart: 157, xEnd: 172, y: 717 }
         },
         dayNumber: { xStart: 187, xEnd: 201, y: 717 },
         docNumber: { xStart: 498, xEnd: 545, y: 717 },
 
-        official: { x: 294, y: 652, maxWidth: 250, lineHeight: 13 },
+        official: { x: 294, y: 652, maxWidth: 250, lineHeight: 13, indent: 0 },
 
         timeStart: {
             h: { xStart: 230, xEnd: 245, y: 630 },
@@ -246,9 +251,9 @@
 
         basis: { x: 42, y: 617, maxWidth: 500, lineHeight: 13, indent: 0 },
 
-        witness1: { x: 53, y: 556, maxWidth: 490, lineHeight: 13 },
-        witness2: { x: 53, y: 543, maxWidth: 490, lineHeight: 13 },
-        defender: { x: 187, y: 529, maxWidth: 357, lineHeight: 13 },
+        witness1: { x: 53, y: 556, maxWidth: 490, lineHeight: 13, indent: 0 },
+        witness2: { x: 53, y: 543, maxWidth: 490, lineHeight: 13, indent: 0 },
+        defender: { x: 187, y: 529, maxWidth: 357, lineHeight: 13, indent: 0 },
 
         detainedFio: { x: 168, y: 494 },
         detainedDob: {
@@ -261,16 +266,38 @@
             number: { xStart: 208, xEnd: 262, y: 467 }
         },
 
-        seized: { x: 42, y: 446, maxWidth: 502, lineHeight: 13 },
+        seized: { x: 42, y: 446, maxWidth: 502, lineHeight: 13, indent: 355 },
         packageNumber: { xStart: 423, xEnd: 510, y: 384 },
 
         notes: { x: 42, y: 363, maxWidth: 502, lineHeight: 13, indent: 340 },
 
-        // Подчёркивание "лично" / "вслух" — линия под словом
         readUnderline: {
-            personally: { xStart: 136, xEnd: 164, y: 290 },
-            aloud:      { xStart: 175, xEnd: 198, y: 290 }
+            personally: { xStart: 136, xEnd: 164, y: 295 },
+            aloud:      { xStart: 175, xEnd: 198, y: 295 }
         }
+    };
+
+    // =====================================================================
+    // 📋 ШАБЛОНЫ
+    // =====================================================================
+    const TEMPLATES = {
+        official: [
+            "Оперуполномоченный МВД, генерал полиции"
+        ],
+        basis: [
+            "Задержание лица по подозрению в совершении преступления (правонарушения) в порядке статьи 3.1 Процессуального регламента РФ",
+            "Необходимость установления личности задержанного при отсутствии документов",
+            "Наличие достаточных оснований полагать, что задержанный имеет при себе оружие, наркотические средства или иные предметы, запрещенные к обороту",
+            "Обеспечение личной безопасности сотрудника полиции и окружающих граждан при задержании",
+            "Постановление Верховного суда города Соль-Илецка о разрешении производства личного досмотра (ордер № ___ от ___)",
+            "Наличие достаточных данных полагать, что лицо скрывает при себе предметы или документы, имеющие значение для уголовного дела (ст. 2.1.1 Процессуального регламента)"
+        ],
+        defender: [
+            "Не участвовал"
+        ],
+        notes: [
+            "Не заявлены."
+        ]
     };
 
     const MONTHS_NUMERIC = ["01","02","03","04","05","06","07","08","09","10","11","12"];
@@ -300,13 +327,29 @@
     }
 
     function initTemplates() {
-        const t = document.getElementById('template-defender');
-        const inp = document.getElementById('defender');
-        t.addEventListener('change', e => { if (e.target.value) inp.value = e.target.value; });
+        // official
+        const selOfficial = document.getElementById('template-official');
+        const inpOfficial = document.getElementById('official');
+        TEMPLATES.official.forEach(t => selOfficial.add(new Option(t, t)));
+        selOfficial.addEventListener('change', e => { if (e.target.value) inpOfficial.value = e.target.value; });
 
-        const tn = document.getElementById('template-notes');
-        const notes = document.getElementById('notes');
-        tn.addEventListener('change', e => { if (e.target.value) notes.value = e.target.value; });
+        // basis
+        const selBasis = document.getElementById('template-basis');
+        const inpBasis = document.getElementById('basis');
+        TEMPLATES.basis.forEach((t, i) => selBasis.add(new Option(`Вариант ${i + 1}`, t)));
+        selBasis.addEventListener('change', e => { if (e.target.value) inpBasis.value = e.target.value; });
+
+        // defender
+        const selDef = document.getElementById('template-defender');
+        const inpDef = document.getElementById('defender');
+        TEMPLATES.defender.forEach(t => selDef.add(new Option(t, t)));
+        selDef.addEventListener('change', e => { if (e.target.value) inpDef.value = e.target.value; });
+
+        // notes
+        const selNotes = document.getElementById('template-notes');
+        const inpNotes = document.getElementById('notes');
+        TEMPLATES.notes.forEach(t => selNotes.add(new Option(t, t)));
+        selNotes.addEventListener('change', e => { if (e.target.value) inpNotes.value = e.target.value; });
     }
 
     async function loadCitizens() {
@@ -329,15 +372,11 @@
 
         data.forEach(p => {
             const fio = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`.trim();
-            const opt = new Option(fio, p.id);
-            dSelect.add(opt);
+            dSelect.add(new Option(fio, p.id));
 
-            // Понятые: "Имя Отчество, № паспорта"
             const witnessLabel = `${p.first_name} ${p.patronymic || ''}, № ${p.pass_series || ''} ${p.pass_number || ''}`.trim();
-            const o1 = new Option(witnessLabel, p.id);
-            const o2 = new Option(witnessLabel, p.id);
-            w1.add(o1);
-            w2.add(o2);
+            w1.add(new Option(witnessLabel, p.id));
+            w2.add(new Option(witnessLabel, p.id));
         });
     }
 
@@ -445,7 +484,6 @@
             const docNumber = getVal('docNumber');
             const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.20${getVal('dateYear')}`;
 
-            // Шаблон
             const existingPdfBytes = await fetch('./protocol_search_template.pdf').then(r => r.arrayBuffer());
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
@@ -469,7 +507,7 @@
             const bcImg = await pdfDoc.embedPng(bcBytes);
             page.drawImage(bcImg, { x: COORDS.barcode.x, y: COORDS.barcode.y, width: COORDS.barcode.width, height: COORDS.barcode.height });
 
-            // Дата (ДД, ММ словами, ГГ)
+            // Дата
             const monthWord = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(getVal('dateMonth'))];
             drawCenteredInRange(page, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt);
             drawCenteredInRange(page, monthWord, COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt);
@@ -479,9 +517,9 @@
             drawCenteredInRange(page, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt);
             drawCenteredInRange(page, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt);
 
-            // Должностное лицо (многострочный — на всякий случай)
+            // Должностное лицо
             drawParagraph(page, getVal('official'), COORDS.official.x, COORDS.official.y, {
-                ...opt, maxWidth: COORDS.official.maxWidth, lineHeight: COORDS.official.lineHeight, indent: 0
+                ...opt, maxWidth: COORDS.official.maxWidth, lineHeight: COORDS.official.lineHeight, indent: COORDS.official.indent
             });
 
             // Время
@@ -497,13 +535,13 @@
 
             // Понятые + защитник
             drawParagraph(page, getVal('witness1'), COORDS.witness1.x, COORDS.witness1.y, {
-                ...opt, maxWidth: COORDS.witness1.maxWidth, lineHeight: COORDS.witness1.lineHeight, indent: 0
+                ...opt, maxWidth: COORDS.witness1.maxWidth, lineHeight: COORDS.witness1.lineHeight, indent: COORDS.witness1.indent
             });
             drawParagraph(page, getVal('witness2'), COORDS.witness2.x, COORDS.witness2.y, {
-                ...opt, maxWidth: COORDS.witness2.maxWidth, lineHeight: COORDS.witness2.lineHeight, indent: 0
+                ...opt, maxWidth: COORDS.witness2.maxWidth, lineHeight: COORDS.witness2.lineHeight, indent: COORDS.witness2.indent
             });
             drawParagraph(page, getVal('defender'), COORDS.defender.x, COORDS.defender.y, {
-                ...opt, maxWidth: COORDS.defender.maxWidth, lineHeight: COORDS.defender.lineHeight, indent: 0
+                ...opt, maxWidth: COORDS.defender.maxWidth, lineHeight: COORDS.defender.lineHeight, indent: COORDS.defender.indent
             });
 
             // Задержанный
@@ -516,9 +554,9 @@
             drawCenteredInRange(page, getVal('passSeries'), COORDS.detainedPass.series.xStart, COORDS.detainedPass.series.xEnd, COORDS.detainedPass.series.y, opt);
             drawCenteredInRange(page, getVal('passNumber'), COORDS.detainedPass.number.xStart, COORDS.detainedPass.number.xEnd, COORDS.detainedPass.number.y, opt);
 
-            // Изъято
+            // Изъято (с отступом 355)
             drawParagraph(page, getVal('seized'), COORDS.seized.x, COORDS.seized.y, {
-                ...opt, maxWidth: COORDS.seized.maxWidth, lineHeight: COORDS.seized.lineHeight, indent: 0
+                ...opt, maxWidth: COORDS.seized.maxWidth, lineHeight: COORDS.seized.lineHeight, indent: COORDS.seized.indent
             });
 
             // № пакета
