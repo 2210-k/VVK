@@ -93,11 +93,16 @@
         </div>
 
         <div class="form-group">
-            <label>Должностное лицо, вынесшее постановление</label>
+            <label>Должностное лицо — должность, специальное звание</label>
             <select id="template-official" class="form-select">
                 <option value="">-- Выбрать шаблон --</option>
             </select>
-            <input type="text" id="official" placeholder="Должность, звание, ФИО" required>
+            <input type="text" id="official" placeholder="Например: инспектор ДПС УМВД России по Оренбургской области, генерал полиции" required>
+        </div>
+
+        <div class="form-group">
+            <label>Имя Отчество должностного лица</label>
+            <input type="text" id="officialName" placeholder="Например: Иван Иванович" required>
         </div>
 
         <div class="section-title">Данные гражданина</div>
@@ -185,10 +190,6 @@
                     <input type="text" id="offYear" class="part" maxlength="2" placeholder="ГГ" required>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Номер дня нарушения</label>
-                <input type="text" id="offDayNumber" style="text-align:center;" maxlength="3" required>
-            </div>
         </div>
 
         <div class="form-group">
@@ -265,8 +266,7 @@
     const currentOrgId = parseInt(urlParams.get('org')) || 2;
 
     // =====================================================================
-    // ⚠️ ЗАГЛУШКИ КООРДИНАТ — подгоняй сам ⚠️
-    // (0,0) — левый нижний угол PDF. Y растёт вверх.
+    // ✅ КООРДИНАТЫ (откалиброваны пользователем)
     // =====================================================================
     const COORDS = {
         qrCode: { x: 22, y: 747, width: 70, height: 70 },
@@ -274,8 +274,8 @@
 
         // Заголовок
         date: {
-            day:   { xStart: 204,  xEnd: 227,  y: 685 },
-            month: { xStart: 235,  xEnd: 297, y: 685 },
+            day:   { xStart: 204, xEnd: 227, y: 685 },
+            month: { xStart: 235, xEnd: 297, y: 685 },
             year:  { xStart: 311, xEnd: 333, y: 685 }
         },
         dayNumber: { xStart: 348, xEnd: 368, y: 685 },
@@ -296,8 +296,8 @@
 
         // Паспорт
         passport: {
-            series: { xStart: 299, xEnd: 328, y: 605.6 },
-            number: { xStart: 367, xEnd: 429, y: 605.6 }
+            series: { xStart: 299, xEnd: 328, y: 606.2 },
+            number: { xStart: 367, xEnd: 429, y: 606.2 }
         },
 
         // Водительское удостоверение
@@ -330,14 +330,14 @@
         // Место
         offensePlace: { x: 292, y: 526, maxWidth: 276, lineHeight: 13, indent: 0 },
 
-        // Обстоятельства (многострочный с отступом) //
+        // Обстоятельства (многострочный с отступом)
         circumstances: { x: 22, y: 504, maxWidth: 548, lineHeight: 13, indent: 164 },
 
         // Статья (первое вхождение)
         article1: { xStart: 418, xEnd: 474, y: 469 },
 
         // "Признать гражданина(ку) [ИО]"
-        admitName: { x: 144, y: 392 },
+        admitName: { x: 144, y: 393 },
 
         // Статья (второе вхождение)
         article2: { xStart: 236, xEnd: 296, y: 382 },
@@ -346,8 +346,8 @@
         punishment: {
             fine: {
                 check:  { x: 26.5, y: 358.5 },
-                amount: { xStart: 222, xEnd: 298, y: 356 },
-                text:   { x: 304, y: 356 }
+                amount: { xStart: 222, xEnd: 298, y: 355.5 },
+                text:   { x: 304, y: 355.5 }
             },
             deprivation: {
                 check: { x: 26.5, y: 347.5 },
@@ -359,7 +359,7 @@
             }
         },
 
-        // Должностное лицо (низ)
+        // Должностное лицо (низ) — только должность/звание
         finalOfficial: { x: 248, y: 112, maxWidth: 320, lineHeight: 13, indent: 0 }
     };
 
@@ -367,7 +367,7 @@
     const MONTHS_GENITIVE = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
 
     // =====================================================================
-    // 📋 Шаблоны должностного лица
+    // 📋 Шаблоны должностного лица (только должность + звание)
     // =====================================================================
     const OFFICIAL_TEMPLATES = [
         "инспектор ДПС УМВД России по Оренбургской области, генерал полиции"
@@ -377,73 +377,26 @@
     // 🚗 База транспортных средств
     // =====================================================================
     const VEHICLES = [
-        'Горный велосипед',
-        'Электрический велосипед',
-        'ЗАЗ-966 «Запорожец»',
-        'Lada -1111 «Ока»',
-        'Ваз-2105',
-        'Ваз-2104',
-        'Ваз-2107',
-        'Ваз-2114',
-        'Lada Granta',
-        'Lada Kalina (ВАЗ-2192, хэтчбек)',
-        'Lada Kalina (ВАЗ-2194, универсал)',
-        'Lada Kalina (ВАЗ-1117, седан)',
-        'Lada Kalina (ВАЗ-1118, хэтчбек)',
-        'Lada Kalina (ВАЗ-1119, универсал)',
-        'Ford Fiesta',
-        'Ford Focus',
-        'Ford Bronco',
-        'Ford Crown Victoria',
-        'Lifan X60',
-        'Lifan X50',
-        'Lifan Solano',
-        'Lifan Breez',
-        'Lada Iskra',
-        'Lada Vesta New',
-        'Lada Vesta SW',
-        'Lada Vesta SW-Такси',
-        'Lada Niva Travel',
-        'Audi A4',
-        'BMW Z4',
-        'BMW 1-series',
-        'Alfa Romeo Mita',
-        'Citroen C6',
-        'Ferrari F430',
-        'Mini',
-        'Renault Logan',
-        'Porsche 911',
-        'Nissan 350Z',
-        'Mitsubishi Lanser Evo X',
-        'Mazda MX-5',
-        'Kia Spectra',
-        'Jeep Liberty',
-        'Range Rover Sport',
-        'Hyundai Genesis',
-        'Honda pilot',
-        'Газ- 3302',
-        'КамАЗ-54901',
-        'КамАЗ КО-440А1 (мусоровоз)',
-        'Pegeot Boxer (груз)',
-        'Volkswagen LT',
-        'Mersedes-Benz Sprinter (груз)',
-        'Паз-3205',
-        'Mersedes-Benz Sprinter (пасс)',
-        'Yamaha YZF-R1',
-        'Harley-Davidson',
-        'Honda Gold Wing',
-        'Yamaha MT-03.',
-        'Honda CB300R',
-        'Wels 200CC EVO',
-        'Курьерский скутер Honda Dio AF62',
-        'Can-am SPYDER F3'
+        'Горный велосипед','Электрический велосипед','ЗАЗ-966 «Запорожец»',
+        'Lada -1111 «Ока»','Ваз-2105','Ваз-2104','Ваз-2107','Ваз-2114',
+        'Lada Granta','Lada Kalina (ВАЗ-2192, хэтчбек)','Lada Kalina (ВАЗ-2194, универсал)',
+        'Lada Kalina (ВАЗ-1117, седан)','Lada Kalina (ВАЗ-1118, хэтчбек)','Lada Kalina (ВАЗ-1119, универсал)',
+        'Ford Fiesta','Ford Focus','Ford Bronco','Ford Crown Victoria',
+        'Lifan X60','Lifan X50','Lifan Solano','Lifan Breez','Lada Iskra',
+        'Lada Vesta New','Lada Vesta SW','Lada Vesta SW-Такси','Lada Niva Travel',
+        'Audi A4','BMW Z4','BMW 1-series','Alfa Romeo Mita','Citroen C6',
+        'Ferrari F430','Mini','Renault Logan','Porsche 911','Nissan 350Z',
+        'Mitsubishi Lanser Evo X','Mazda MX-5','Kia Spectra','Jeep Liberty',
+        'Range Rover Sport','Hyundai Genesis','Honda pilot','Газ- 3302',
+        'КамАЗ-54901','КамАЗ КО-440А1 (мусоровоз)','Pegeot Boxer (груз)',
+        'Volkswagen LT','Mersedes-Benz Sprinter (груз)','Паз-3205',
+        'Mersedes-Benz Sprinter (пасс)','Yamaha YZF-R1','Harley-Davidson',
+        'Honda Gold Wing','Yamaha MT-03.','Honda CB300R','Wels 200CC EVO',
+        'Курьерский скутер Honda Dio AF62','Can-am SPYDER F3'
     ];
 
     // =====================================================================
     // 📕 Статьи Дорожного кодекса
-    // fine — сумма штрафа
-    // deprivation — доступно лишение
-    // arrest — доступен арест
     // =====================================================================
     const ARTICLES = [
         { code: '1.1.1', desc: 'Управление ТС без водительского удостоверения (соответствующей категории)', fine: 5000 },
@@ -484,7 +437,7 @@
     ];
 
     // =====================================================================
-    // 💰 Расшифровка сумм штрафа
+    // 💰 Расшифровка сумм (без «рублей»)
     // =====================================================================
     const FINE_DECODE = {
         500: 'пятьсот',
@@ -531,7 +484,6 @@
 
         document.getElementById('docNumber').value = `0112${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
         document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
-        document.getElementById('offDayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
     }
 
     function initOfficialTemplate() {
@@ -546,8 +498,7 @@
         const out = document.getElementById('fineDecoded');
         inp.addEventListener('input', () => {
             const v = parseInt(inp.value);
-            const decoded = FINE_DECODE[v] || '';
-            out.textContent = decoded ? `(${decoded})` : '';
+            out.textContent = FINE_DECODE[v] || '';
         });
     }
 
@@ -598,7 +549,6 @@
         const c = allCitizensCache.find(x => x.id === id);
         if (!c) return;
 
-        // Имя Отчество (не ФИО)
         document.getElementById('citizenName').value = `${c.first_name || ''} ${c.patronymic || ''}`.trim();
         document.getElementById('regAddress').value = c.address || '';
         document.getElementById('passSeries').value = c.pass_series || '';
@@ -629,16 +579,11 @@
                     const div = document.createElement('div');
                     div.className = 'autocomplete-item';
                     div.textContent = v;
-                    div.onclick = () => {
-                        inp.value = v;
-                        dd.style.display = 'none';
-                    };
+                    div.onclick = () => { inp.value = v; dd.style.display = 'none'; };
                     dd.appendChild(div);
                 });
                 dd.style.display = 'block';
-            } else {
-                dd.style.display = 'none';
-            }
+            } else dd.style.display = 'none';
         });
 
         inp.addEventListener('focus', () => { if (inp.value) inp.dispatchEvent(new Event('input')); });
@@ -659,25 +604,18 @@
             dd.innerHTML = '';
             if (!q) { dd.style.display = 'none'; currentArticle = null; return; }
             const matches = ARTICLES.filter(a =>
-                a.code.toLowerCase().includes(q) ||
-                a.desc.toLowerCase().includes(q)
+                a.code.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q)
             );
             if (matches.length) {
                 matches.forEach(a => {
                     const div = document.createElement('div');
                     div.className = 'autocomplete-item';
                     div.innerHTML = `<b>${a.code}</b> — ${a.desc} <span class="price">${a.fine.toLocaleString('ru-RU')} ₽</span>`;
-                    div.onclick = () => {
-                        inp.value = a.code;
-                        dd.style.display = 'none';
-                        onArticleSelected(a);
-                    };
+                    div.onclick = () => { inp.value = a.code; dd.style.display = 'none'; onArticleSelected(a); };
                     dd.appendChild(div);
                 });
                 dd.style.display = 'block';
-            } else {
-                dd.style.display = 'none';
-            }
+            } else dd.style.display = 'none';
         });
 
         inp.addEventListener('focus', () => { if (inp.value) inp.dispatchEvent(new Event('input')); });
@@ -689,12 +627,10 @@
     function onArticleSelected(a) {
         currentArticle = a;
 
-        // Авто-заполнение штрафа
         const fineInp = document.getElementById('fineAmount');
         fineInp.value = a.fine || '';
         fineInp.dispatchEvent(new Event('input'));
 
-        // Доступность/недоступность чекбоксов
         const rowFine = document.getElementById('rowFine');
         const rowDep = document.getElementById('rowDeprivation');
         const rowArrest = document.getElementById('rowArrest');
@@ -702,7 +638,6 @@
         const cbDep = document.getElementById('pCheckDeprivation');
         const cbArrest = document.getElementById('pCheckArrest');
 
-        // Штраф есть всегда
         rowFine.classList.remove('disabled');
         cbFine.disabled = false;
 
@@ -792,8 +727,13 @@
             const docNumber = getVal('docNumber');
             const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.20${getVal('dateYear')}`;
             const articleCode = getVal('articleInput');
+            const dayNumberVal = getVal('dayNumber');
 
-            // Загрузка шаблона
+            // "Должность/звание, Имя Отчество" для блока "Я, ..."
+            const officialFull = `${getVal('official')}, ${getVal('officialName')}`;
+            // Только должность/звание — для низа
+            const officialShort = getVal('official');
+
             const existingPdfBytes = await fetch('./admin_order_template.pdf').then(r => r.arrayBuffer());
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
@@ -820,11 +760,11 @@
             drawCenteredInRange(page, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt);
             drawCenteredInRange(page, dateMonthWord, COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt);
             drawCenteredInRange(page, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt);
-            drawCenteredInRange(page, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt);
+            drawCenteredInRange(page, dayNumberVal, COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt);
             drawCenteredInRange(page, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt);
 
-            // Должностное лицо (верх)
-            drawParagraph(page, getVal('official'), COORDS.official.x, COORDS.official.y, {
+            // Должностное лицо (верх) — "должность, звание, ИО"
+            drawParagraph(page, officialFull, COORDS.official.x, COORDS.official.y, {
                 ...opt, maxWidth: COORDS.official.maxWidth, lineHeight: COORDS.official.lineHeight, indent: COORDS.official.indent
             });
 
@@ -864,7 +804,10 @@
             drawCenteredInRange(page, getVal('offDay'), COORDS.offenseDate.day.xStart, COORDS.offenseDate.day.xEnd, COORDS.offenseDate.day.y, opt);
             drawCenteredInRange(page, offMonthWord, COORDS.offenseDate.month.xStart, COORDS.offenseDate.month.xEnd, COORDS.offenseDate.month.y, opt);
             drawCenteredInRange(page, getVal('offYear'), COORDS.offenseDate.year.xStart, COORDS.offenseDate.year.xEnd, COORDS.offenseDate.year.y, opt);
-            drawCenteredInRange(page, getVal('offDayNumber'), COORDS.offenseDayNumber.xStart, COORDS.offenseDayNumber.xEnd, COORDS.offenseDayNumber.y, opt);
+
+            // Номер дня нарушения — БЕРЁМ ИЗ ТОГО ЖЕ ПОЛЯ dayNumber
+            drawCenteredInRange(page, dayNumberVal, COORDS.offenseDayNumber.xStart, COORDS.offenseDayNumber.xEnd, COORDS.offenseDayNumber.y, opt);
+
             drawCenteredInRange(page, getVal('offTimeH'), COORDS.offenseTime.h.xStart, COORDS.offenseTime.h.xEnd, COORDS.offenseTime.h.y, opt);
             drawCenteredInRange(page, getVal('offTimeM'), COORDS.offenseTime.m.xStart, COORDS.offenseTime.m.xEnd, COORDS.offenseTime.m.y, opt);
 
@@ -885,9 +828,7 @@
             // ИО в "Признать гражданина(ку) [ИО]"
             page.drawText(getVal('citizenName'), { x: COORDS.admitName.x, y: COORDS.admitName.y, ...opt });
 
-            // ============================================================
             // Наказания
-            // ============================================================
             const cbFine = document.getElementById('pCheckFine');
             const cbDep = document.getElementById('pCheckDeprivation');
             const cbArrest = document.getElementById('pCheckArrest');
@@ -895,12 +836,11 @@
             if (cbFine.checked) {
                 drawCross(page, COORDS.punishment.fine.check.x, COORDS.punishment.fine.check.y);
                 const fineVal = getVal('fineAmount');
-                // Сумма внутри скобок
                 drawCenteredInRange(page, fineVal, COORDS.punishment.fine.amount.xStart, COORDS.punishment.fine.amount.xEnd, COORDS.punishment.fine.amount.y, opt);
-                // Расшифровка
                 const decoded = FINE_DECODE[parseInt(fineVal)] || '';
                 if (decoded) {
-                    page.drawText(`(${decoded})`, { x: COORDS.punishment.fine.text.x, y: COORDS.punishment.fine.text.y, ...opt });
+                    // Без скобок, без «рублей»
+                    page.drawText(decoded, { x: COORDS.punishment.fine.text.x, y: COORDS.punishment.fine.text.y, ...opt });
                 }
             }
 
@@ -914,8 +854,8 @@
                 page.drawText('на срок, установленный законом', { x: COORDS.punishment.arrest.term.x, y: COORDS.punishment.arrest.term.y, ...opt });
             }
 
-            // Должностное лицо (низ)
-            drawParagraph(page, getVal('official'), COORDS.finalOfficial.x, COORDS.finalOfficial.y, {
+            // Должностное лицо (низ) — только должность/звание, без ИО
+            drawParagraph(page, officialShort, COORDS.finalOfficial.x, COORDS.finalOfficial.y, {
                 ...opt, maxWidth: COORDS.finalOfficial.maxWidth, lineHeight: COORDS.finalOfficial.lineHeight, indent: COORDS.finalOfficial.indent
             });
 
