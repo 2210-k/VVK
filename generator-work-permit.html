@@ -22,7 +22,6 @@
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
         
-        /* Стили для кастомного выпадающего списка */
         .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
         .autocomplete-item:hover { background-color: #eef5ff; }
@@ -62,7 +61,7 @@
             </div>
             <div class="form-group">
                 <label>Номер дня (000-999)</label>
-                <input type="text" id="dayNumber" class="center-input" required oninput="syncBottomDayNumber()">
+                <input type="text" id="dayNumber" class="center-input" placeholder="Например: 150" required>
             </div>
             <div class="form-group">
                 <label>№ документа (0308ННН)</label>
@@ -106,23 +105,19 @@
         <div class="row">
             <div class="form-group">
                 <label>Срок действия С (День)</label>
-                <input type="number" id="validFrom" class="center-input" required>
-            </div>
-            <div class="form-group">
-                <label>Срок действия ПО (День)</label>
-                <input type="number" id="validTo" class="center-input" required>
+                <input type="number" id="validFrom" class="center-input" readonly style="background:#eee;">
             </div>
             <div class="form-group">
                 <label>Срок действия (в днях для расчета)</label>
-                <input type="number" id="durationDays" class="center-input" value="30" required onchange="calcValidity()">
+                <input type="number" id="durationDays" class="center-input" value="3" required>
+            </div>
+            <div class="form-group">
+                <label>Срок действия ПО (День)</label>
+                <input type="number" id="validTo" class="center-input" readonly style="background:#eee;">
             </div>
         </div>
 
         <div class="row" style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #ccc;">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label>Номер дня внизу (дублируется)</label>
-                <input type="text" id="issueDayNumber" class="center-input" required>
-            </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Руководитель Департамента труда (ФИО)</label>
                 <input type="text" id="headName" placeholder="Необязательно">
@@ -152,9 +147,8 @@
 <script>
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
     
-    // =====================================================================
-    // 🛠️ БАЗА РАБОТ
-    // =====================================================================
+    const MONTHS_WORDS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+
     const WORK_DATABASE = [
         "Горнодобывающая организация | Шахтер",
         "Горнодобывающая организация | Инженер",
@@ -179,23 +173,16 @@
         "Министерство внутренних дел | Подполковник"
     ];
 
-    // =====================================================================
-    // ⚠️ ТВОИ КООРДИНАТЫ (ВЕРХНИЕ ВСТАВЛЕНЫ, ОСТАЛЬНЫЕ ПРИМЕРНО - ПОДГОНИШЬ)
-    // =====================================================================
     const COORDS = {
         qrCode: { x: 44, y: 747, width: 70, height: 70 },
         barcode: { x: 450, y: 776, width: 100, height: 40 },
-        
         date: { 
             day: { xStart: 49, xEnd: 63, y: 682 }, 
             month: { xStart: 72, xEnd: 133, y: 682 }, 
             year: { xStart: 147, xEnd: 162, y: 682 } 
         },
         dayNumber: { xStart: 176, xEnd: 194, y: 682 },
-        
-        docNumber: { xStart: 505, xEnd: 550, y: 682 }, // Примерно
-        
-        // Основной текст (опустил на ~18 пунктов вниз, подгони под себя)
+        docNumber: { xStart: 505, xEnd: 550, y: 682 },
         fullName: { x: 115, y: 634 },
         dob: { 
             day: { xStart: 128, xEnd: 143, y: 620 }, 
@@ -205,36 +192,33 @@
         passSeries: { xStart: 365, xEnd: 394, y: 620 },
         passNumber: { xStart: 410, xEnd: 475, y: 620 },
         address: { x: 140, y: 605 },
-        
         workPlace: { x: 152, y: 583 },
-        
         validFrom: { xStart: 186, xEnd: 209, y: 559 },
         validTo: { xStart: 245, xEnd: 267, y: 559 },
-        
-        // Нижняя часть (Дата выдачи дублируется + номер дня)
         issueDate: { 
             day: { xStart: 115, xEnd: 130, y: 452 }, 
             month: { xStart: 138, xEnd: 201, y: 452 }, 
             year: { xStart: 215, xEnd: 229, y: 452 } 
         },
-        issueDayNumber: { xStart: 244, xEnd: 261, y: 452 }, // Координаты для нижнего номера дня
-        
         headName: { x: 215, y: 426 }
     };
 
     let currentPdfBlob = null;
 
-    // Синхронизация номера дня
-    function syncBottomDayNumber() {
-        document.getElementById('issueDayNumber').value = document.getElementById('dayNumber').value;
+    // Функция обновления сроков
+    function updateValidity() {
+        const start = document.getElementById('dayNumber').value;
+        const duration = parseInt(document.getElementById('durationDays').value) || 0;
+        
+        document.getElementById('validFrom').value = start;
+        
+        const startNum = parseInt(start) || 0;
+        document.getElementById('validTo').value = startNum > 0 ? startNum + duration : '';
     }
 
-    function calcValidity() {
-        const start = parseInt(document.getElementById('dayNumber').value) || 0;
-        const duration = parseInt(document.getElementById('durationDays').value) || 0;
-        document.getElementById('validFrom').value = start;
-        document.getElementById('validTo').value = start + duration;
-    }
+    // Слушатели для пересчета
+    document.getElementById('dayNumber').addEventListener('input', updateValidity);
+    document.getElementById('durationDays').addEventListener('input', updateValidity);
 
     // --- ВЫПАДАЮЩИЙ СПИСОК РАБОТ ---
     const workInput = document.getElementById('workPlace');
@@ -286,7 +270,6 @@
         if (!selectedOption.value || selectedOption.value === 'none') return;
         
         const citizen = JSON.parse(selectedOption.dataset.citizen);
-        // Склеиваем Имя и Отчество
         document.getElementById('fullName').value = `${citizen.first_name || ''} ${citizen.patronymic || ''}`.trim();
         
         document.getElementById('passSeries').value = citizen.pass_series || '';
@@ -297,7 +280,9 @@
         if (citizen.dob) {
             const [year, month, day] = citizen.dob.split('-');
             document.getElementById('dobDay').value = day;
-            document.getElementById('dobMonth').value = month;
+            // Месяц теперь слово
+            const monthIndex = parseInt(month) - 1;
+            document.getElementById('dobMonth').value = MONTHS_WORDS[monthIndex];
             document.getElementById('dobYear').value = year.slice(-2);
         }
     });
@@ -307,20 +292,20 @@
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
         document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
         
-        document.getElementById('docNumber').value = `0308${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
-        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
-        
+        // Заполняем месяцы словами
         const dateMonthSelect = document.getElementById('dateMonth');
         const dobMonthSelect = document.getElementById('dobMonth');
-        const months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-        months.forEach((m, i) => {
+        
+        MONTHS_WORDS.forEach(m => {
             dateMonthSelect.add(new Option(m, m));
             dobMonthSelect.add(new Option(m, m));
         });
-        dateMonthSelect.value = months[today.getMonth()];
+        dateMonthSelect.value = MONTHS_WORDS[today.getMonth()];
         
-        syncBottomDayNumber();
-        calcValidity();
+        document.getElementById('docNumber').value = `0308${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        // Верхний номер дня пустой!
+        
+        updateValidity(); // Расчет сроков (если день пустой, то и сроки пустые)
         loadCitizens();
     }
 
@@ -385,7 +370,6 @@
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt9);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt9);
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt9);
-            
             drawCenteredInRange(firstPage, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt9);
 
             // Основное
@@ -399,18 +383,22 @@
             drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt9);
 
             firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...opt9 });
-            firstPage.drawText(getVal('workPlace'), { x: COORDS.workPlace.x, y: COORDS.workPlace.y, ...opt9 });
+            
+            // Форматирование работы
+            const workText = getVal('workPlace');
+            const parts = workText.split('|').map(s => s.trim());
+            const org = parts[0] || '';
+            const pos = parts[1] || '';
+            const formattedWork = pos && org ? `должности «${pos}» в ${org}` : workText;
+            firstPage.drawText(formattedWork, { x: COORDS.workPlace.x, y: COORDS.workPlace.y, ...opt9 });
 
             drawCenteredInRange(firstPage, getVal('validFrom'), COORDS.validFrom.xStart, COORDS.validFrom.xEnd, COORDS.validFrom.y, opt9);
             drawCenteredInRange(firstPage, getVal('validTo'), COORDS.validTo.xStart, COORDS.validTo.xEnd, COORDS.validTo.y, opt9);
 
-            // Нижняя дата и номер дня
+            // Нижняя дата (без номера дня)
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt9);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt9);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt9);
-            
-            // НИЖНИЙ НОМЕР ДНЯ
-            drawCenteredInRange(firstPage, getVal('issueDayNumber'), COORDS.issueDayNumber.xStart, COORDS.issueDayNumber.xEnd, COORDS.issueDayNumber.y, opt9);
 
             // Руководитель
             if (getVal('headName')) {
