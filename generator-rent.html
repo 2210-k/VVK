@@ -17,8 +17,9 @@
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
         .row > .form-group { flex: 1; min-width: 150px; }
         .date-group { display: flex; gap: 5px; }
-        .date-group input { text-align: center; }
+        .date-group input, .date-group select { text-align: center; }
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
         
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
@@ -33,6 +34,15 @@
 
 <div class="container">
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
+    
+    <!-- БЛОК ВЫБОРА ГРАЖДАНИНА -->
+    <div class="patient-selector">
+        <label>👤 Выберите гражданина (данные подставятся)</label>
+        <select id="patientSelect" class="form-select">
+            <option value="none">-- Без гражданина (В архив) --</option>
+        </select>
+    </div>
+
     <h2>Договор аренды транспортного средства</h2>
     
     <form id="rentForm">
@@ -131,27 +141,21 @@
     const ALLOWED_LETTERS = ['А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х'];
 
     // =====================================================================
-    // ⚠️ ТВОИ КООРДИНАТЫ (ВПИШИ СВОИ XStart и XEnd ГДЕ СТОЯТ НУЛИ)
+    // ⚠️ ТВОИ КООРДИНАТЫ
     // =====================================================================
     const COORDS = {
         docNumber: { xStart: 142, xEnd: 174, y: 193 },
         renterName: { x: 38, y: 170 },
-        
-        // Серия разбита на 2 части
-        passSeries1: { xStart: 139, xEnd: 147, y: 170 }, 
-        passSeries2: { xStart: 148, xEnd: 156, y: 170 }, 
-        
+        passSeries1: { xStart: 0, xEnd: 0, y: 170 }, 
+        passSeries2: { xStart: 0, xEnd: 0, y: 170 }, 
         passNumber: { xStart: 158, xEnd: 177, y: 170 },
         vehicleName: { x: 57, y: 161 },
-        
-        // Госномер разбит на 6 позиций
-        plate1: { xStart: 40, xEnd: 50, y: 153 },
-        plate2: { xStart: 54, xEnd: 64, y: 153 },
-        plate3: { xStart: 66, xEnd: 76, y: 153 },
-        plate4: { xStart: 77, xEnd: 87, y: 153 },
-        plate5: { xStart: 91, xEnd: 101, y: 153 },
-        plate6: { xStart: 102, xEnd: 112, y: 153 },
-
+        plate1: { xStart: 0, xEnd: 0, y: 153 },
+        plate2: { xStart: 0, xEnd: 0, y: 153 },
+        plate3: { xStart: 0, xEnd: 0, y: 153 },
+        plate4: { xStart: 0, xEnd: 0, y: 153 },
+        plate5: { xStart: 0, xEnd: 0, y: 153 },
+        plate6: { xStart: 0, xEnd: 0, y: 153 },
         issueDate: { 
             day: { xStart: 45, xEnd: 53, y: 37 }, 
             month: { xStart: 55, xEnd: 63, y: 37 }, 
@@ -173,6 +177,35 @@
         document.getElementById('totalCost').value = `${days * cost} руб.`;
     }
 
+    // --- ЗАГРУЗКА ГРАЖДАН ---
+    async function loadCitizens() {
+        const select = document.getElementById('patientSelect');
+        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (!citizens) return;
+        select.innerHTML = '<option value="none">-- Без гражданина (В архив) --</option>';
+        citizens.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.dataset.citizen = JSON.stringify(p);
+            opt.textContent = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
+            select.appendChild(opt);
+        });
+    }
+
+    // АВТОЗАПОЛНЕНИЕ ПРИ ВЫБОРЕ
+    document.getElementById('patientSelect').addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (!selectedOption.value || selectedOption.value === 'none') return;
+        
+        const citizen = JSON.parse(selectedOption.dataset.citizen);
+        
+        // В документе поле называется "Арендатор: Имя Отчество"
+        document.getElementById('renterName').value = `${citizen.first_name || ''} ${citizen.patronymic || ''}`.trim();
+        document.getElementById('passSeries').value = citizen.pass_series || '';
+        document.getElementById('passNumber').value = citizen.pass_number || '';
+    });
+
+    // Установка даты и номеров по умолчанию
     function init() {
         const today = new Date();
         document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
@@ -181,6 +214,7 @@
         document.getElementById('docNumber').value = `0816${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
         document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
         calcTotal();
+        loadCitizens();
     }
 
     async function generateUniquePlate(type) {
@@ -200,7 +234,7 @@
             const rNum = (len) => String(Math.floor(Math.random() * Math.pow(10, len))).padStart(len, '0');
 
             if (type === 'auto') {
-                newPlate = `${rLetter()}${rNum(3)}${rLetter()}${rLetter()}`; // Без пробелов для разбивки
+                newPlate = `${rLetter()}${rNum(3)}${rLetter()}${rLetter()}`;
             } else {
                 newPlate = `${rNum(4)}${rLetter()}${rLetter()}`;
             }
@@ -228,12 +262,15 @@
     document.getElementById('rentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
+        const citizenVal = document.getElementById('patientSelect').value;
+        const actualCitizenId = (citizenVal === 'none') ? null : citizenVal;
+
         btn.disabled = true;
         btn.textContent = 'Генерация...';
 
         try {
             const plateType = document.getElementById('plateType').value;
-            const plateNumber = await generateUniquePlate(plateType); // Например: А123ВС
+            const plateNumber = await generateUniquePlate(plateType);
 
             const getVal = (id) => document.getElementById(id).value;
             const docNumber = getVal('docNumber');
@@ -242,7 +279,7 @@
             const totalCost = rentDays * costPerDay;
             const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.20${getVal('dateYear')}`;
             
-            const url = './rent_template.pdf'; // Имя твоего файла
+            const url = './rent_template.pdf'; 
             const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
             const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
             pdfDoc.registerFontkit(fontkit);
@@ -252,16 +289,12 @@
             const customFont = await pdfDoc.embedFont(fontBytesReg);
             
             const firstPage = pdfDoc.getPages()[0];
-
-            // Разные размеры шрифтов
             const opt6 = { size: 6, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const opt11 = { size: 11, font: customFont, color: PDFLib.rgb(0, 0, 0) };
 
-            // 1. Основные поля (шрифт 6)
             drawCenteredInRange(firstPage, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt6);
             firstPage.drawText(getVal('renterName'), { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt6 });
             
-            // 2. Серия паспорта (разбита на 2 части по 2 цифры, шрифт 6)
             const series = getVal('passSeries').padEnd(4, ' ');
             drawCenteredInRange(firstPage, series.substring(0, 2), COORDS.passSeries1.xStart, COORDS.passSeries1.xEnd, COORDS.passSeries1.y, opt6);
             drawCenteredInRange(firstPage, series.substring(2, 4), COORDS.passSeries2.xStart, COORDS.passSeries2.xEnd, COORDS.passSeries2.y, opt6);
@@ -269,7 +302,6 @@
             drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt6);
             firstPage.drawText(getVal('vehicleName'), { x: COORDS.vehicleName.x, y: COORDS.vehicleName.y, ...opt6 });
 
-            // 3. Госномер (разбит на 6 позиций, шрифт 11)
             const plateChars = plateNumber.split('');
             drawCenteredInRange(firstPage, plateChars[0] || '', COORDS.plate1.xStart, COORDS.plate1.xEnd, COORDS.plate1.y, opt11);
             drawCenteredInRange(firstPage, plateChars[1] || '', COORDS.plate2.xStart, COORDS.plate2.xEnd, COORDS.plate2.y, opt11);
@@ -278,16 +310,13 @@
             drawCenteredInRange(firstPage, plateChars[4] || '', COORDS.plate5.xStart, COORDS.plate5.xEnd, COORDS.plate5.y, opt11);
             drawCenteredInRange(firstPage, plateChars[5] || '', COORDS.plate6.xStart, COORDS.plate6.xEnd, COORDS.plate6.y, opt11);
 
-            // 4. Даты (шрифт 6)
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt6);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt6);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt6);
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt6);
             
-            // 5. Срок действия (шрифт 11)
             drawCenteredInRange(firstPage, `${rentDays} дня`, COORDS.validDays.xStart, COORDS.validDays.xEnd, COORDS.validDays.y, opt11);
 
-            // 6. QR-код
             const qrText = `Договор аренды ТС\n№ ${docNumber}\nАрендодатель: Арендная компания «Wels Rent»\nАрендатор: ${getVal('renterName')} (${getVal('passSeries')} ${getVal('passNumber')})\nТС: ${getVal('vehicleName')}, ${getVal('vehicleColor')}, ${plateNumber}\nДней: ${rentDays}\nСтоимость 1 дня: ${costPerDay} руб.\nИтого: ${totalCost} руб.\nДата выдачи: ${dateStr} (${getVal('dayNumber')} день)\nДействителен: ${rentDays} дня`;
             
             const qrBytes = await createQrImage(qrText);
@@ -304,8 +333,8 @@
 
             await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
             await supabaseClient.from('documents').insert({
-                patient_id: null,
-                organization_id: 3, // Правительство
+                patient_id: actualCitizenId, // ПРИВЯЗКА К ГРАЖДАНИНУ
+                organization_id: 3, 
                 doc_number: docNumber,
                 document_type: 'Договор аренды ТС',
                 file_path: fileName,
