@@ -8,7 +8,7 @@
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; position: relative; } /* Добавил relative для выпадающего списка */
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input[type="text"], input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
         .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
@@ -21,6 +21,30 @@
         .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
         .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
         
+        /* Стили для кастомного выпадающего списка */
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .autocomplete-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .autocomplete-item:hover {
+            background-color: #eef5ff;
+        }
+
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
@@ -62,24 +86,17 @@
             </div>
         </div>
 
-        <!-- УМНЫЙ ВЫБОР ТС -->
+        <!-- КАСТОМНЫЙ ВЫБОР ТС С ПОИСКОМ -->
         <div class="form-group">
-            <label>Наименование ТС (можно выбрать или ввести вручную)</label>
-            <input type="text" id="vehicleName" list="car-list" placeholder="Например: Лада Веста" required>
-            <datalist id="car-list">
-                <option value="Лада Веста">
-                <option value="Лада Гранта">
-                <option value="Kia Rio">
-                <option value="Hyundai Solaris">
-                <option value="Toyota Camry">
-                <option value="ГАЗель Next">
-            </datalist>
+            <label>Наименование ТС (начните вводить для поиска)</label>
+            <input type="text" id="vehicleName" placeholder="Например: Лада Веста" required autocomplete="off">
+            <div id="vehicleDropdown" class="autocomplete-dropdown"></div>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Тип госномера</label>
-                <select id="plateType" class="form-select" onchange="updatePlatePreview()">
+                <select id="plateType" class="form-select" onchange="generatePlate()">
                     <option value="auto">Автомобильный (А 123 ВС)</option>
                     <option value="moto">Мотоциклетный (1234 АА)</option>
                 </select>
@@ -156,14 +173,14 @@
     const ALLOWED_LETTERS = ['А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х'];
 
     // =====================================================================
-    // ⚠️ ТВОИ НОВЫЕ КООРДИНАТЫ
+    // ⚠️ ТВОИ КООРДИНАТЫ
     // =====================================================================
     const COORDS = {
         docNumber: { xStart: 142, xEnd: 174, y: 197 },
-        renterName: { x: 38, y: 175 },
-        passSeries1: { xStart: 139, xEnd: 147, y: 175 }, 
-        passSeries2: { xStart: 148, xEnd: 159, y: 175 }, 
-        passNumber: { xStart: 158, xEnd: 177, y: 175 },
+        renterName: { x: 38, y: 174 },
+        passSeries1: { xStart: 139, xEnd: 147, y: 174 }, 
+        passSeries2: { xStart: 147, xEnd: 158, y: 174 }, 
+        passNumber: { xStart: 158, xEnd: 177, y: 174 },
         vehicleName: { x: 57, y: 166 },
         plate1: { xStart: 40, xEnd: 50, y: 153 },
         plate2: { xStart: 54, xEnd: 64, y: 153 },
@@ -172,17 +189,25 @@
         plate5: { xStart: 91, xEnd: 101, y: 153 },
         plate6: { xStart: 102, xEnd: 112, y: 153 },
         issueDate: { 
-            day: { xStart: 45, xEnd: 53, y: 42 }, 
-            month: { xStart: 55, xEnd: 63, y: 42 }, 
-            year: { xStart: 72, xEnd: 80, y: 42 } 
+            day: { xStart: 45, xEnd: 53, y: 41 }, 
+            month: { xStart: 55, xEnd: 63, y: 41 }, 
+            year: { xStart: 72, xEnd: 80, y: 41 } 
         },
-        dayNumber: { xStart: 88, xEnd: 100, y: 42 },
+        dayNumber: { xStart: 88, xEnd: 100, y: 41 },
         validDays: { xStart: 7, xEnd: 95, y: 12 },
         qrCode: { x: 130, y: 6, width: 45, height: 45 }
     };
 
+    // БАЗА АВТОМОБИЛЕЙ (ДОПИШИ СВОИ ТУТ)
+    const CAR_DATABASE = [
+        "Лада Веста", "Лада Гранта", "Лада Нива", 
+        "Kia Rio", "Hyundai Solaris", "Toyota Camry", 
+        "Ford Focus", "ГАЗель Next", "УАЗ Патриот"
+    ];
+
     let currentPdfBlob = null;
 
+    // --- АВТОЗАПОЛНЕНИЕ И РАСЧЕТЫ ---
     document.getElementById('rentDays').addEventListener('input', calcTotal);
     document.getElementById('costPerDay').addEventListener('input', calcTotal);
     
@@ -191,6 +216,54 @@
         const cost = parseInt(document.getElementById('costPerDay').value) || 0;
         document.getElementById('totalCost').value = `${days * cost} руб.`;
     }
+
+    // --- КАСТОМНЫЙ ВЫПАДАЮЩИЙ СПИСОК (ПОИСК) ---
+    const vehicleInput = document.getElementById('vehicleName');
+    const dropdown = document.getElementById('vehicleDropdown');
+
+    vehicleInput.addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        dropdown.innerHTML = '';
+        
+        if (!val) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        // Ищем совпадения
+        const matches = CAR_DATABASE.filter(car => car.toLowerCase().includes(val));
+        
+        if (matches.length > 0) {
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.textContent = match;
+                // При клике подставляем в инпут и скрываем список
+                div.onclick = function() {
+                    vehicleInput.value = match;
+                    dropdown.style.display = 'none';
+                };
+                dropdown.appendChild(div);
+            });
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // Закрываем список, если кликнули вне его
+    document.addEventListener('click', function(e) {
+        if (e.target !== vehicleInput && e.target !== dropdown) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // Показываем список при фокусе, если есть текст
+    vehicleInput.addEventListener('focus', function() {
+        if (this.value) {
+            this.dispatchEvent(new Event('input'));
+        }
+    });
 
     // --- ЗАГРУЗКА ГРАЖДАН ---
     async function loadCitizens() {
@@ -248,12 +321,8 @@
             }
         }
         
-        // Выводим в поле для просмотра и редактирования (добавляем регион)
         document.getElementById('generatedPlate').value = `${newPlate} 156 RUS`;
     }
-
-    // Обновляем номер при смене типа
-    document.getElementById('plateType').addEventListener('change', generatePlate);
 
     // Установка даты и номеров по умолчанию
     async function init() {
@@ -266,7 +335,7 @@
         
         calcTotal();
         await loadCitizens();
-        await generatePlate(); // Генерируем первый номер
+        await generatePlate();
     }
 
     async function createQrImage(text) {
@@ -294,15 +363,21 @@
         try {
             const getVal = (id) => document.getElementById(id).value;
             
-            // Берем номер из поля, которое отредактировал пользователь (если менял)
+            // Берем номер из поля, которое отредактировал пользователь
             const fullPlateString = getVal('generatedPlate'); 
-            // Очищаем от пробелов и региона для отрисовки по квадратикам
-            // Формат: "А 123 ВС 156 RUS" -> берем только первую часть до "156"
             const mainPlatePart = fullPlateString.split('156')[0].trim(); 
             const plateChars = mainPlatePart.replace(/\s+/g, '').split('');
 
+            // Объединяем ТС и цвет
+            const fullVehicleName = `${getVal('vehicleName')}, ${getVal('vehicleColor')}`;
+
             const docNumber = getVal('docNumber');
-            const rentDays = getVal('rentDays');
+            const rentDays = parseInt(getVal('rentDays'));
+            const dayNumber = parseInt(getVal('dayNumber'));
+            
+            // РАСЧЕТ ДАТЫ ДЕЙСТВИЯ (День выдачи + срок)
+            const endDay = dayNumber + rentDays;
+
             const costPerDay = getVal('costPerDay');
             const totalCost = rentDays * costPerDay;
             const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.20${getVal('dateYear')}`;
@@ -321,6 +396,10 @@
             const opt11 = { size: 11, font: customFont, color: PDFLib.rgb(0, 0, 0) };
 
             drawCenteredInRange(firstPage, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt6);
+            
+            // Рисуем ТС с цветом
+            firstPage.drawText(fullVehicleName, { x: COORDS.vehicleName.x, y: COORDS.vehicleName.y, ...opt6 });
+            
             firstPage.drawText(getVal('renterName'), { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt6 });
             
             const series = getVal('passSeries').padEnd(4, ' ');
@@ -328,7 +407,6 @@
             drawCenteredInRange(firstPage, series.substring(2, 4), COORDS.passSeries2.xStart, COORDS.passSeries2.xEnd, COORDS.passSeries2.y, opt6);
             
             drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt6);
-            firstPage.drawText(getVal('vehicleName'), { x: COORDS.vehicleName.x, y: COORDS.vehicleName.y, ...opt6 });
 
             // Отрисовка квадратиков номера
             drawCenteredInRange(firstPage, plateChars[0] || '', COORDS.plate1.xStart, COORDS.plate1.xEnd, COORDS.plate1.y, opt11);
@@ -341,12 +419,14 @@
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt6);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt6);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt6);
+            
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt6);
             
-            drawCenteredInRange(firstPage, `${rentDays} дня`, COORDS.validDays.xStart, COORDS.validDays.xEnd, COORDS.validDays.y, opt11);
+            // ВЫВОДИМ РАСЧЕТ ДАТЫ ДЕЙСТВИЯ
+            drawCenteredInRange(firstPage, `${endDay} дня`, COORDS.validDays.xStart, COORDS.validDays.xEnd, COORDS.validDays.y, opt11);
 
-            // В QR-код пишем полный номер с регионом
-            const qrText = `Договор аренды ТС\n№ ${docNumber}\nАрендодатель: Арендная компания «Wels Rent»\nАрендатор: ${getVal('renterName')} (${getVal('passSeries')} ${getVal('passNumber')})\nТС: ${getVal('vehicleName')}, ${getVal('vehicleColor')}, ${fullPlateString}\nДней: ${rentDays}\nСтоимость 1 дня: ${costPerDay} руб.\nИтого: ${totalCost} руб.\nДата выдачи: ${dateStr} (${getVal('dayNumber')} день)\nДействителен: ${rentDays} дня`;
+            // В QR-код пишем полный номер с регионом и расчетную дату
+            const qrText = `Договор аренды ТС\n№ ${docNumber}\nАрендодатель: Арендная компания «Wels Rent»\nАрендатор: ${getVal('renterName')} (${getVal('passSeries')} ${getVal('passNumber')})\nТС: ${fullVehicleName}, ${fullPlateString}\nСрок аренды: ${rentDays} дней\nСтоимость 1 дня: ${costPerDay} руб.\nИтого: ${totalCost} руб.\nДата выдачи: ${dateStr} (${getVal('dayNumber')} день)\nДействителен до: ${endDay} дня`;
             
             const qrBytes = await createQrImage(qrText);
             const qrImage = await pdfDoc.embedPng(qrBytes);
@@ -369,11 +449,12 @@
                 file_path: fileName,
                 status: 'active',
                 metadata: {
-                    plate: fullPlateString, // Сохраняем полный номер с регионом
+                    plate: fullPlateString,
                     days: rentDays,
                     cost_per_day: costPerDay,
                     total_cost: totalCost,
-                    color: getVal('vehicleColor')
+                    color: getVal('vehicleColor'),
+                    end_day: endDay
                 }
             });
 
