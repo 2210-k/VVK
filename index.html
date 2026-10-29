@@ -305,6 +305,7 @@
             <label>Адрес</label><input type="text" id="edit-address">
             <label>Серия паспорта</label><input type="text" id="edit-pass-series">
             <label>Номер паспорта</label><input type="text" id="edit-pass-number">
+            <label>№ В/У (водительского удостоверения)</label><input type="text" id="edit-driver-license">
             <div class="modal-actions">
                 <button class="btn-save" onclick="saveCitizen()">Сохранить</button>
                 <button class="btn-cancel" onclick="closeModal('edit-modal')">Отмена</button>
@@ -322,6 +323,7 @@
             <label>Отчество</label><input type="text" id="add-patronymic">
             <label>Дата рождения</label><input type="date" id="add-dob">
             <label>Место рождения</label><input type="text" id="add-pob">
+            <label>№ В/У (водительского удостоверения)</label><input type="text" id="add-driver-license">
             <div class="modal-actions">
                 <button class="btn-save" onclick="addCitizen()">Создать</button>
                 <button class="btn-cancel" onclick="closeModal('add-modal')">Отмена</button>
@@ -801,6 +803,7 @@
             document.getElementById('edit-address').value = p.address || '';
             document.getElementById('edit-pass-series').value = p.pass_series || '';
             document.getElementById('edit-pass-number').value = p.pass_number || '';
+            document.getElementById('edit-driver-license').value = p.driver_license || '';
             document.getElementById('edit-modal').style.display = 'flex';
         }
 
@@ -814,7 +817,8 @@
                 pob: document.getElementById('edit-pob').value,
                 address: document.getElementById('edit-address').value,
                 pass_series: document.getElementById('edit-pass-series').value,
-                pass_number: document.getElementById('edit-pass-number').value
+                pass_number: document.getElementById('edit-pass-number').value,
+                driver_license: document.getElementById('edit-driver-license').value
             };
             const { error } = await supabaseClient.from('profiles').update(updates).eq('id', id);
             if (error) alert("Ошибка: " + error.message);
@@ -828,6 +832,7 @@
             document.getElementById('add-patronymic').value = '';
             document.getElementById('add-dob').value = '';
             document.getElementById('add-pob').value = '';
+            document.getElementById('add-driver-license').value = '';
             document.getElementById('add-modal').style.display = 'flex';
         }
 
@@ -858,6 +863,7 @@
                 patronymic: document.getElementById('add-patronymic').value,
                 dob: document.getElementById('add-dob').value || null,
                 pob: document.getElementById('add-pob').value,
+                driver_license: document.getElementById('add-driver-license').value,
                 role: 'patient'
             };
 
