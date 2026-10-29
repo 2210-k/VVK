@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Разрешение на трудовую деятельность</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        button[type="submit"]:disabled { background: #ccc; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 150px; }
+        .date-group { display: flex; gap: 5px; }
+        .date-group input, .date-group select { text-align: center; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
+        
+        /* Стили для кастомного выпадающего списка */
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
+        .autocomplete-item:hover { background-color: #eef5ff; }
+        
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-close { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Вернуться на портал</a>
+    
+    <div class="patient-selector">
+        <label>👤 Выберите гражданина (данные подставятся)</label>
+        <select id="patientSelect" class="form-select">
+            <option value="none">-- Без гражданина (В архив) --</option>
+        </select>
+    </div>
+
+    <h2>Разрешение на трудовую деятельность</h2>
+    
+    <form id="permitForm">
+        <div class="row">
+            <div class="form-group">
+                <label>Дата выдачи</label>
+                <div class="date-group">
+                    <input type="text" id="dateDay" class="day" maxlength="2" required>
+                    <select id="dateMonth" class="month" required></select>
+                    <input type="text" id="dateYear" class="year" maxlength="2" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер дня (000-999)</label>
+                <input type="text" id="dayNumber" class="center-input" required oninput="syncBottomDayNumber()">
+            </div>
+            <div class="form-group">
+                <label>№ документа (0308ННН)</label>
+                <input type="text" id="docNumber" class="center-input" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Имя, Отчество (вместе)</label>
+            <input type="text" id="fullName" placeholder="Иван Иванович" required>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Дата рождения</label>
+                <div class="date-group">
+                    <input type="text" id="dobDay" class="day" maxlength="2" required>
+                    <select id="dobMonth" class="month" required></select>
+                    <input type="text" id="dobYear" class="year" maxlength="2" required>
+                </div>
+            </div>
+            <div class="form-group"><label>Место рождения</label><input type="text" id="pob"></div>
+        </div>
+
+        <div class="row">
+            <div class="form-group"><label>Паспорт (Серия)</label><input type="text" id="passSeries" maxlength="4" required></div>
+            <div class="form-group"><label>Паспорт (Номер)</label><input type="text" id="passNumber" maxlength="6" required></div>
+        </div>
+
+        <div class="form-group">
+            <label>Адрес регистрации</label>
+            <input type="text" id="address" required>
+        </div>
+
+        <div class="form-group">
+            <label>Допускается к работе в (Организация | Должность)</label>
+            <input type="text" id="workPlace" placeholder="Начните вводить для поиска..." required autocomplete="off">
+            <div id="workDropdown" class="autocomplete-dropdown"></div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Срок действия С (День)</label>
+                <input type="number" id="validFrom" class="center-input" required>
+            </div>
+            <div class="form-group">
+                <label>Срок действия ПО (День)</label>
+                <input type="number" id="validTo" class="center-input" required>
+            </div>
+            <div class="form-group">
+                <label>Срок действия (в днях для расчета)</label>
+                <input type="number" id="durationDays" class="center-input" value="30" required onchange="calcValidity()">
+            </div>
+        </div>
+
+        <div class="row" style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #ccc;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Номер дня внизу (дублируется)</label>
+                <input type="text" id="issueDayNumber" class="center-input" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Руководитель Департамента труда (ФИО)</label>
+                <input type="text" id="headName" placeholder="Необязательно">
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn">Сгенерировать и сохранить</button>
+    </form>
+</div>
+
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Документ сформирован!</h3>
+            <div>
+                <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-preview btn-close" onclick="window.location.href='index.html'">Вернуться</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+    
+    // =====================================================================
+    // 🛠️ БАЗА РАБОТ
+    // =====================================================================
+    const WORK_DATABASE = [
+        "Горнодобывающая организация | Шахтер",
+        "Горнодобывающая организация | Инженер",
+        "Курьерская служба | Курьер",
+        "Почтовое отделение | Почтальон",
+        "Таксопарк | Водитель такси",
+        "Автобусная компания | Водитель автобуса",
+        "Коммунальная служба | Слесарь",
+        "Служба доставки | Развозчик",
+        "Транспортная компания | Дальнобойщик",
+        "Единая служба спасения | Водитель",
+        "Единая служба спасения | Пожарный",
+        "Единая служба спасения | Спасатель",
+        "Единая служба спасения | Инспектор",
+        "Единая служба спасения | Фельдшер",
+        "Единая служба спасения | Врач",
+        "Министерство внутренних дел | Рядовой",
+        "Министерство внутренних дел | Сержант",
+        "Министерство внутренних дел | Лейтенант",
+        "Министерство внутренних дел | Капитан",
+        "Министерство внутренних дел | Майор",
+        "Министерство внутренних дел | Подполковник"
+    ];
+
+    // =====================================================================
+    // ⚠️ ТВОИ КООРДИНАТЫ (ВЕРХНИЕ ВСТАВЛЕНЫ, ОСТАЛЬНЫЕ ПРИМЕРНО - ПОДГОНИШЬ)
+    // =====================================================================
+    const COORDS = {
+        qrCode: { x: 44, y: 817, width: 70, height: 70 },
+        barcode: { x: 450, y: 816, width: 100, height: 40 },
+        
+        date: { 
+            day: { xStart: 49, xEnd: 63, y: 682 }, 
+            month: { xStart: 72, xEnd: 133, y: 682 }, 
+            year: { xStart: 147, xEnd: 162, y: 682 } 
+        },
+        dayNumber: { xStart: 176, xEnd: 194, y: 682 },
+        
+        docNumber: { xStart: 400, xEnd: 450, y: 682 }, // Примерно
+        
+        // Основной текст (опустил на ~18 пунктов вниз, подгони под себя)
+        fullName: { x: 115, y: 634 },
+        dob: { 
+            day: { xStart: 128, xEnd: 143, y: 620 }, 
+            month: { xStart: 151, xEnd: 213, y: 620 }, 
+            year: { xStart: 227, xEnd: 242, y: 620 } 
+        },
+        passSeries: { xStart: 365, xEnd: 394, y: 620 },
+        passNumber: { xStart: 410, xEnd: 475, y: 620 },
+        address: { x: 140, y: 605 },
+        
+        workPlace: { x: 152, y: 583 },
+        
+        validFrom: { xStart: 186, xEnd: 209, y: 559 },
+        validTo: { xStart: 245, xEnd: 267, y: 559 },
+        
+        // Нижняя часть (Дата выдачи дублируется + номер дня)
+        issueDate: { 
+            day: { xStart: 115, xEnd: 130, y: 452 }, 
+            month: { xStart: 138, xEnd: 201, y: 452 }, 
+            year: { xStart: 215, xEnd: 229, y: 452 } 
+        },
+        issueDayNumber: { xStart: 244, xEnd: 261, y: 452 }, // Координаты для нижнего номера дня
+        
+        headName: { x: 215, y: 426 }
+    };
+
+    let currentPdfBlob = null;
+
+    // Синхронизация номера дня
+    function syncBottomDayNumber() {
+        document.getElementById('issueDayNumber').value = document.getElementById('dayNumber').value;
+    }
+
+    function calcValidity() {
+        const start = parseInt(document.getElementById('dayNumber').value) || 0;
+        const duration = parseInt(document.getElementById('durationDays').value) || 0;
+        document.getElementById('validFrom').value = start;
+        document.getElementById('validTo').value = start + duration;
+    }
+
+    // --- ВЫПАДАЮЩИЙ СПИСОК РАБОТ ---
+    const workInput = document.getElementById('workPlace');
+    const dropdown = document.getElementById('workDropdown');
+
+    workInput.addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        dropdown.innerHTML = '';
+        if (!val) { dropdown.style.display = 'none'; return; }
+        const matches = WORK_DATABASE.filter(w => w.toLowerCase().includes(val));
+        if (matches.length > 0) {
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.textContent = match;
+                div.onclick = function() {
+                    workInput.value = match;
+                    dropdown.style.display = 'none';
+                };
+                dropdown.appendChild(div);
+            });
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target !== workInput && e.target !== dropdown) dropdown.style.display = 'none';
+    });
+
+    // --- ЗАГРУЗКА ГРАЖДАН ---
+    async function loadCitizens() {
+        const select = document.getElementById('patientSelect');
+        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (!citizens) return;
+        select.innerHTML = '<option value="none">-- Без гражданина (В архив) --</option>';
+        citizens.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.dataset.citizen = JSON.stringify(p);
+            opt.textContent = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
+            select.appendChild(opt);
+        });
+    }
+
+    document.getElementById('patientSelect').addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (!selectedOption.value || selectedOption.value === 'none') return;
+        
+        const citizen = JSON.parse(selectedOption.dataset.citizen);
+        // Склеиваем Имя и Отчество
+        document.getElementById('fullName').value = `${citizen.first_name || ''} ${citizen.patronymic || ''}`.trim();
+        
+        document.getElementById('passSeries').value = citizen.pass_series || '';
+        document.getElementById('passNumber').value = citizen.pass_number || '';
+        document.getElementById('address').value = citizen.address || '';
+        document.getElementById('pob').value = citizen.pob || '';
+
+        if (citizen.dob) {
+            const [year, month, day] = citizen.dob.split('-');
+            document.getElementById('dobDay').value = day;
+            document.getElementById('dobMonth').value = month;
+            document.getElementById('dobYear').value = year.slice(-2);
+        }
+    });
+
+    function init() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+        
+        document.getElementById('docNumber').value = `0308${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+        
+        const dateMonthSelect = document.getElementById('dateMonth');
+        const dobMonthSelect = document.getElementById('dobMonth');
+        const months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+        months.forEach((m, i) => {
+            dateMonthSelect.add(new Option(m, m));
+            dobMonthSelect.add(new Option(m, m));
+        });
+        dateMonthSelect.value = months[today.getMonth()];
+        
+        syncBottomDayNumber();
+        calcValidity();
+        loadCitizens();
+    }
+
+    // --- PDF ФУНКЦИИ ---
+    async function createBarcodeImage(text) {
+        const canvas = document.createElement('canvas');
+        JsBarcode(canvas, text, { format: "CODE128", width: 2, height: 60, displayValue: false, margin: 0 });
+        return await fetch(canvas.toDataURL("image/png")).then(res => res.arrayBuffer());
+    }
+
+    async function createQrImage(text) {
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+        return await fetch(url).then(res => res.arrayBuffer());
+    }
+
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const textWidth = options.font.widthOfTextAtSize(text, options.size);
+        const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
+        page.drawText(text, { ...options, x: startX, y });
+    }
+
+    // --- ГЕНЕРАЦИЯ ---
+    document.getElementById('permitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const citizenVal = document.getElementById('patientSelect').value;
+        const actualCitizenId = (citizenVal === 'none') ? null : citizenVal;
+
+        btn.disabled = true;
+        btn.textContent = 'Генерация...';
+
+        try {
+            const getVal = (id) => document.getElementById(id).value;
+            const docNumber = getVal('docNumber');
+            const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.20${getVal('dateYear')}`;
+            
+            const url = './work_permit_template.pdf'; 
+            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            
+            const fontUrlReg = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytesReg = await fetch(fontUrlReg).then(res => res.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytesReg);
+            
+            const firstPage = pdfDoc.getPages()[0];
+            const opt9 = { size: 9, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+
+            // Коды
+            const barcodeBytes = await createBarcodeImage(docNumber);
+            const barcodeImage = await pdfDoc.embedPng(barcodeBytes);
+            firstPage.drawImage(barcodeImage, { x: COORDS.barcode.x, y: COORDS.barcode.y, width: COORDS.barcode.width, height: COORDS.barcode.height });
+
+            const qrText = `РАЗРЕШЕНИЕ НА ТРУДОВУЮ ДЕЯТЕЛЬНОСТЬ\n№ ${docNumber}\nГражданин: ${getVal('fullName')}\nПаспорт: ${getVal('passSeries')} ${getVal('passNumber')}\nРабота: ${getVal('workPlace')}\nСрок: с ${getVal('validFrom')} по ${getVal('validTo')} день\nВыдано: ${dateStr}`;
+            const qrBytes = await createQrImage(qrText);
+            const qrImage = await pdfDoc.embedPng(qrBytes);
+            firstPage.drawImage(qrImage, { x: COORDS.qrCode.x, y: COORDS.qrCode.y, width: COORDS.qrCode.width, height: COORDS.qrCode.height });
+
+            // Верхняя дата
+            drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt9);
+            drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt9);
+            drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt9);
+            drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt9);
+            
+            drawCenteredInRange(firstPage, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt9);
+
+            // Основное
+            firstPage.drawText(getVal('fullName'), { x: COORDS.fullName.x, y: COORDS.fullName.y, ...opt9 });
+
+            drawCenteredInRange(firstPage, getVal('dobDay'), COORDS.dob.day.xStart, COORDS.dob.day.xEnd, COORDS.dob.day.y, opt9);
+            drawCenteredInRange(firstPage, getVal('dobMonth'), COORDS.dob.month.xStart, COORDS.dob.month.xEnd, COORDS.dob.month.y, opt9);
+            drawCenteredInRange(firstPage, getVal('dobYear'), COORDS.dob.year.xStart, COORDS.dob.year.xEnd, COORDS.dob.year.y, opt9);
+            
+            drawCenteredInRange(firstPage, getVal('passSeries'), COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt9);
+            drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt9);
+
+            firstPage.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...opt9 });
+            firstPage.drawText(getVal('workPlace'), { x: COORDS.workPlace.x, y: COORDS.workPlace.y, ...opt9 });
+
+            drawCenteredInRange(firstPage, getVal('validFrom'), COORDS.validFrom.xStart, COORDS.validFrom.xEnd, COORDS.validFrom.y, opt9);
+            drawCenteredInRange(firstPage, getVal('validTo'), COORDS.validTo.xStart, COORDS.validTo.xEnd, COORDS.validTo.y, opt9);
+
+            // Нижняя дата и номер дня
+            drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt9);
+            drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt9);
+            drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt9);
+            
+            // НИЖНИЙ НОМЕР ДНЯ
+            drawCenteredInRange(firstPage, getVal('issueDayNumber'), COORDS.issueDayNumber.xStart, COORDS.issueDayNumber.xEnd, COORDS.issueDayNumber.y, opt9);
+
+            // Руководитель
+            if (getVal('headName')) {
+                firstPage.drawText(getVal('headName'), { x: COORDS.headName.x, y: COORDS.headName.y, ...opt9 });
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            const fileName = `${Date.now()}_WORKPERMIT_${docNumber}.pdf`;
+
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            await supabaseClient.from('documents').insert({
+                patient_id: actualCitizenId,
+                organization_id: 3, 
+                doc_number: docNumber,
+                document_type: 'Разрешение на работу',
+                file_path: fileName,
+                status: 'active'
+            });
+
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl;
+            document.getElementById('preview-modal').style.display = 'flex';
+            
+            document.getElementById('download-btn').onclick = () => {
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = `Разрешение_на_работу_${docNumber}.pdf`;
+                link.click();
+            };
+
+        } catch (error) {
+            console.error(error);
+            alert("Ошибка: " + error.message + "\nУбедитесь, что файл work_permit_template.pdf загружен на GitHub!");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать и сохранить';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
