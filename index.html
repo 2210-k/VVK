@@ -63,7 +63,7 @@
         .btn-delete { background: var(--danger); }
         .btn-download { background: #64748b; }
         .btn-view { background: var(--primary); }
-        .btn-revoke { background: #b91c1c; } /* Кнопка аннулирования */
+        .btn-revoke { background: #b91c1c; } 
         .btn-back { background: #64748b; padding: 10px 20px; font-size: 14px; margin-bottom: 15px; display: inline-block; border-radius: 6px; color: white; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
 
         /* Статусы */
@@ -180,7 +180,7 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКИ ОРГАНИЗАЦИИ (Документы / Граждане) -->
+            <!-- ВКЛАДКИ ОРГАНИЗАЦИИ -->
             <div id="view-org-tabs" style="display: none;">
                 <div class="tabs">
                     <div class="tab active" id="tab-org-docs" onclick="switchOrgTab('docs', this)">📄 Документы организации</div>
@@ -188,7 +188,7 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКИ ВСЕ ДОКУМЕНТЫ (Документы / Граждане) -->
+            <!-- ВКЛАДКИ ВСЕ ДОКУМЕНТЫ -->
             <div id="view-all-tabs" style="display: none;">
                 <div class="tabs">
                     <div class="tab active" id="tab-all-docs" onclick="switchAllTab('docs', this)">📄 Все документы (Глобально)</div>
@@ -207,7 +207,7 @@
                                 <th onclick="sortDocs('document_type')">Тип <span id="sort-document_type"></span></th>
                                 <th onclick="sortDocs('recipient')">Получатель <span id="sort-recipient"></span></th>
                                 <th onclick="sortDocs('created_at')">Дата <span id="sort-created_at">▼</span></th>
-                                <th>Статус</th> <!-- ДОБАВЛЕНА КОЛОНКА СТАТУСА -->
+                                <th>Статус</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -234,7 +234,7 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: УПРАВЛЕНИЕ ГРАЖДАНАМИ (РЕДАКТИРОВАНИЕ) -->
+            <!-- КОНТЕНТ: УПРАВЛЕНИЕ ГРАЖДАНАМИ -->
             <div id="content-manage-citizens" style="display: none;">
                 <div style="margin-bottom: 15px; text-align: right;">
                     <button class="btn-create" onclick="openAddCitizenModal()">+ Добавить гражданина</button>
@@ -255,10 +255,14 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: ДОКУМЕНТЫ ВЫБРАННОГО ГРАЖДАНИНА -->
+            <!-- КОНТЕНТ: ДОКУМЕНТЫ ВЫБРАННОГО ГРАЖДАНИНА (ОБНОВЛЕНО) -->
             <div id="content-citizen-details" style="display: none;">
                 <button class="btn-back" onclick="goBack()">← Назад</button>
                 <h2 id="citizen-details-name" style="color: var(--primary); margin-bottom: 20px;"></h2>
+                
+                <!-- ДОБАВЛЕН ПОИСК -->
+                <input type="text" id="search-citizen-docs" class="search-bar" placeholder="🔍 Поиск по номеру или типу документа..." oninput="renderCitizenDocsTable()">
+                
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -266,6 +270,7 @@
                                 <th>Номер</th>
                                 <th>Тип</th>
                                 <th>Дата</th>
+                                <th>Статус</th> <!-- ДОБАВЛЕН СТАТУС -->
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -344,22 +349,14 @@
         
         const orgNames = { 1: 'Единая Служба Спасения', 2: 'Министерство Внутренних Дел', 3: 'Правительство', 4: 'Воинская часть' };
 
-        // Глобальное состояние
         let currentState = {
-            view: 'org', // 'org', 'all_docs', 'manage_citizens', 'citizen_details'
-            orgId: 1,
-            orgName: 'Единая Служба Спасения',
-            orgTab: 'docs', // 'docs', 'citizens'
-            allTab: 'docs', // 'docs', 'citizens'
-            
-            originView: 'org',
-            originOrgId: 1,
-            selectedCitizenId: null
+            view: 'org', orgId: 1, orgName: 'Единая Служба Спасения', orgTab: 'docs', allTab: 'docs',
+            originView: 'org', originOrgId: 1, selectedCitizenId: null
         };
 
         let allDocs = [];
         let allCitizens = [];
-        let currentCitizenDocs = [];
+        let currentCitizenDocs = []; // Храним доки выбранного гражданина
 
         let docSort = { col: 'created_at', asc: false };
 
@@ -417,7 +414,6 @@
                 if (viewType === 'manage_citizens') document.getElementById('menu-manage-citizens').classList.add('active');
             }
 
-            // Прячем все
             document.getElementById('content-docs').style.display = 'none';
             document.getElementById('content-citizens-view').style.display = 'none';
             document.getElementById('content-manage-citizens').style.display = 'none';
@@ -434,7 +430,6 @@
                 document.getElementById('page-subtitle').textContent = 'Управление документами и гражданами';
                 document.getElementById('view-org-tabs').style.display = 'block';
                 btnCreate.style.display = 'flex';
-                
                 switchOrgTab(currentState.orgTab, document.getElementById(`tab-org-${currentState.orgTab}`));
                 
             } else if (viewType === 'all_docs') {
@@ -442,7 +437,6 @@
                 document.getElementById('page-subtitle').textContent = 'Глобальный архив';
                 document.getElementById('view-all-tabs').style.display = 'block';
                 btnCreate.style.display = 'none'; 
-                
                 switchAllTab(currentState.allTab, document.getElementById(`tab-all-${currentState.allTab}`));
                 
             } else if (viewType === 'manage_citizens') {
@@ -452,7 +446,6 @@
                 btnCreate.style.display = 'none';
                 loadCitizens();
             }
-
             updateStats();
         }
 
@@ -460,7 +453,6 @@
             currentState.orgTab = tab;
             document.querySelectorAll('#view-org-tabs .tab').forEach(el => el.classList.remove('active'));
             if(element) element.classList.add('active');
-
             document.getElementById('content-docs').style.display = 'none';
             document.getElementById('content-citizens-view').style.display = 'none';
 
@@ -477,7 +469,6 @@
             currentState.allTab = tab;
             document.querySelectorAll('#view-all-tabs .tab').forEach(el => el.classList.remove('active'));
             if(element) element.classList.add('active');
-
             document.getElementById('content-docs').style.display = 'none';
             document.getElementById('content-citizens-view').style.display = 'none';
 
@@ -521,10 +512,8 @@
         function sortDocs(col) {
             if (docSort.col === col) docSort.asc = !docSort.asc;
             else { docSort.col = col; docSort.asc = true; }
-            
             document.querySelectorAll('th span').forEach(el => el.textContent = '');
             document.getElementById(`sort-${col}`).textContent = docSort.asc ? '▲' : '▼';
-            
             renderDocs();
         }
 
@@ -551,17 +540,14 @@
             });
             
             tbody.innerHTML = '';
-            if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Нет документов</td></tr>'; // colspan="6"
+            if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Нет документов</td></tr>';
 
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 
-                // ЛОГИКА СТАТУСОВ
                 const isActive = doc.status === 'active' || !doc.status;
                 const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
-                const btnRevoke = isActive 
-                    ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` 
-                    : '';
+                const btnRevoke = isActive ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
 
                 tbody.innerHTML += `
                     <tr>
@@ -569,7 +555,7 @@
                         <td>${doc.document_type}</td>
                         <td>${doc.recipient}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
-                        <td>${statusHtml}</td> <!-- ОТОБРАЖЕНИЕ СТАТУСА -->
+                        <td>${statusHtml}</td>
                         <td>
                             <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
                             ${btnRevoke}
@@ -580,9 +566,8 @@
             });
         }
 
-        // ФУНКЦИЯ АННУЛИРОВАНИЯ
         async function revokeDoc(docId) {
-            if (!confirm("Аннулировать документ? Госномер станет доступен для повторного использования.")) return;
+            if (!confirm("Аннулировать документ?")) return;
             const { error } = await supabaseClient.from('documents').update({ status: 'revoked' }).eq('id', docId);
             if (error) alert("Ошибка: " + error.message);
             else {
@@ -645,7 +630,6 @@
             });
         }
 
-        // --- УПРАВЛЕНИЕ ГРАЖДАНАМИ ---
         async function loadCitizens() {
             allCitizens = await fetchCitizensData();
             renderManageCitizens();
@@ -669,19 +653,16 @@
                         <td>${p.last_name} ${p.first_name} ${p.patronymic || ''}</td>
                         <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
                         <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
-                        <td>
-                            <button class="btn-action btn-edit" onclick="openEdit('${p.id}')">Редактировать</button>
-                        </td>
+                        <td><button class="btn-action btn-edit" onclick="openEdit('${p.id}')">Редактировать</button></td>
                     </tr>
                 `;
             });
         }
 
-        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА ---
+        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА (ОБНОВЛЕНО) ---
         async function openCitizenDocs(citizenId, citizenName) {
             currentState.originView = currentState.view;
             currentState.originOrgId = currentState.orgId;
-
             currentState.view = 'citizen_details';
             currentState.selectedCitizenId = citizenId;
 
@@ -697,9 +678,9 @@
             
             document.getElementById('content-citizen-details').style.display = 'block';
             document.getElementById('citizen-details-name').textContent = citizenName;
+            document.getElementById('search-citizen-docs').value = ''; // Сброс поиска при открытии
 
             let query = supabaseClient.from('documents').select('*').eq('patient_id', citizenId);
-            
             if (currentState.originView === 'org') {
                 query = query.eq('organization_id', currentState.originOrgId);
             }
@@ -707,21 +688,40 @@
             const { data: docs } = await query.order('created_at', { ascending: false });
             currentCitizenDocs = docs || [];
 
+            renderCitizenDocsTable(); // Вызываем отдельную функцию отрисовки
+        }
+
+        // НОВАЯ ФУНКЦИЯ: Отрисовка таблицы документов гражданина с учетом поиска
+        function renderCitizenDocsTable() {
             const tbody = document.getElementById('citizen-details-table-body');
+            const query = document.getElementById('search-citizen-docs').value.toLowerCase();
+            
+            // Фильтруем сохраненные документы по поиску
+            let filtered = currentCitizenDocs.filter(doc => 
+                doc.doc_number.toLowerCase().includes(query) || 
+                doc.document_type.toLowerCase().includes(query)
+            );
+
             tbody.innerHTML = '';
             
-            if (currentCitizenDocs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">У этого гражданина нет документов в данной категории.</td></tr>';
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет документов по вашему запросу.</td></tr>';
                 return;
             }
 
-            currentCitizenDocs.forEach(doc => {
+            filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                
+                // ЛОГИКА СТАТУСОВ
+                const isActive = doc.status === 'active' || !doc.status;
+                const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
+
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${doc.doc_number}</b></td>
                         <td>${doc.document_type}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+                        <td>${statusHtml}</td> <!-- ВЫВОД СТАТУСА -->
                         <td>
                             <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
                         </td>
@@ -770,23 +770,12 @@
         async function openCreateDocModal() {
             document.getElementById('create-doc-title').textContent = `Создать документ (${currentState.orgName})`;
             document.getElementById('create-doc-modal').style.display = 'flex';
-            
             const list = document.getElementById('templates-list');
             list.innerHTML = '<p>Загрузка...</p>';
-            
-            const { data: templates, error } = await supabaseClient
-                .from('document_templates')
-                .select('*')
-                .eq('organization_id', currentState.orgId);
-                
+            const { data: templates, error } = await supabaseClient.from('document_templates').select('*').eq('organization_id', currentState.orgId);
             if (error) { list.innerHTML = `<p style="color:red;">Ошибка: ${error.message}</p>`; return; }
-            
             list.innerHTML = '';
-            if (!templates || templates.length === 0) {
-                list.innerHTML = '<p style="color:#888;">Нет доступных шаблонов.</p>';
-                return;
-            }
-            
+            if (!templates || templates.length === 0) { list.innerHTML = '<p style="color:#888;">Нет доступных шаблонов.</p>'; return; }
             templates.forEach(tpl => {
                 const div = document.createElement('div');
                 div.className = 'template-card';
@@ -803,7 +792,6 @@
             const { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
             if (error) return alert("Ошибка загрузки: " + error.message);
             if (!p) return;
-            
             document.getElementById('edit-id').value = p.id;
             document.getElementById('edit-last-name').value = p.last_name || '';
             document.getElementById('edit-first-name').value = p.first_name || '';
