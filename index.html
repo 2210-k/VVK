@@ -9,6 +9,7 @@
         :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; }
         body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 60px; }
         
+        /* Вход */
         #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; box-sizing: border-box; }
         .auth-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
         .auth-box h2 { margin-top: 0; color: var(--primary); }
@@ -16,9 +17,11 @@
         .btn-login { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; font-size: 16px; }
         .error-msg { color: var(--danger); display: none; margin-bottom: 15px; font-size: 14px; background: #fee2e2; padding: 10px; border-radius: 6px; }
 
+        /* Кабинет */
         #dashboard-screen { display: none; min-height: 100vh; }
         .sidebar { width: 260px; background: var(--primary); color: white; position: fixed; height: 100%; overflow-y: auto; z-index: 100; transition: 0.3s; }
         .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
+        
         .menu-label { padding: 15px 20px 5px 20px; font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
         .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #e2e8f0; }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; color: white; }
@@ -27,6 +30,7 @@
         .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .workspace-title h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); }
         .workspace-title p { margin: 0; color: #64748b; font-size: 14px; }
+        
         .actions-area { display: flex; gap: 15px; align-items: center; }
         .btn-create { background: var(--success); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .btn-create:hover { background: #059669; transform: translateY(-2px); }
@@ -36,11 +40,13 @@
         .tab:hover { color: var(--primary); }
         .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
+        /* Статистика */
         .stats-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .stat-box { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); flex: 1; min-width: 150px; }
         .stat-box h4 { margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase; }
         .stat-box .num { font-size: 24px; font-weight: bold; color: var(--primary); margin-top: 5px; }
 
+        /* Поиск и Таблицы */
         .search-bar { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
         .search-bar:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1); }
 
@@ -60,9 +66,11 @@
         .btn-revoke { background: #b91c1c; } 
         .btn-back { background: #64748b; padding: 10px 20px; font-size: 14px; margin-bottom: 15px; display: inline-block; border-radius: 6px; color: white; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
 
+        /* Статусы */
         .status-active { color: #166534; font-weight: bold; background: #dcfce7; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
         .status-revoked { color: #991b1b; font-weight: bold; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
 
+        /* Модалки */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; }
         .modal-content h3 { margin-top: 0; color: var(--primary); }
@@ -106,6 +114,7 @@
 </head>
 <body>
 
+    <!-- ЭКРАН ВХОДА -->
     <div id="auth-screen">
         <div class="auth-box">
             <h2>Служебный портал</h2>
@@ -119,10 +128,12 @@
         </div>
     </div>
 
+    <!-- ОСНОВНОЙ ЭКРАН -->
     <div id="dashboard-screen">
         <!-- САЙДБАР -->
         <div class="sidebar">
             <h2>Меню</h2>
+            
             <div class="menu-label">Организации</div>
             <div class="menu-item org-tab" data-org="1" onclick="switchView('org', 1, 'Единая Служба Спасения', this)">🚑 ЕСС</div>
             <div class="menu-item org-tab" data-org="2" onclick="switchView('org', 2, 'Министерство Внутренних Дел', this)">🚓 МВД</div>
@@ -134,17 +145,18 @@
             <div class="menu-item" id="menu-manage-citizens" onclick="switchView('manage_citizens')">👥 Граждане (Ред.)</div>
         </div>
 
-        <!-- НИЖНЕЕ МЕНЮ (Мобилки) - ДОБАВЛЕНЫ ВСЕ ОРГАНИЗАЦИИ -->
+        <!-- НИЖНЕЕ МЕНЮ (Мобилки) -->
         <div class="mobile-nav">
             <div class="menu-item org-tab" data-org="1" onclick="switchView('org', 1, 'ЕСС', this)">🚑<br>ЕСС</div>
-            <div class="menu-item org-tab" data-org="2" onclick="switchView('org', 2, 'МВД', this)">🚓<br>МВД</div>
-            <div class="menu-item org-tab" data-org="3" onclick="switchView('org', 3, 'Прав-во', this)">🏛️<br>Прав-во</div>
             <div class="menu-item org-tab" data-org="4" onclick="switchView('org', 4, 'ВЧ', this)">🪖<br>ВЧ</div>
             <div class="menu-item" onclick="switchView('all_docs')">📄<br>Все</div>
             <div class="menu-item" onclick="switchView('manage_citizens')">👥<br>Граждане</div>
         </div>
 
+        <!-- ОСНОВНОЙ КОНТЕНТ -->
         <div class="main-content">
+            
+            <!-- ШАПКА -->
             <div class="workspace-header">
                 <div class="workspace-title">
                     <h1 id="page-title">Единая Служба Спасения</h1>
@@ -156,6 +168,7 @@
                 </div>
             </div>
 
+            <!-- СТАТИСТИКА -->
             <div class="stats-bar" id="stats-bar">
                 <div class="stat-box">
                     <h4 id="stat-docs-title">Всего документов</h4>
@@ -167,6 +180,7 @@
                 </div>
             </div>
 
+            <!-- ВКЛАДКИ ОРГАНИЗАЦИИ -->
             <div id="view-org-tabs" style="display: none;">
                 <div class="tabs">
                     <div class="tab active" id="tab-org-docs" onclick="switchOrgTab('docs', this)">📄 Документы организации</div>
@@ -174,6 +188,7 @@
                 </div>
             </div>
 
+            <!-- ВКЛАДКИ ВСЕ ДОКУМЕНТЫ -->
             <div id="view-all-tabs" style="display: none;">
                 <div class="tabs">
                     <div class="tab active" id="tab-all-docs" onclick="switchAllTab('docs', this)">📄 Все документы (Глобально)</div>
@@ -181,6 +196,7 @@
                 </div>
             </div>
 
+            <!-- КОНТЕНТ: ДОКУМЕНТЫ -->
             <div id="content-docs" style="display: none;">
                 <input type="text" id="search-docs" class="search-bar" placeholder="🔍 Поиск по номеру или ФИО получателя..." oninput="renderDocs()">
                 <div class="table-responsive">
@@ -200,16 +216,25 @@
                 </div>
             </div>
 
+            <!-- КОНТЕНТ: ГРАЖДАНЕ (ПРОСМОТР) -->
             <div id="content-citizens-view" style="display: none;">
                 <input type="text" id="search-citizens-view" class="search-bar" placeholder="🔍 Поиск по ФИО или паспорту..." oninput="renderCitizensView()">
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>ФИО</th><th>Дата рождения</th><th>Паспорт</th><th>Действия</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>ФИО</th>
+                                <th>Дата рождения</th>
+                                <th>Паспорт</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
                         <tbody id="citizens-view-table-body"></tbody>
                     </table>
                 </div>
             </div>
 
+            <!-- КОНТЕНТ: УПРАВЛЕНИЕ ГРАЖДАНАМИ -->
             <div id="content-manage-citizens" style="display: none;">
                 <div style="margin-bottom: 15px; text-align: right;">
                     <button class="btn-create" onclick="openAddCitizenModal()">+ Добавить гражданина</button>
@@ -217,19 +242,38 @@
                 <input type="text" id="search-manage-citizens" class="search-bar" placeholder="🔍 Поиск по ФИО..." oninput="renderManageCitizens()">
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>ФИО</th><th>Дата рождения</th><th>Паспорт</th><th>Действия</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>ФИО</th>
+                                <th>Дата рождения</th>
+                                <th>Паспорт</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
                         <tbody id="manage-citizens-table-body"></tbody>
                     </table>
                 </div>
             </div>
 
+            <!-- КОНТЕНТ: ДОКУМЕНТЫ ВЫБРАННОГО ГРАЖДАНИНА (ОБНОВЛЕНО) -->
             <div id="content-citizen-details" style="display: none;">
                 <button class="btn-back" onclick="goBack()">← Назад</button>
                 <h2 id="citizen-details-name" style="color: var(--primary); margin-bottom: 20px;"></h2>
+                
+                <!-- ДОБАВЛЕН ПОИСК -->
                 <input type="text" id="search-citizen-docs" class="search-bar" placeholder="🔍 Поиск по номеру или типу документа..." oninput="renderCitizenDocsTable()">
+                
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Номер</th><th>Тип</th><th>Дата</th><th>Статус</th><th>Действия</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Номер</th>
+                                <th>Тип</th>
+                                <th>Дата</th>
+                                <th>Статус</th> <!-- ДОБАВЛЕН СТАТУС -->
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
                         <tbody id="citizen-details-table-body"></tbody>
                     </table>
                 </div>
@@ -243,7 +287,9 @@
         <div class="modal-content">
             <h3 id="create-doc-title">Выберите документ</h3>
             <div id="templates-list" style="margin-top: 20px;"></div>
-            <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('create-doc-modal')">Отмена</button></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('create-doc-modal')">Отмена</button>
+            </div>
         </div>
     </div>
 
@@ -310,9 +356,11 @@
 
         let allDocs = [];
         let allCitizens = [];
-        let currentCitizenDocs = [];
+        let currentCitizenDocs = []; // Храним доки выбранного гражданина
+
         let docSort = { col: 'created_at', asc: false };
 
+        // --- АВТОРИЗАЦИЯ ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.querySelector('.btn-login');
@@ -345,6 +393,7 @@
                 }
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
+                
                 switchView('org', 1, 'Единая Служба Спасения');
             } else {
                 document.getElementById('auth-screen').style.display = 'flex';
@@ -354,8 +403,10 @@
             }
         });
 
+        // --- НАВИГАЦИЯ ---
         function switchView(viewType, orgId, orgName, element) {
             currentState.view = viewType;
+            
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             if (element) element.classList.add('active');
             else {
@@ -380,12 +431,14 @@
                 document.getElementById('view-org-tabs').style.display = 'block';
                 btnCreate.style.display = 'flex';
                 switchOrgTab(currentState.orgTab, document.getElementById(`tab-org-${currentState.orgTab}`));
+                
             } else if (viewType === 'all_docs') {
                 document.getElementById('page-title').textContent = 'Все документы';
                 document.getElementById('page-subtitle').textContent = 'Глобальный архив';
                 document.getElementById('view-all-tabs').style.display = 'block';
                 btnCreate.style.display = 'none'; 
                 switchAllTab(currentState.allTab, document.getElementById(`tab-all-${currentState.allTab}`));
+                
             } else if (viewType === 'manage_citizens') {
                 document.getElementById('page-title').textContent = 'База граждан';
                 document.getElementById('page-subtitle').textContent = 'Добавление и редактирование профилей';
@@ -428,19 +481,33 @@
             }
         }
 
+        // --- ДОКУМЕНТЫ ---
         async function fetchDocumentsData(filterOrgId = null) {
             let query = supabaseClient.from('documents').select('*');
             if (filterOrgId) query = query.eq('organization_id', filterOrgId);
+            
             const { data: docs, error } = await query.order('created_at', { ascending: false });
             if (error) { console.error(error); return []; }
+
             const { data: profiles } = await supabaseClient.from('profiles').select('id, last_name, first_name, patronymic');
             const profileMap = {};
             if(profiles) profiles.forEach(p => profileMap[p.id] = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`.trim());
-            return docs.map(d => ({ ...d, recipient: d.patient_id ? (profileMap[d.patient_id] || 'Неизвестный') : 'В архиве' }));
+
+            return docs.map(d => ({
+                ...d,
+                recipient: d.patient_id ? (profileMap[d.patient_id] || 'Неизвестный') : 'В архиве'
+            }));
         }
 
-        async function loadOrgDocs() { allDocs = await fetchDocumentsData(currentState.orgId); renderDocs(); }
-        async function loadAllDocs() { allDocs = await fetchDocumentsData(null); renderDocs(); }
+        async function loadOrgDocs() {
+            allDocs = await fetchDocumentsData(currentState.orgId);
+            renderDocs();
+        }
+
+        async function loadAllDocs() {
+            allDocs = await fetchDocumentsData(null);
+            renderDocs();
+        }
 
         function sortDocs(col) {
             if (docSort.col === col) docSort.asc = !docSort.asc;
@@ -453,11 +520,20 @@
         function renderDocs() {
             const tbody = document.getElementById('docs-table-body');
             const query = document.getElementById('search-docs').value.toLowerCase();
-            let filtered = allDocs.filter(doc => doc.doc_number.toLowerCase().includes(query) || doc.recipient.toLowerCase().includes(query) || doc.document_type.toLowerCase().includes(query));
+            
+            let filtered = allDocs.filter(doc => 
+                doc.doc_number.toLowerCase().includes(query) || 
+                doc.recipient.toLowerCase().includes(query) ||
+                doc.document_type.toLowerCase().includes(query)
+            );
             
             filtered.sort((a, b) => {
-                let valA = a[docSort.col], valB = b[docSort.col];
-                if (docSort.col === 'created_at') { valA = new Date(valA).getTime(); valB = new Date(valB).getTime(); }
+                let valA = a[docSort.col];
+                let valB = b[docSort.col];
+                if (docSort.col === 'created_at') {
+                    valA = new Date(valA).getTime();
+                    valB = new Date(valB).getTime();
+                }
                 if (valA < valB) return docSort.asc ? -1 : 1;
                 if (valA > valB) return docSort.asc ? 1 : -1;
                 return 0;
@@ -468,9 +544,11 @@
 
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                
                 const isActive = doc.status === 'active' || !doc.status;
                 const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
                 const btnRevoke = isActive ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
+
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${doc.doc_number}</b></td>
@@ -483,7 +561,8 @@
                             ${btnRevoke}
                             <button class="btn-action btn-delete" onclick="deleteDoc(${doc.id}, '${doc.file_path}')">Удалить</button>
                         </td>
-                    </tr>`;
+                    </tr>
+                `;
             });
         }
 
@@ -491,7 +570,11 @@
             if (!confirm("Аннулировать документ?")) return;
             const { error } = await supabaseClient.from('documents').update({ status: 'revoked' }).eq('id', docId);
             if (error) alert("Ошибка: " + error.message);
-            else { if (currentState.view === 'org') loadOrgDocs(); else loadAllDocs(); updateStats(); }
+            else {
+                if (currentState.view === 'org') loadOrgDocs();
+                else loadAllDocs();
+                updateStats();
+            }
         }
 
         async function deleteDoc(docId, filePath) {
@@ -499,27 +582,42 @@
             await supabaseClient.storage.from('documents').remove([filePath]);
             const { error } = await supabaseClient.from('documents').delete().eq('id', docId);
             if (error) alert("Ошибка: " + error.message);
-            else { if (currentState.view === 'org') loadOrgDocs(); else loadAllDocs(); updateStats(); }
+            else {
+                if (currentState.view === 'org') loadOrgDocs();
+                else loadAllDocs();
+                updateStats();
+            }
         }
 
+        // --- ГРАЖДАНЕ ---
         async function fetchCitizensData() {
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
             return error ? [] : data;
         }
 
-        async function loadOrgCitizens() { allCitizens = await fetchCitizensData(); renderCitizensView(); }
-        async function loadAllCitizens() { allCitizens = await fetchCitizensData(); renderCitizensView(); }
+        async function loadOrgCitizens() {
+            allCitizens = await fetchCitizensData();
+            renderCitizensView();
+        }
+
+        async function loadAllCitizens() {
+            allCitizens = await fetchCitizensData();
+            renderCitizensView();
+        }
 
         function renderCitizensView() {
             const tbody = document.getElementById('citizens-view-table-body');
             const query = document.getElementById('search-citizens-view').value.toLowerCase();
+            
             let filtered = allCitizens.filter(p => {
                 const fio = `${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`.toLowerCase();
                 const pass = `${p.pass_series || ''} ${p.pass_number || ''}`.toLowerCase();
                 return fio.includes(query) || pass.includes(query);
             });
+            
             tbody.innerHTML = '';
             if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет граждан</td></tr>';
+
             filtered.forEach(p => {
                 tbody.innerHTML += `
                     <tr>
@@ -527,21 +625,28 @@
                         <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
                         <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
                         <td><button class="btn-action btn-view" onclick="openCitizenDocs('${p.id}', '${p.last_name} ${p.first_name} ${p.patronymic || ''}')">Документы</button></td>
-                    </tr>`;
+                    </tr>
+                `;
             });
         }
 
-        async function loadCitizens() { allCitizens = await fetchCitizensData(); renderManageCitizens(); }
+        async function loadCitizens() {
+            allCitizens = await fetchCitizensData();
+            renderManageCitizens();
+        }
 
         function renderManageCitizens() {
             const tbody = document.getElementById('manage-citizens-table-body');
             const query = document.getElementById('search-manage-citizens').value.toLowerCase();
+            
             let filtered = allCitizens.filter(p => {
                 const fio = `${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`.toLowerCase();
                 return fio.includes(query);
             });
+            
             tbody.innerHTML = '';
             if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Нет граждан</td></tr>';
+
             filtered.forEach(p => {
                 tbody.innerHTML += `
                     <tr>
@@ -549,10 +654,12 @@
                         <td>${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</td>
                         <td>${p.pass_series || ''} ${p.pass_number || ''}</td>
                         <td><button class="btn-action btn-edit" onclick="openEdit('${p.id}')">Редактировать</button></td>
-                    </tr>`;
+                    </tr>
+                `;
             });
         }
 
+        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА (ОБНОВЛЕНО) ---
         async function openCitizenDocs(citizenId, citizenName) {
             currentState.originView = currentState.view;
             currentState.originOrgId = currentState.orgId;
@@ -561,52 +668,82 @@
 
             document.getElementById('page-title').textContent = 'Документы гражданина';
             document.getElementById('page-subtitle').textContent = citizenName;
+            
             document.getElementById('content-docs').style.display = 'none';
             document.getElementById('content-citizens-view').style.display = 'none';
             document.getElementById('content-manage-citizens').style.display = 'none';
             document.getElementById('view-org-tabs').style.display = 'none';
             document.getElementById('view-all-tabs').style.display = 'none';
             document.getElementById('btn-create-doc').style.display = 'none';
+            
             document.getElementById('content-citizen-details').style.display = 'block';
             document.getElementById('citizen-details-name').textContent = citizenName;
-            document.getElementById('search-citizen-docs').value = '';
+            document.getElementById('search-citizen-docs').value = ''; // Сброс поиска при открытии
 
             let query = supabaseClient.from('documents').select('*').eq('patient_id', citizenId);
-            if (currentState.originView === 'org') query = query.eq('organization_id', currentState.originOrgId);
+            if (currentState.originView === 'org') {
+                query = query.eq('organization_id', currentState.originOrgId);
+            }
+
             const { data: docs } = await query.order('created_at', { ascending: false });
             currentCitizenDocs = docs || [];
-            renderCitizenDocsTable();
+
+            renderCitizenDocsTable(); // Вызываем отдельную функцию отрисовки
         }
 
+        // НОВАЯ ФУНКЦИЯ: Отрисовка таблицы документов гражданина с учетом поиска
         function renderCitizenDocsTable() {
             const tbody = document.getElementById('citizen-details-table-body');
             const query = document.getElementById('search-citizen-docs').value.toLowerCase();
-            let filtered = currentCitizenDocs.filter(doc => doc.doc_number.toLowerCase().includes(query) || doc.document_type.toLowerCase().includes(query));
+            
+            // Фильтруем сохраненные документы по поиску
+            let filtered = currentCitizenDocs.filter(doc => 
+                doc.doc_number.toLowerCase().includes(query) || 
+                doc.document_type.toLowerCase().includes(query)
+            );
+
             tbody.innerHTML = '';
-            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет документов.</td></tr>'; return; }
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет документов по вашему запросу.</td></tr>';
+                return;
+            }
+
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                
+                // ЛОГИКА СТАТУСОВ
                 const isActive = doc.status === 'active' || !doc.status;
                 const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
+
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${doc.doc_number}</b></td>
                         <td>${doc.document_type}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
-                        <td>${statusHtml}</td>
-                        <td><button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button></td>
-                    </tr>`;
+                        <td>${statusHtml}</td> <!-- ВЫВОД СТАТУСА -->
+                        <td>
+                            <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
+                        </td>
+                    </tr>
+                `;
             });
         }
 
         function goBack() {
-            if (currentState.originView === 'all_docs') switchView('all_docs');
-            else switchView('org', currentState.originOrgId, orgNames[currentState.originOrgId]);
+            if (currentState.originView === 'all_docs') {
+                switchView('all_docs');
+            } else {
+                const orgName = orgNames[currentState.originOrgId] || 'ЕСС';
+                switchView('org', currentState.originOrgId, orgName);
+            }
         }
 
+        // --- СТАТИСТИКА ---
         async function updateStats() {
             const { count: citizensCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'patient');
             document.getElementById('stat-citizens').textContent = citizensCount || 0;
+
             if (currentState.view === 'org') {
                 const { count: docsCount } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('organization_id', currentState.orgId);
                 document.getElementById('stat-docs').textContent = docsCount || 0;
@@ -621,14 +758,11 @@
             }
         }
 
+        // --- ВСПОМОГАТЕЛЬНЫЕ ---
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function closePreview() { document.getElementById('preview-modal').style.display = 'none'; document.getElementById('preview-frame').src = ''; }
-        
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ ПРЕДПРОСМОТРА (С GOOGLE DOCS VIEWER)
-               // ОБНОВЛЕННАЯ ФУНКЦИЯ ПРЕДПРОСМОТРА (С GOOGLE DOCS VIEWER)
         function previewDoc(url) {
-            const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-            document.getElementById('preview-frame').src = viewerUrl;
+            document.getElementById('preview-frame').src = url;
             document.getElementById('preview-download-btn').href = url;
             document.getElementById('preview-modal').style.display = 'flex';
         }
@@ -646,7 +780,10 @@
                 const div = document.createElement('div');
                 div.className = 'template-card';
                 div.innerHTML = `<h4>${tpl.name}</h4><p>${tpl.description || 'Документ'}</p>`;
-                div.onclick = () => { if (tpl.url === '#') alert('В разработке'); else window.location.href = `${tpl.url}?org=${currentState.orgId}&t=${Date.now()}`; };
+                div.onclick = () => {
+                    if (tpl.url === '#') alert('В разработке');
+                    else window.location.href = `${tpl.url}?org=${currentState.orgId}&t=${Date.now()}`;
+                };
                 list.appendChild(div);
             });
         }
@@ -698,11 +835,23 @@
             const btn = document.querySelector('#add-modal .btn-save');
             btn.disabled = true;
             btn.textContent = 'Создание...';
+
             const email = document.getElementById('add-email').value;
             const password = document.getElementById('add-password').value;
-            const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+
+            const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+            });
+            
             const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
-            if (authError) { alert("ОШИБКА СОЗДАНИЯ: " + authError.message); btn.disabled = false; btn.textContent = 'Создать'; return; }
+            
+            if (authError) {
+                alert("ОШИБКА СОЗДАНИЯ: " + authError.message);
+                btn.disabled = false;
+                btn.textContent = 'Создать';
+                return;
+            }
+
             const updates = {
                 last_name: document.getElementById('add-last-name').value,
                 first_name: document.getElementById('add-first-name').value,
@@ -711,11 +860,19 @@
                 pob: document.getElementById('add-pob').value,
                 role: 'patient'
             };
+
             const { error: profileError } = await supabaseClient.from('profiles').update(updates).eq('id', authData.user.id);
+            
             btn.disabled = false;
             btn.textContent = 'Создать';
-            if (profileError) alert("Пользователь создан, но данные не сохранились: " + profileError.message);
-            else { alert("Гражданин добавлен!"); closeModal('add-modal'); loadCitizens(); }
+
+            if (profileError) {
+                alert("Пользователь создан, но данные не сохранились: " + profileError.message);
+            } else { 
+                alert("Гражданин добавлен!"); 
+                closeModal('add-modal'); 
+                loadCitizens(); 
+            }
         }
     </script>
 </body>
