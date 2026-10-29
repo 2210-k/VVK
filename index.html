@@ -63,7 +63,12 @@
         .btn-delete { background: var(--danger); }
         .btn-download { background: #64748b; }
         .btn-view { background: var(--primary); }
+        .btn-revoke { background: #b91c1c; } /* Кнопка аннулирования */
         .btn-back { background: #64748b; padding: 10px 20px; font-size: 14px; margin-bottom: 15px; display: inline-block; border-radius: 6px; color: white; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
+
+        /* Статусы */
+        .status-active { color: #166534; font-weight: bold; background: #dcfce7; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-revoked { color: #991b1b; font-weight: bold; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
 
         /* Модалки */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
@@ -109,6 +114,7 @@
 </head>
 <body>
 
+    <!-- ЭКРАН ВХОДА -->
     <div id="auth-screen">
         <div class="auth-box">
             <h2>Служебный портал</h2>
@@ -122,6 +128,7 @@
         </div>
     </div>
 
+    <!-- ОСНОВНОЙ ЭКРАН -->
     <div id="dashboard-screen">
         <!-- САЙДБАР -->
         <div class="sidebar">
@@ -200,6 +207,7 @@
                                 <th onclick="sortDocs('document_type')">Тип <span id="sort-document_type"></span></th>
                                 <th onclick="sortDocs('recipient')">Получатель <span id="sort-recipient"></span></th>
                                 <th onclick="sortDocs('created_at')">Дата <span id="sort-created_at">▼</span></th>
+                                <th>Статус</th> <!-- ДОБАВЛЕНА КОЛОНКА СТАТУСА -->
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -344,10 +352,8 @@
             orgTab: 'docs', // 'docs', 'citizens'
             allTab: 'docs', // 'docs', 'citizens'
             
-            // Для возврата из карточки гражданина
             originView: 'org',
             originOrgId: 1,
-            
             selectedCitizenId: null
         };
 
@@ -545,23 +551,45 @@
             });
             
             tbody.innerHTML = '';
-            if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет документов</td></tr>';
+            if(filtered.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Нет документов</td></tr>'; // colspan="6"
 
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                
+                // ЛОГИКА СТАТУСОВ
+                const isActive = doc.status === 'active' || !doc.status;
+                const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
+                const btnRevoke = isActive 
+                    ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` 
+                    : '';
+
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${doc.doc_number}</b></td>
                         <td>${doc.document_type}</td>
                         <td>${doc.recipient}</td>
                         <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+                        <td>${statusHtml}</td> <!-- ОТОБРАЖЕНИЕ СТАТУСА -->
                         <td>
                             <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
+                            ${btnRevoke}
                             <button class="btn-action btn-delete" onclick="deleteDoc(${doc.id}, '${doc.file_path}')">Удалить</button>
                         </td>
                     </tr>
                 `;
             });
+        }
+
+        // ФУНКЦИЯ АННУЛИРОВАНИЯ
+        async function revokeDoc(docId) {
+            if (!confirm("Аннулировать документ? Госномер станет доступен для повторного использования.")) return;
+            const { error } = await supabaseClient.from('documents').update({ status: 'revoked' }).eq('id', docId);
+            if (error) alert("Ошибка: " + error.message);
+            else {
+                if (currentState.view === 'org') loadOrgDocs();
+                else loadAllDocs();
+                updateStats();
+            }
         }
 
         async function deleteDoc(docId, filePath) {
@@ -649,9 +677,8 @@
             });
         }
 
-        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА (ИСПРАВЛЕНО!) ---
+        // --- ДОКУМЕНТЫ КОНКРЕТНОГО ГРАЖДАНИНА ---
         async function openCitizenDocs(citizenId, citizenName) {
-            // Запоминаем ОТКУДА пришли
             currentState.originView = currentState.view;
             currentState.originOrgId = currentState.orgId;
 
@@ -671,10 +698,8 @@
             document.getElementById('content-citizen-details').style.display = 'block';
             document.getElementById('citizen-details-name').textContent = citizenName;
 
-            // Загружаем документы
             let query = supabaseClient.from('documents').select('*').eq('patient_id', citizenId);
             
-            // ⚠️ ГЛАВНЫЙ ФИКС: Если пришли из организации, фильтруем по её ID
             if (currentState.originView === 'org') {
                 query = query.eq('organization_id', currentState.originOrgId);
             }
