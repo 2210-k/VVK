@@ -62,15 +62,24 @@
             </div>
         </div>
 
+        <!-- УМНЫЙ ВЫБОР ТС -->
         <div class="form-group">
-            <label>Наименование ТС</label>
-            <input type="text" id="vehicleName" placeholder="Например: Лада Веста" required>
+            <label>Наименование ТС (можно выбрать или ввести вручную)</label>
+            <input type="text" id="vehicleName" list="car-list" placeholder="Например: Лада Веста" required>
+            <datalist id="car-list">
+                <option value="Лада Веста">
+                <option value="Лада Гранта">
+                <option value="Kia Rio">
+                <option value="Hyundai Solaris">
+                <option value="Toyota Camry">
+                <option value="ГАЗель Next">
+            </datalist>
         </div>
 
         <div class="row">
             <div class="form-group">
                 <label>Тип госномера</label>
-                <select id="plateType" class="form-select">
+                <select id="plateType" class="form-select" onchange="updatePlatePreview()">
                     <option value="auto">Автомобильный (А 123 ВС)</option>
                     <option value="moto">Мотоциклетный (1234 АА)</option>
                 </select>
@@ -79,6 +88,12 @@
                 <label>Цвет ТС</label>
                 <input type="text" id="vehicleColor" placeholder="Например: Белый" required>
             </div>
+        </div>
+
+        <!-- ПОЛЕ ДЛЯ ПРОСМОТРА И РЕДАКТИРОВАНИЯ НОМЕРА -->
+        <div class="form-group" style="background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
+            <label style="color:#856404;">Сгенерированный Госномер (Регион 156 RUS) - можно редактировать</label>
+            <input type="text" id="generatedPlate" style="font-size:18px; font-weight:bold; color:#856404; text-align:center;" required>
         </div>
 
         <div class="row">
@@ -141,29 +156,29 @@
     const ALLOWED_LETTERS = ['А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х'];
 
     // =====================================================================
-    // ⚠️ ТВОИ КООРДИНАТЫ
+    // ⚠️ ТВОИ НОВЫЕ КООРДИНАТЫ
     // =====================================================================
     const COORDS = {
-        docNumber: { xStart: 142, xEnd: 174, y: 193 },
-        renterName: { x: 38, y: 170 },
-        passSeries1: { xStart: 0, xEnd: 0, y: 170 }, 
-        passSeries2: { xStart: 0, xEnd: 0, y: 170 }, 
-        passNumber: { xStart: 158, xEnd: 177, y: 170 },
-        vehicleName: { x: 57, y: 161 },
-        plate1: { xStart: 0, xEnd: 0, y: 153 },
-        plate2: { xStart: 0, xEnd: 0, y: 153 },
-        plate3: { xStart: 0, xEnd: 0, y: 153 },
-        plate4: { xStart: 0, xEnd: 0, y: 153 },
-        plate5: { xStart: 0, xEnd: 0, y: 153 },
-        plate6: { xStart: 0, xEnd: 0, y: 153 },
+        docNumber: { xStart: 142, xEnd: 174, y: 197 },
+        renterName: { x: 38, y: 175 },
+        passSeries1: { xStart: 139, xEnd: 147, y: 175 }, 
+        passSeries2: { xStart: 148, xEnd: 159, y: 175 }, 
+        passNumber: { xStart: 158, xEnd: 177, y: 175 },
+        vehicleName: { x: 57, y: 166 },
+        plate1: { xStart: 40, xEnd: 50, y: 153 },
+        plate2: { xStart: 54, xEnd: 64, y: 153 },
+        plate3: { xStart: 66, xEnd: 76, y: 153 },
+        plate4: { xStart: 77, xEnd: 87, y: 153 },
+        plate5: { xStart: 91, xEnd: 101, y: 153 },
+        plate6: { xStart: 102, xEnd: 112, y: 153 },
         issueDate: { 
-            day: { xStart: 45, xEnd: 53, y: 37 }, 
-            month: { xStart: 55, xEnd: 63, y: 37 }, 
-            year: { xStart: 72, xEnd: 80, y: 37 } 
+            day: { xStart: 45, xEnd: 53, y: 42 }, 
+            month: { xStart: 55, xEnd: 63, y: 42 }, 
+            year: { xStart: 72, xEnd: 80, y: 42 } 
         },
-        dayNumber: { xStart: 88, xEnd: 100, y: 37 },
-        validDays: { xStart: 7, xEnd: 95, y: 9 },
-        qrCode: { x: 130, y: 6, width: 50, height: 50 }
+        dayNumber: { xStart: 88, xEnd: 100, y: 42 },
+        validDays: { xStart: 7, xEnd: 95, y: 12 },
+        qrCode: { x: 130, y: 6, width: 45, height: 45 }
     };
 
     let currentPdfBlob = null;
@@ -198,26 +213,15 @@
         if (!selectedOption.value || selectedOption.value === 'none') return;
         
         const citizen = JSON.parse(selectedOption.dataset.citizen);
-        
-        // В документе поле называется "Арендатор: Имя Отчество"
         document.getElementById('renterName').value = `${citizen.first_name || ''} ${citizen.patronymic || ''}`.trim();
         document.getElementById('passSeries').value = citizen.pass_series || '';
         document.getElementById('passNumber').value = citizen.pass_number || '';
     });
 
-    // Установка даты и номеров по умолчанию
-    function init() {
-        const today = new Date();
-        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
-        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
-        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
-        document.getElementById('docNumber').value = `0816${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
-        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
-        calcTotal();
-        loadCitizens();
-    }
-
-    async function generateUniquePlate(type) {
+    // --- ГЕНЕРАЦИЯ И ОТОБРАЖЕНИЕ НОМЕРА ---
+    async function generatePlate() {
+        const type = document.getElementById('plateType').value;
+        
         const { data: activeDocs } = await supabaseClient
             .from('documents')
             .select('metadata')
@@ -234,16 +238,35 @@
             const rNum = (len) => String(Math.floor(Math.random() * Math.pow(10, len))).padStart(len, '0');
 
             if (type === 'auto') {
-                newPlate = `${rLetter()}${rNum(3)}${rLetter()}${rLetter()}`;
+                newPlate = `${rLetter()} ${rNum(3)} ${rLetter()} ${rLetter()}`; 
             } else {
-                newPlate = `${rNum(4)}${rLetter()}${rLetter()}`;
+                newPlate = `${rNum(4)} ${rLetter()} ${rLetter()}`;
             }
 
             if (!usedPlates.includes(newPlate)) {
                 isUnique = true;
             }
         }
-        return newPlate;
+        
+        // Выводим в поле для просмотра и редактирования (добавляем регион)
+        document.getElementById('generatedPlate').value = `${newPlate} 156 RUS`;
+    }
+
+    // Обновляем номер при смене типа
+    document.getElementById('plateType').addEventListener('change', generatePlate);
+
+    // Установка даты и номеров по умолчанию
+    async function init() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+        document.getElementById('docNumber').value = `0816${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+        
+        calcTotal();
+        await loadCitizens();
+        await generatePlate(); // Генерируем первый номер
     }
 
     async function createQrImage(text) {
@@ -269,10 +292,15 @@
         btn.textContent = 'Генерация...';
 
         try {
-            const plateType = document.getElementById('plateType').value;
-            const plateNumber = await generateUniquePlate(plateType);
-
             const getVal = (id) => document.getElementById(id).value;
+            
+            // Берем номер из поля, которое отредактировал пользователь (если менял)
+            const fullPlateString = getVal('generatedPlate'); 
+            // Очищаем от пробелов и региона для отрисовки по квадратикам
+            // Формат: "А 123 ВС 156 RUS" -> берем только первую часть до "156"
+            const mainPlatePart = fullPlateString.split('156')[0].trim(); 
+            const plateChars = mainPlatePart.replace(/\s+/g, '').split('');
+
             const docNumber = getVal('docNumber');
             const rentDays = getVal('rentDays');
             const costPerDay = getVal('costPerDay');
@@ -302,7 +330,7 @@
             drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt6);
             firstPage.drawText(getVal('vehicleName'), { x: COORDS.vehicleName.x, y: COORDS.vehicleName.y, ...opt6 });
 
-            const plateChars = plateNumber.split('');
+            // Отрисовка квадратиков номера
             drawCenteredInRange(firstPage, plateChars[0] || '', COORDS.plate1.xStart, COORDS.plate1.xEnd, COORDS.plate1.y, opt11);
             drawCenteredInRange(firstPage, plateChars[1] || '', COORDS.plate2.xStart, COORDS.plate2.xEnd, COORDS.plate2.y, opt11);
             drawCenteredInRange(firstPage, plateChars[2] || '', COORDS.plate3.xStart, COORDS.plate3.xEnd, COORDS.plate3.y, opt11);
@@ -317,7 +345,8 @@
             
             drawCenteredInRange(firstPage, `${rentDays} дня`, COORDS.validDays.xStart, COORDS.validDays.xEnd, COORDS.validDays.y, opt11);
 
-            const qrText = `Договор аренды ТС\n№ ${docNumber}\nАрендодатель: Арендная компания «Wels Rent»\nАрендатор: ${getVal('renterName')} (${getVal('passSeries')} ${getVal('passNumber')})\nТС: ${getVal('vehicleName')}, ${getVal('vehicleColor')}, ${plateNumber}\nДней: ${rentDays}\nСтоимость 1 дня: ${costPerDay} руб.\nИтого: ${totalCost} руб.\nДата выдачи: ${dateStr} (${getVal('dayNumber')} день)\nДействителен: ${rentDays} дня`;
+            // В QR-код пишем полный номер с регионом
+            const qrText = `Договор аренды ТС\n№ ${docNumber}\nАрендодатель: Арендная компания «Wels Rent»\nАрендатор: ${getVal('renterName')} (${getVal('passSeries')} ${getVal('passNumber')})\nТС: ${getVal('vehicleName')}, ${getVal('vehicleColor')}, ${fullPlateString}\nДней: ${rentDays}\nСтоимость 1 дня: ${costPerDay} руб.\nИтого: ${totalCost} руб.\nДата выдачи: ${dateStr} (${getVal('dayNumber')} день)\nДействителен: ${rentDays} дня`;
             
             const qrBytes = await createQrImage(qrText);
             const qrImage = await pdfDoc.embedPng(qrBytes);
@@ -333,14 +362,14 @@
 
             await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
             await supabaseClient.from('documents').insert({
-                patient_id: actualCitizenId, // ПРИВЯЗКА К ГРАЖДАНИНУ
+                patient_id: actualCitizenId,
                 organization_id: 3, 
                 doc_number: docNumber,
                 document_type: 'Договор аренды ТС',
                 file_path: fileName,
                 status: 'active',
                 metadata: {
-                    plate: plateNumber,
+                    plate: fullPlateString, // Сохраняем полный номер с регионом
                     days: rentDays,
                     cost_per_day: costPerDay,
                     total_cost: totalCost,
