@@ -520,7 +520,7 @@
     async function loadCitizens() {
         const { data } = await supabaseClient
             .from('profiles')
-            .select('*')
+            .select('id, last_name, first_name, patronymic, dob, address, pass_series, pass_number, driver_license')
             .eq('role', 'patient')
             .order('last_name');
         if (!data) return;
