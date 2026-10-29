@@ -541,6 +541,7 @@
             document.getElementById('regAddress').value = '';
             document.getElementById('passSeries').value = '';
             document.getElementById('passNumber').value = '';
+            document.getElementById('driverLicense').value = ''; // ИСПРАВЛЕНО: очистка поля
             document.getElementById('dobDay').value = '';
             document.getElementById('dobYear').value = '';
             document.getElementById('dobMonth').value = '01';
@@ -553,6 +554,7 @@
         document.getElementById('regAddress').value = c.address || '';
         document.getElementById('passSeries').value = c.pass_series || '';
         document.getElementById('passNumber').value = c.pass_number || '';
+        document.getElementById('driverLicense').value = c.driver_license || ''; // ИСПРАВЛЕНО: автозаполнение
 
         if (c.dob) {
             const [y, m, d] = c.dob.split('-');
