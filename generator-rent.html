@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Договор аренды ТС</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        button[type="submit"]:disabled { background: #ccc; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 150px; }
+        .date-group { display: flex; gap: 5px; }
+        .date-group input { text-align: center; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-close { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Вернуться на портал</a>
+    <h2>Договор аренды транспортного средства</h2>
+    
+    <form id="rentForm">
+        <div class="form-group">
+            <label>Арендатор (Имя Отчество)</label>
+            <input type="text" id="renterName" required>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Паспорт (Серия)</label>
+                <input type="text" id="passSeries" maxlength="4" required>
+            </div>
+            <div class="form-group">
+                <label>Паспорт (Номер)</label>
+                <input type="text" id="passNumber" maxlength="6" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Наименование ТС</label>
+            <input type="text" id="vehicleName" placeholder="Например: Лада Веста" required>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Тип госномера</label>
+                <select id="plateType" class="form-select">
+                    <option value="auto">Автомобильный (А 123 ВС)</option>
+                    <option value="moto">Мотоциклетный (1234 АА)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Цвет ТС</label>
+                <input type="text" id="vehicleColor" placeholder="Например: Белый" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Количество дней аренды</label>
+                <input type="number" id="rentDays" min="1" value="12" required>
+            </div>
+            <div class="form-group">
+                <label>Стоимость 1 дня (руб)</label>
+                <input type="number" id="costPerDay" min="1" value="1000" required>
+            </div>
+            <div class="form-group">
+                <label>Итого (считается сам)</label>
+                <input type="text" id="totalCost" readonly style="background:#eee; font-weight:bold;">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Дата выдачи</label>
+                <div class="date-group">
+                    <input type="text" id="dateDay" class="day" maxlength="2" required>
+                    <input type="text" id="dateMonth" class="month" maxlength="2" required>
+                    <input type="text" id="dateYear" class="year" maxlength="2" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер дня (000-999)</label>
+                <input type="text" id="dayNumber" class="center-input" required>
+            </div>
+            <div class="form-group">
+                <label>№ документа (0816ННН)</label>
+                <input type="text" id="docNumber" class="center-input" required>
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn">Сгенерировать и сохранить</button>
+    </form>
+</div>
+
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Договор сформирован!</h3>
+            <div>
+                <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-preview btn-close" onclick="window.location.href='index.html'">Вернуться</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+    
+    const ALLOWED_LETTERS = ['А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х'];
+
+    // =====================================================================
+    // ⚠️ ТВОИ КООРДИНАТЫ (ВПИШИ СВОИ XStart и XEnd ГДЕ СТОЯТ НУЛИ)
+    // =====================================================================
+    const COORDS = {
+        docNumber: { xStart: 142, xEnd: 174, y: 193 },
+        renterName: { x: 38, y: 170 },
+        
+        // Серия разбита на 2 части
+        passSeries1: { xStart: 139, xEnd: 147, y: 170 }, 
+        passSeries2: { xStart: 148, xEnd: 156, y: 170 }, 
+        
+        passNumber: { xStart: 158, xEnd: 177, y: 170 },
+        vehicleName: { x: 57, y: 161 },
+        
+        // Госномер разбит на 6 позиций
+        plate1: { xStart: 40, xEnd: 50, y: 153 },
+        plate2: { xStart: 54, xEnd: 64, y: 153 },
+        plate3: { xStart: 66, xEnd: 76, y: 153 },
+        plate4: { xStart: 77, xEnd: 87, y: 153 },
+        plate5: { xStart: 91, xEnd: 101, y: 153 },
+        plate6: { xStart: 102, xEnd: 112, y: 153 },
+
+        issueDate: { 
+            day: { xStart: 45, xEnd: 53, y: 37 }, 
+            month: { xStart: 55, xEnd: 63, y: 37 }, 
+            year: { xStart: 72, xEnd: 80, y: 37 } 
+        },
+        dayNumber: { xStart: 88, xEnd: 100, y: 37 },
+        validDays: { xStart: 7, xEnd: 95, y: 9 },
+        qrCode: { x: 130, y: 6, width: 50, height: 50 }
+    };
+
+    let currentPdfBlob = null;
+
+    document.getElementById('rentDays').addEventListener('input', calcTotal);
+    document.getElementById('costPerDay').addEventListener('input', calcTotal);
+    
+    function calcTotal() {
+        const days = parseInt(document.getElementById('rentDays').value) || 0;
+        const cost = parseInt(document.getElementById('costPerDay').value) || 0;
+        document.getElementById('totalCost').value = `${days * cost} руб.`;
+    }
+
+    function init() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+        document.getElementById('docNumber').value = `0816${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+        calcTotal();
+    }
+
+    async function generateUniquePlate(type) {
+        const { data: activeDocs } = await supabaseClient
+            .from('documents')
+            .select('metadata')
+            .eq('document_type', 'Договор аренды ТС')
+            .eq('status', 'active');
+            
+        const usedPlates = activeDocs ? activeDocs.map(d => d.metadata?.plate).filter(Boolean) : [];
+        
+        let isUnique = false;
+        let newPlate = '';
+
+        while (!isUnique) {
+            const rLetter = () => ALLOWED_LETTERS[Math.floor(Math.random() * ALLOWED_LETTERS.length)];
+            const rNum = (len) => String(Math.floor(Math.random() * Math.pow(10, len))).padStart(len, '0');
+
+            if (type === 'auto') {
+                newPlate = `${rLetter()}${rNum(3)}${rLetter()}${rLetter()}`; // Без пробелов для разбивки
+            } else {
+                newPlate = `${rNum(4)}${rLetter()}${rLetter()}`;
+            }
+
+            if (!usedPlates.includes(newPlate)) {
+                isUnique = true;
+            }
+        }
+        return newPlate;
+    }
+
+    async function createQrImage(text) {
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+        const response = await fetch(url);
+        return await response.arrayBuffer();
+    }
+
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const textWidth = options.font.widthOfTextAtSize(text, options.size);
+        const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
+        page.drawText(text, { ...options, x: startX, y });
+    }
+
+    document.getElementById('rentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Генерация...';
+
+        try {
+            const plateType = document.getElementById('plateType').value;
+            const plateNumber = await generateUniquePlate(plateType); // Например: А123ВС
+
+            const getVal = (id) => document.getElementById(id).value;
+            const docNumber = getVal('docNumber');
+            const rentDays = getVal('rentDays');
+            const costPerDay = getVal('costPerDay');
+            const totalCost = rentDays * costPerDay;
+            const dateStr = `${getVal('dateDay')}.${getVal('dateMonth')}.20${getVal('dateYear')}`;
+            
+            const url = './rent_template.pdf'; // Имя твоего файла
+            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            
+            const fontUrlReg = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytesReg = await fetch(fontUrlReg).then(res => res.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytesReg);
+            
+            const firstPage = pdfDoc.getPages()[0];
+
+            // Разные размеры шрифтов
+            const opt6 = { size: 6, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+            const opt11 = { size: 11, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+
+            // 1. Основные поля (шрифт 6)
+            drawCenteredInRange(firstPage, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt6);
+            firstPage.drawText(getVal('renterName'), { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt6 });
+            
+            // 2. Серия паспорта (разбита на 2 части по 2 цифры, шрифт 6)
+            const series = getVal('passSeries').padEnd(4, ' ');
+            drawCenteredInRange(firstPage, series.substring(0, 2), COORDS.passSeries1.xStart, COORDS.passSeries1.xEnd, COORDS.passSeries1.y, opt6);
+            drawCenteredInRange(firstPage, series.substring(2, 4), COORDS.passSeries2.xStart, COORDS.passSeries2.xEnd, COORDS.passSeries2.y, opt6);
+            
+            drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt6);
+            firstPage.drawText(getVal('vehicleName'), { x: COORDS.vehicleName.x, y: COORDS.vehicleName.y, ...opt6 });
+
+            // 3. Госномер (разбит на 6 позиций, шрифт 11)
+            const plateChars = plateNumber.split('');
+            drawCenteredInRange(firstPage, plateChars[0] || '', COORDS.plate1.xStart, COORDS.plate1.xEnd, COORDS.plate1.y, opt11);
+            drawCenteredInRange(firstPage, plateChars[1] || '', COORDS.plate2.xStart, COORDS.plate2.xEnd, COORDS.plate2.y, opt11);
+            drawCenteredInRange(firstPage, plateChars[2] || '', COORDS.plate3.xStart, COORDS.plate3.xEnd, COORDS.plate3.y, opt11);
+            drawCenteredInRange(firstPage, plateChars[3] || '', COORDS.plate4.xStart, COORDS.plate4.xEnd, COORDS.plate4.y, opt11);
+            drawCenteredInRange(firstPage, plateChars[4] || '', COORDS.plate5.xStart, COORDS.plate5.xEnd, COORDS.plate5.y, opt11);
+            drawCenteredInRange(firstPage, plateChars[5] || '', COORDS.plate6.xStart, COORDS.plate6.xEnd, COORDS.plate6.y, opt11);
+
+            // 4. Даты (шрифт 6)
+            drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt6);
+            drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt6);
+            drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt6);
+            drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt6);
+            
+            // 5. Срок действия (шрифт 11)
+            drawCenteredInRange(firstPage, `${rentDays} дня`, COORDS.validDays.xStart, COORDS.validDays.xEnd, COORDS.validDays.y, opt11);
+
+            // 6. QR-код
+            const qrText = `Договор аренды ТС\n№ ${docNumber}\nАрендодатель: Арендная компания «Wels Rent»\nАрендатор: ${getVal('renterName')} (${getVal('passSeries')} ${getVal('passNumber')})\nТС: ${getVal('vehicleName')}, ${getVal('vehicleColor')}, ${plateNumber}\nДней: ${rentDays}\nСтоимость 1 дня: ${costPerDay} руб.\nИтого: ${totalCost} руб.\nДата выдачи: ${dateStr} (${getVal('dayNumber')} день)\nДействителен: ${rentDays} дня`;
+            
+            const qrBytes = await createQrImage(qrText);
+            const qrImage = await pdfDoc.embedPng(qrBytes);
+            firstPage.drawImage(qrImage, {
+                x: COORDS.qrCode.x, y: COORDS.qrCode.y,
+                width: COORDS.qrCode.width, height: COORDS.qrCode.height
+            });
+
+            const pdfBytes = await pdfDoc.save();
+            currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            const fileName = `${Date.now()}_RENT_${docNumber}.pdf`;
+
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            await supabaseClient.from('documents').insert({
+                patient_id: null,
+                organization_id: 3, // Правительство
+                doc_number: docNumber,
+                document_type: 'Договор аренды ТС',
+                file_path: fileName,
+                status: 'active',
+                metadata: {
+                    plate: plateNumber,
+                    days: rentDays,
+                    cost_per_day: costPerDay,
+                    total_cost: totalCost,
+                    color: getVal('vehicleColor')
+                }
+            });
+
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl;
+            document.getElementById('preview-modal').style.display = 'flex';
+            
+            document.getElementById('download-btn').onclick = () => {
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = `Договор_аренды_${docNumber}.pdf`;
+                link.click();
+            };
+
+        } catch (error) {
+            console.error(error);
+            alert("Ошибка: " + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать и сохранить';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
