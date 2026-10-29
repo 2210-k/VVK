@@ -64,14 +64,26 @@
         .filters select { padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; outline: none; cursor: pointer; flex: 1; min-width: 200px; }
         .filters select:focus { border-color: var(--primary); }
 
-        /* Карточки самих документов */
+        /* Карточки документов */
         .docs-list { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .doc-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid #e5e7eb; }
         .doc-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-        .doc-info h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--text); }
+        .doc-info h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--text); display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
         .doc-info p { margin: 0; color: #6b7280; font-size: 14px; }
         .doc-org { display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; font-weight: bold; }
         
+        /* Статусы документов */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-revoked { background: #fee2e2; color: #991b1b; }
+
         .doc-actions { display: flex; gap: 10px; }
         .btn-view, .btn-dl { padding: 10px 15px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; text-decoration: none; border: none; cursor: pointer; }
         .btn-view { background: #f3f4f6; color: #374151; }
@@ -267,15 +279,9 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let globalDocs = [];
-        let orgMap = {}; // Для хранения названий организаций { id: 'Название' }
+        let orgMap = {}; 
         
-        // Состояние навигации по плиткам
-        let docNavState = {
-            level: 1, // 1: Организации, 2: Типы, 3: Конкретные документы
-            selectedOrgId: null,
-            selectedOrgName: '',
-            selectedType: ''
-        };
+        let docNavState = { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' };
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -329,7 +335,6 @@
             
             document.getElementById(`tab-${tabId}`).style.display = 'block';
 
-            // Если открыли "Мои документы" - сбрасываем навигацию на 1 уровень
             if (tabId === 'docs') resetDocsNav();
             if (tabId === 'all_docs') renderAllDocs();
         }
@@ -345,9 +350,7 @@
             document.getElementById('preview-modal').style.display = 'flex';
         }
 
-        // --- ЗАГРУЗКА ДАННЫХ ---
         async function loadMyDocs(userId) {
-            // Загружаем документы
             const { data: docs, error } = await supabaseClient
                 .from('documents')
                 .select('*')
@@ -361,26 +364,19 @@
             
             globalDocs = docs || [];
             
-            // Загружаем названия организаций (чтобы не было ошибки 400 при join)
             const { data: orgs } = await supabaseClient.from('organizations').select('id, name');
-            if (orgs) {
-                orgs.forEach(o => orgMap[o.id] = o.name);
-            }
+            if (orgs) orgs.forEach(o => orgMap[o.id] = o.name);
 
-            // Обновляем статистику
             document.getElementById('stat-total-docs').textContent = globalDocs.length;
             if (globalDocs.length > 0) {
                 document.getElementById('stat-last-doc').textContent = new Date(globalDocs[0].created_at).toLocaleDateString('ru-RU');
             }
 
-            // Рендерим главную (последние 3)
             renderDocsList('home-recent-docs', globalDocs.slice(0, 3));
-            
-            // Инициализируем фильтры для "Все документы"
             initAllDocsFilters();
         }
 
-        // --- НАВИГАЦИЯ ПО ПЛИТКАМ (МОИ ДОКУМЕНТЫ) ---
+        // НАВИГАЦИЯ ПО ПЛИТКАМ
         function resetDocsNav() {
             docNavState = { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' };
             document.getElementById('docs-breadcrumb').style.display = 'none';
@@ -389,7 +385,6 @@
             document.getElementById('orgs-grid').style.display = 'grid';
             document.getElementById('types-grid').style.display = 'none';
             document.getElementById('specific-docs-list').style.display = 'none';
-
             renderOrgsGrid();
         }
 
@@ -402,7 +397,6 @@
                 return;
             }
 
-            // Группируем по organization_id
             const orgCounts = {};
             globalDocs.forEach(d => {
                 if (!orgCounts[d.organization_id]) orgCounts[d.organization_id] = 0;
@@ -433,7 +427,6 @@
             document.getElementById('orgs-grid').style.display = 'none';
             document.getElementById('types-grid').style.display = 'grid';
             document.getElementById('specific-docs-list').style.display = 'none';
-
             renderTypesGrid();
         }
 
@@ -441,10 +434,7 @@
             const container = document.getElementById('types-grid');
             container.innerHTML = '';
 
-            // Фильтруем доки по выбранной организации
             const filteredDocs = globalDocs.filter(d => d.organization_id == docNavState.selectedOrgId);
-
-            // Группируем по типам
             const typeCounts = {};
             filteredDocs.forEach(d => {
                 if (!typeCounts[d.document_type]) typeCounts[d.document_type] = 0;
@@ -457,6 +447,7 @@
                 if (type.includes('Повестка')) icon = '✉️';
                 if (type.includes('Приказ')) icon = '📜';
                 if (type.includes('билет')) icon = '📘';
+                if (type.includes('Аренда')) icon = '🚗';
 
                 container.innerHTML += `
                     <div class="tile" onclick="navToSpecificDocs('${type}')">
@@ -478,60 +469,32 @@
             document.getElementById('orgs-grid').style.display = 'none';
             document.getElementById('types-grid').style.display = 'none';
             document.getElementById('specific-docs-list').style.display = 'grid';
-
             renderSpecificDocs();
         }
 
         function navDocsBack() {
-            if (docNavState.level === 3) {
-                navToTypes(docNavState.selectedOrgId, docNavState.selectedOrgName);
-            } else if (docNavState.level === 2) {
-                resetDocsNav();
-            }
+            if (docNavState.level === 3) navToTypes(docNavState.selectedOrgId, docNavState.selectedOrgName);
+            else if (docNavState.level === 2) resetDocsNav();
         }
 
         function renderSpecificDocs() {
             const container = document.getElementById('specific-docs-list');
             container.innerHTML = '';
-
             const filtered = globalDocs.filter(d => d.organization_id == docNavState.selectedOrgId && d.document_type === docNavState.selectedType);
-
-            if (filtered.length === 0) {
-                container.innerHTML = '<div class="empty-state">Нет документов.</div>';
-                return;
-            }
-
-            filtered.forEach(doc => {
-                const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-                const dateStr = new Date(doc.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-
-                container.innerHTML += `
-                    <div class="doc-card">
-                        <div class="doc-info">
-                            <h4>${doc.document_type}</h4>
-                            <p>Номер: <b>${doc.doc_number}</b> &nbsp;|&nbsp; Дата: ${dateStr}</p>
-                        </div>
-                        <div class="doc-actions">
-                            <button onclick="previewDoc('${publicUrl}')" class="btn-view">👁️ Просмотр</button>
-                            <a href="${publicUrl}" target="_blank" class="btn-dl">⬇️ Скачать</a>
-                        </div>
-                    </div>
-                `;
-            });
+            if (filtered.length === 0) { container.innerHTML = '<div class="empty-state">Нет документов.</div>'; return; }
+            renderDocsList('specific-docs-list', filtered);
         }
 
-        // --- ВСЕ ДОКУМЕНТЫ (С ФИЛЬТРАМИ) ---
+        // ВСЕ ДОКУМЕНТЫ
         function initAllDocsFilters() {
             const orgSelect = document.getElementById('filter-org');
             const typeSelect = document.getElementById('filter-type');
-
             const uniqueOrgs = [...new Set(globalDocs.map(d => d.organization_id))];
             const uniqueTypes = [...new Set(globalDocs.map(d => d.document_type))];
 
             orgSelect.innerHTML = '<option value="all">Все организации</option>';
             uniqueOrgs.forEach(orgId => {
-                const orgName = orgMap[orgId] || 'Неизвестная';
-                orgSelect.innerHTML += `<option value="${orgId}">${orgName}</option>`;
+                orgSelect.innerHTML += `<option value="${orgId}">${orgMap[orgId] || 'Неизвестная'}</option>`;
             });
 
             typeSelect.innerHTML = '<option value="all">Все типы документов</option>';
@@ -543,20 +506,15 @@
         function renderAllDocs() {
             const orgFilter = document.getElementById('filter-org').value;
             const typeFilter = document.getElementById('filter-type').value;
-
             let filtered = globalDocs;
 
-            if (orgFilter !== 'all') {
-                filtered = filtered.filter(d => d.organization_id == orgFilter);
-            }
-            if (typeFilter !== 'all') {
-                filtered = filtered.filter(d => d.document_type === typeFilter);
-            }
+            if (orgFilter !== 'all') filtered = filtered.filter(d => d.organization_id == orgFilter);
+            if (typeFilter !== 'all') filtered = filtered.filter(d => d.document_type === typeFilter);
 
             renderDocsList('all-docs-list', filtered);
         }
 
-        // --- УНИВЕРСАЛЬНАЯ ОТРИСОВКА СПИСКА ДОКУМЕНТОВ ---
+        // УНИВЕРСАЛЬНАЯ ОТРИСОВКА (СО СТАТУСАМИ)
         function renderDocsList(containerId, docs) {
             const container = document.getElementById(containerId);
             
@@ -571,11 +529,19 @@
                 const dateStr = new Date(doc.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
                 const orgName = orgMap[doc.organization_id] || 'Архив';
 
+                // ЛОГИКА СТАТУСОВ
+                let statusHtml = '';
+                if (doc.status === 'revoked') {
+                    statusHtml = '<span class="status-badge status-revoked">Аннулирован</span>';
+                } else {
+                    statusHtml = '<span class="status-badge status-active">Действителен</span>';
+                }
+
                 container.innerHTML += `
                     <div class="doc-card">
                         <div class="doc-info">
                             <div class="doc-org">${orgName}</div>
-                            <h4>${doc.document_type}</h4>
+                            <h4>${doc.document_type} ${statusHtml}</h4>
                             <p>Номер: <b>${doc.doc_number}</b> &nbsp;|&nbsp; Дата: ${dateStr}</p>
                         </div>
                         <div class="doc-actions">
