@@ -8,7 +8,7 @@
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 15px; position: relative; } /* Добавил relative для выпадающего списка */
+        .form-group { margin-bottom: 15px; position: relative; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input[type="text"], input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
         .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
@@ -40,9 +40,16 @@
             padding: 10px;
             cursor: pointer;
             border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
         }
         .autocomplete-item:hover {
             background-color: #eef5ff;
+        }
+        .autocomplete-item .price {
+            font-weight: bold;
+            color: #0056b3;
         }
 
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
@@ -59,7 +66,6 @@
 <div class="container">
     <a href="index.html" class="back-btn">← Вернуться на портал</a>
     
-    <!-- БЛОК ВЫБОРА ГРАЖДАНИНА -->
     <div class="patient-selector">
         <label>👤 Выберите гражданина (данные подставятся)</label>
         <select id="patientSelect" class="form-select">
@@ -95,22 +101,16 @@
 
         <div class="row">
             <div class="form-group">
+                <label>Цвет ТС</label>
+                <input type="text" id="vehicleColor" placeholder="Например: Белый" required>
+            </div>
+            <div class="form-group">
                 <label>Тип госномера</label>
                 <select id="plateType" class="form-select" onchange="generatePlate()">
                     <option value="auto">Автомобильный (А 123 ВС)</option>
                     <option value="moto">Мотоциклетный (1234 АА)</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Цвет ТС</label>
-                <input type="text" id="vehicleColor" placeholder="Например: Белый" required>
-            </div>
-        </div>
-
-        <!-- ПОЛЕ ДЛЯ ПРОСМОТРА И РЕДАКТИРОВАНИЯ НОМЕРА -->
-        <div class="form-group" style="background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
-            <label style="color:#856404;">Сгенерированный Госномер (Регион 156 RUS) - можно редактировать</label>
-            <input type="text" id="generatedPlate" style="font-size:18px; font-weight:bold; color:#856404; text-align:center;" required>
         </div>
 
         <div class="row">
@@ -119,6 +119,7 @@
                 <input type="number" id="rentDays" min="1" value="12" required>
             </div>
             <div class="form-group">
+                <!-- Здесь стоимость будет подставляться автоматически -->
                 <label>Стоимость 1 дня (руб)</label>
                 <input type="number" id="costPerDay" min="1" value="1000" required>
             </div>
@@ -126,6 +127,11 @@
                 <label>Итого (считается сам)</label>
                 <input type="text" id="totalCost" readonly style="background:#eee; font-weight:bold;">
             </div>
+        </div>
+
+        <div class="form-group" style="background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
+            <label style="color:#856404;">Сгенерированный Госномер (Регион 156 RUS)</label>
+            <input type="text" id="generatedPlate" style="font-size:18px; font-weight:bold; color:#856404; text-align:center;" required>
         </div>
 
         <div class="row">
@@ -179,7 +185,7 @@
         docNumber: { xStart: 142, xEnd: 174, y: 197 },
         renterName: { x: 38, y: 174 },
         passSeries1: { xStart: 139, xEnd: 147, y: 174 }, 
-        passSeries2: { xStart: 147, xEnd: 158, y: 174 }, 
+        passSeries2: { xStart: 148, xEnd: 159, y: 174 }, 
         passNumber: { xStart: 158, xEnd: 177, y: 174 },
         vehicleName: { x: 57, y: 166 },
         plate1: { xStart: 40, xEnd: 50, y: 153 },
@@ -198,11 +204,78 @@
         qrCode: { x: 130, y: 6, width: 45, height: 45 }
     };
 
-    // БАЗА АВТОМОБИЛЕЙ (ДОПИШИ СВОИ ТУТ)
-    const CAR_DATABASE = [
-        "Лада Веста", "Лада Гранта", "Лада Нива", 
-        "Kia Rio", "Hyundai Solaris", "Toyota Camry", 
-        "Ford Focus", "ГАЗель Next", "УАЗ Патриот"
+    // =====================================================================
+    // 🚗 БАЗА АВТОМОБИЛЕЙ (ДОПИСЫВАЙ СВОИ ТУТ)
+    // Формат: { category: 'Категория', name: 'Название', cost: Стоимость, class: 'Класс' }
+    // =====================================================================
+   const CAR_DATABASE = [
+    { category: null, name: 'Горный велосипед', cost: 50, class: 'Низкий' },
+    { category: null, name: 'Электрический велосипед', cost: 100, class: 'Средний' },
+
+    { category: 'B', name: 'ЗАЗ-966 «Запорожец»', cost: 250, class: 'Низкий' },
+    { category: 'B', name: 'Lada -1111 «Ока»', cost: 280, class: 'Низкий' },
+    { category: 'B', name: 'Ваз-2105', cost: 310, class: 'Низкий' },
+    { category: 'B', name: 'Ваз-2104', cost: 300, class: 'Низкий' },
+    { category: 'B', name: 'Ваз-2107', cost: 340, class: 'Низкий' },
+    { category: 'B', name: 'Ваз-2114', cost: 400, class: 'Низкий' },
+    { category: 'B', name: 'Lada Granta', cost: 470, class: 'Низкий' },
+    { category: 'B', name: 'Lada Kalina (ВАЗ-2192, хэтчбек)', cost: 470, class: 'Низкий' },
+    { category: 'B', name: 'Lada Kalina (ВАЗ-2194, универсал)', cost: 500, class: 'Низкий' },
+    { category: 'B', name: 'Lada Kalina (ВАЗ-1117, седан)', cost: 440, class: 'Низкий' },
+    { category: 'B', name: 'Lada Kalina (ВАЗ-1118, хэтчбек)', cost: 450, class: 'Низкий' },
+    { category: 'B', name: 'Lada Kalina (ВАЗ-1119, универсал)', cost: 480, class: 'Низкий' },
+    { category: 'B', name: 'Ford Fiesta', cost: 620, class: 'Низкий' },
+    { category: 'B', name: 'Ford Focus', cost: 900, class: 'Средний' },
+    { category: 'B', name: 'Ford Bronco', cost: 1500, class: 'Высокий' },
+    { category: 'B', name: 'Ford Crown Victoria', cost: 1100, class: 'Средний' },
+    { category: 'B', name: 'Lifan X60', cost: 780, class: 'Средний' },
+    { category: 'B', name: 'Lifan X50', cost: 650, class: 'Средний' },
+    { category: 'B', name: 'Lifan Solano', cost: 620, class: 'Низкий' },
+    { category: 'B', name: 'Lifan Breez', cost: 540, class: 'Низкий' },
+    { category: 'B', name: 'Lada Iskra', cost: 520, class: 'Низкий' },
+    { category: 'B', name: 'Lada Vesta New', cost: 680, class: 'Средний' },
+    { category: 'B', name: 'Lada Vesta SW', cost: 540, class: 'Средний' },
+    { category: 'B', name: 'Lada Vesta SW-Такси', cost: 540, class: 'Средний' },
+    { category: 'B', name: 'Lada Niva Travel', cost: 490, class: 'Средний' },
+    { category: 'B', name: 'Audi A4', cost: 1250, class: 'Средний' },
+    { category: 'B', name: 'BMW Z4', cost: 1500, class: 'Высокий' },
+    { category: 'B', name: 'BMW 1-series', cost: 950, class: 'Средний' },
+    { category: 'B', name: 'Alfa Romeo Mita', cost: 1000, class: 'Средний' },
+    { category: 'B', name: 'Citroen C6', cost: 750, class: 'Средний' },
+    { category: 'B', name: 'Ferrari F430', cost: 2350, class: 'Бизнес' },
+    { category: 'B', name: 'Mini', cost: 700, class: 'Низкий' },
+    { category: 'B', name: 'Renault Logan', cost: 540, class: 'Низкий' },
+    { category: 'B', name: 'Porsche 911', cost: 2100, class: 'Бизнес' },
+    { category: 'B', name: 'Nissan 350Z', cost: 1850, class: 'Высокий' },
+    { category: 'B', name: 'Mitsubishi Lanser Evo X', cost: 1600, class: 'Высокий' },
+    { category: 'B', name: 'Mazda MX-5', cost: 1750, class: 'Высокий' },
+    { category: 'B', name: 'Kia Spectra', cost: 650, class: 'Низкий' },
+    { category: 'B', name: 'Jeep Liberty', cost: 1050, class: 'Средний' },
+    { category: 'B', name: 'Range Rover Sport', cost: 1350, class: 'Высокий' },
+    { category: 'B', name: 'Hyundai Genesis', cost: 900, class: 'Средний' },
+    { category: 'B', name: 'Honda pilot', cost: 1100, class: 'Средний' },
+
+    { category: 'C', name: 'Газ- 3302', cost: 310, class: 'Низкий' },
+    { category: 'C', name: 'КамАЗ-54901', cost: 620, class: 'Низкий' },
+    { category: 'C', name: 'КамАЗ КО-440А1 (мусоровоз)', cost: 500, class: 'Средний' },
+    { category: 'C', name: 'Pegeot Boxer (груз)', cost: 780, class: 'Средний' },
+    { category: 'C', name: 'Volkswagen LT', cost: 470, class: 'Низкий' },
+    { category: 'C', name: 'Mersedes-Benz Sprinter (груз)', cost: 1100, class: 'Высокий' },
+
+    { category: 'D', name: 'Паз-3205', cost: 350, class: 'Средний' },
+    { category: 'D', name: 'Mersedes-Benz Sprinter (пасс)', cost: 1250, class: 'Высокий' },
+
+    { category: 'A', name: 'Yamaha YZF-R1', cost: 200, class: 'Средний' },
+    { category: 'A', name: 'Harley-Davidson', cost: 230, class: 'Средний' },
+    { category: 'A', name: 'Honda Gold Wing', cost: 260, class: 'Средний' },
+
+    { category: 'A1', name: 'Yamaha MT-03.', cost: 170, class: 'Средний' },
+    { category: 'A1', name: 'Honda CB300R', cost: 180, class: 'Средний' },
+
+    { category: 'M', name: 'Wels 200CC EVO', cost: 130, class: 'Средний' },
+    { category: 'M', name: 'Курьерский скутер Honda Dio AF62', cost: 100, class: 'Низкий' },
+
+    { category: 'B1', name: 'Can-am SPYDER F3', cost: 200, class: 'Средний' }
     ];
 
     let currentPdfBlob = null;
@@ -231,16 +304,25 @@
         }
 
         // Ищем совпадения
-        const matches = CAR_DATABASE.filter(car => car.toLowerCase().includes(val));
+        const matches = CAR_DATABASE.filter(car => car.name.toLowerCase().includes(val));
         
         if (matches.length > 0) {
-            matches.forEach(match => {
+            matches.forEach(car => {
                 const div = document.createElement('div');
                 div.className = 'autocomplete-item';
-                div.textContent = match;
-                // При клике подставляем в инпут и скрываем список
+                // Выводим красиво: Название (Категория, Класс) и Цена
+                div.innerHTML = `
+                    <div>
+                        <b>${car.name}</b> <br>
+                        <small style="color:#666;">Кат: ${car.category} | Класс: ${car.class}</small>
+                    </div>
+                    <div class="price">${car.cost} ₽/день</div>
+                `;
+                // При клике подставляем данные
                 div.onclick = function() {
-                    vehicleInput.value = match;
+                    vehicleInput.value = car.name;
+                    document.getElementById('costPerDay').value = car.cost; // Автоматически ставим цену
+                    calcTotal(); // Пересчитываем итог
                     dropdown.style.display = 'none';
                 };
                 dropdown.appendChild(div);
@@ -280,7 +362,7 @@
         });
     }
 
-    // АВТОЗАПОЛНЕНИЕ ПРИ ВЫБОРЕ
+    // АВТОЗАПОЛНЕНИЕ ПРИ ВЫБОРЕ ГРАЖДАНИНА
     document.getElementById('patientSelect').addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (!selectedOption.value || selectedOption.value === 'none') return;
@@ -363,7 +445,7 @@
         try {
             const getVal = (id) => document.getElementById(id).value;
             
-            // Берем номер из поля, которое отредактировал пользователь
+            // Берем номер из поля
             const fullPlateString = getVal('generatedPlate'); 
             const mainPlatePart = fullPlateString.split('156')[0].trim(); 
             const plateChars = mainPlatePart.replace(/\s+/g, '').split('');
@@ -375,7 +457,7 @@
             const rentDays = parseInt(getVal('rentDays'));
             const dayNumber = parseInt(getVal('dayNumber'));
             
-            // РАСЧЕТ ДАТЫ ДЕЙСТВИЯ (День выдачи + срок)
+            // РАСЧЕТ ДАТЫ ДЕЙСТВИЯ
             const endDay = dayNumber + rentDays;
 
             const costPerDay = getVal('costPerDay');
@@ -396,19 +478,14 @@
             const opt11 = { size: 11, font: customFont, color: PDFLib.rgb(0, 0, 0) };
 
             drawCenteredInRange(firstPage, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt6);
-            
-            // Рисуем ТС с цветом
             firstPage.drawText(fullVehicleName, { x: COORDS.vehicleName.x, y: COORDS.vehicleName.y, ...opt6 });
-            
             firstPage.drawText(getVal('renterName'), { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt6 });
             
             const series = getVal('passSeries').padEnd(4, ' ');
             drawCenteredInRange(firstPage, series.substring(0, 2), COORDS.passSeries1.xStart, COORDS.passSeries1.xEnd, COORDS.passSeries1.y, opt6);
             drawCenteredInRange(firstPage, series.substring(2, 4), COORDS.passSeries2.xStart, COORDS.passSeries2.xEnd, COORDS.passSeries2.y, opt6);
-            
             drawCenteredInRange(firstPage, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt6);
 
-            // Отрисовка квадратиков номера
             drawCenteredInRange(firstPage, plateChars[0] || '', COORDS.plate1.xStart, COORDS.plate1.xEnd, COORDS.plate1.y, opt11);
             drawCenteredInRange(firstPage, plateChars[1] || '', COORDS.plate2.xStart, COORDS.plate2.xEnd, COORDS.plate2.y, opt11);
             drawCenteredInRange(firstPage, plateChars[2] || '', COORDS.plate3.xStart, COORDS.plate3.xEnd, COORDS.plate3.y, opt11);
@@ -419,13 +496,10 @@
             drawCenteredInRange(firstPage, getVal('dateDay'), COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt6);
             drawCenteredInRange(firstPage, getVal('dateMonth'), COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt6);
             drawCenteredInRange(firstPage, getVal('dateYear'), COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt6);
-            
             drawCenteredInRange(firstPage, getVal('dayNumber'), COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt6);
             
-            // ВЫВОДИМ РАСЧЕТ ДАТЫ ДЕЙСТВИЯ
             drawCenteredInRange(firstPage, `${endDay} дня`, COORDS.validDays.xStart, COORDS.validDays.xEnd, COORDS.validDays.y, opt11);
 
-            // В QR-код пишем полный номер с регионом и расчетную дату
             const qrText = `Договор аренды ТС\n№ ${docNumber}\nАрендодатель: Арендная компания «Wels Rent»\nАрендатор: ${getVal('renterName')} (${getVal('passSeries')} ${getVal('passNumber')})\nТС: ${fullVehicleName}, ${fullPlateString}\nСрок аренды: ${rentDays} дней\nСтоимость 1 дня: ${costPerDay} руб.\nИтого: ${totalCost} руб.\nДата выдачи: ${dateStr} (${getVal('dayNumber')} день)\nДействителен до: ${endDay} дня`;
             
             const qrBytes = await createQrImage(qrText);
