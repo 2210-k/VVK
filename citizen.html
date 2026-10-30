@@ -4,558 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет | ЕСС</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --primary: #10b981;
-            --primary-dark: #047857;
-            --primary-soft: #ecfdf5;
-            --bg: #f3f4f6;
-            --bg-card: #ffffff;
-            --bg-muted: #f9fafb;
-            --text: #1f2937;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --danger: #dc2626;
-            --warning: #f59e0b;
-            --shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        [data-theme="dark"] {
-            --primary: #34d399;
-            --primary-dark: #10b981;
-            --primary-soft: #064e3b;
-            --bg: #111827;
-            --bg-card: #1f2937;
-            --bg-muted: #374151;
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border: #374151;
-            --danger: #f87171;
-            --warning: #fbbf24;
-            --shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-
-        * { box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            margin: 0;
-            color: var(--text);
-            padding-bottom: 70px;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* === ВХОД === */
-        #auth-screen {
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-            padding: 15px;
-        }
-        .auth-box {
-            background: var(--bg-card); padding: 30px; border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            width: 100%; max-width: 400px; text-align: center;
-        }
-        .auth-box h2 { color: var(--primary-dark); margin: 0 0 10px 0; }
-        .auth-box input {
-            width: 100%; padding: 14px; margin-bottom: 15px;
-            border: 1px solid var(--border); border-radius: 8px;
-            font-size: 15px; background: var(--bg-card); color: var(--text);
-        }
-        .btn {
-            width: 100%; padding: 14px; border: none; border-radius: 8px;
-            font-weight: bold; background: var(--primary); color: white;
-            cursor: pointer; font-size: 16px;
-        }
+        :root { --primary: #10b981; --primary-dark: #047857; --bg: #f3f4f6; --text: #1f2937; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 70px; }
+        
+        /* Вход */
+        #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 15px; box-sizing: border-box; }
+        .auth-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
+        .auth-box h2 { color: var(--primary-dark); margin-top: 0; margin-bottom: 10px; }
+        .auth-box input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; font-size: 16px; }
         .btn:hover { background: var(--primary-dark); }
-        .error-msg {
-            color: var(--danger); font-size: 14px; margin-bottom: 15px;
-            display: none; background: rgba(220,38,38,0.1);
-            padding: 10px; border-radius: 6px;
-        }
+        .error-msg { color: #dc2626; font-size: 14px; margin-bottom: 15px; display: none; background: #fee2e2; padding: 10px; border-radius: 6px; }
 
-        /* === КАБИНЕТ === */
+        /* Кабинет */
         #dashboard-screen { display: none; min-height: 100vh; }
-
-        /* === SIDEBAR (Desktop) === */
-        .sidebar {
-            width: 260px; background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            height: 100vh; position: fixed;
-            display: flex; flex-direction: column; z-index: 100;
-        }
-        .logo-area {
-            padding: 25px 20px; border-bottom: 1px solid var(--border);
-            text-align: center;
-        }
+        
+        .sidebar { width: 260px; background: white; border-right: 1px solid #e5e7eb; height: 100vh; position: fixed; display: flex; flex-direction: column; z-index: 100; }
+        .logo-area { padding: 25px 20px; border-bottom: 1px solid #e5e7eb; text-align: center; }
         .logo-area h2 { margin: 0; color: var(--primary-dark); font-size: 20px; }
-        .logo-area p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 12px; }
-        .menu { flex: 1; padding: 20px 0; overflow-y: auto; }
-        .menu-item {
-            padding: 15px 25px; cursor: pointer;
-            display: flex; align-items: center; gap: 12px;
-            color: var(--text-muted); font-weight: 500;
-            transition: 0.2s; border-left: 4px solid transparent;
-        }
-        .menu-item:hover, .menu-item.active {
-            background: var(--primary-soft); color: var(--primary-dark);
-            border-left-color: var(--primary);
-        }
-        .logout-area { padding: 20px; border-top: 1px solid var(--border); }
-        .btn-logout {
-            width: 100%; background: rgba(220,38,38,0.15);
-            color: var(--danger); border: none; padding: 10px;
-            border-radius: 6px; cursor: pointer; font-weight: bold;
-        }
-        .btn-logout:hover { background: rgba(220,38,38,0.25); }
+        .logo-area p { margin: 5px 0 0 0; color: #6b7280; font-size: 12px; }
+        
+        .menu { flex: 1; padding: 20px 0; }
+        .menu-item { padding: 15px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #4b5563; font-weight: 500; transition: 0.2s; border-left: 4px solid transparent; }
+        .menu-item:hover, .menu-item.active { background: #ecfdf5; color: var(--primary-dark); border-left-color: var(--primary); }
+        
+        .logout-area { padding: 20px; border-top: 1px solid #e5e7eb; }
+        .btn-logout { width: 100%; background: #fee2e2; color: #dc2626; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-        /* === MAIN CONTENT === */
-        .main-content { margin-left: 260px; padding: 0; }
-
-        /* === TOPBAR === */
-        .topbar {
-            position: sticky; top: 0;
-            background: var(--bg-card); border-bottom: 1px solid var(--border);
-            padding: 15px 30px; display: flex; align-items: center;
-            justify-content: space-between; gap: 15px; z-index: 50;
-        }
-        .topbar-title {
-            font-weight: bold; font-size: 16px; color: var(--text);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .topbar-actions { display: flex; gap: 10px; align-items: center; }
-        .icon-btn {
-            position: relative; background: var(--bg-muted); border: none;
-            width: 42px; height: 42px; border-radius: 50%;
-            cursor: pointer; font-size: 18px;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.2s; color: var(--text);
-        }
-        .icon-btn:hover { background: var(--primary-soft); }
-        .bell-badge {
-            position: absolute; top: -3px; right: -3px;
-            background: var(--danger); color: white; font-size: 11px;
-            font-weight: bold; min-width: 18px; height: 18px;
-            border-radius: 9px; display: flex; align-items: center;
-            justify-content: center; padding: 0 5px;
-            border: 2px solid var(--bg-card);
-        }
-
-        /* === КОНТЕНТ === */
-        .content-area { padding: 25px 30px; }
-
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white; padding: 30px; border-radius: 12px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
+        .main-content { margin-left: 260px; padding: 30px; }
+        
+        .welcome-banner { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
         .welcome-banner h1 { margin: 0 0 10px 0; font-size: 24px; }
         .welcome-banner p { margin: 0; opacity: 0.9; font-size: 15px; }
 
-        /* === СТАТИСТИКА === */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 15px; margin-bottom: 25px;
-        }
-        .stat-card {
-            background: var(--bg-card); padding: 18px;
-            border-radius: 12px; box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary);
-        }
-        .stat-card.stat-active { border-left-color: var(--primary); }
-        .stat-card.stat-revoked { border-left-color: var(--danger); }
-        .stat-card.stat-orgs { border-left-color: var(--warning); }
-        .stat-card h3 {
-            margin: 0; font-size: 12px; color: var(--text-muted);
-            text-transform: uppercase; font-weight: 600;
-            letter-spacing: 0.3px;
-        }
-        .stat-card .value {
-            font-size: 28px; font-weight: bold; color: var(--text);
-            margin-top: 8px;
-        }
-        .stat-card.stat-active .value { color: var(--primary); }
-        .stat-card.stat-revoked .value { color: var(--danger); }
-        .stat-card.stat-orgs .value {
-            font-size: 13px; font-weight: 600;
-            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
-        }
-        .org-mini-chip {
-            background: var(--bg-muted); padding: 4px 10px;
-            border-radius: 20px; font-size: 12px; color: var(--text);
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); }
+        .stat-card h3 { margin: 0; font-size: 14px; color: #6b7280; text-transform: uppercase; }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: var(--text); margin-top: 10px; }
 
-        .section-title {
-            font-size: 20px; margin: 0 0 20px 0; color: var(--text);
-        }
-
-        /* === ПЛИТКИ === */
-        .tiles-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px; margin-bottom: 30px;
-        }
-        .tile {
-            background: var(--bg-card); padding: 25px;
-            border-radius: 12px; box-shadow: var(--shadow);
-            text-align: center; cursor: pointer; transition: 0.2s;
-            border: 2px solid transparent;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; min-height: 120px;
-        }
-        .tile:hover {
-            border-color: var(--primary); transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        .tile-icon { font-size: 40px; margin-bottom: 15px; }
-        .tile h3 { margin: 0; font-size: 17px; color: var(--text); }
-        .tile p { margin: 5px 0 0 0; font-size: 13px; color: var(--text-muted); }
-
-        /* === BREADCRUMB === */
-        .breadcrumb {
-            display: flex; align-items: center; gap: 10px;
-            margin-bottom: 20px; font-size: 14px; color: var(--text-muted);
-        }
-        .btn-back {
-            background: var(--bg-muted); border: none;
-            padding: 8px 15px; border-radius: 6px;
-            cursor: pointer; color: var(--text); font-weight: bold;
-            display: flex; align-items: center; gap: 5px;
-        }
-        .btn-back:hover { background: var(--border); }
-
-        /* === ПОИСК === */
-        .search-bar {
-            width: 100%; padding: 12px 15px;
-            margin-bottom: 15px; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 15px;
-            background: var(--bg-card); color: var(--text);
-            outline: none;
-        }
-        .search-bar:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-soft);
-        }
-
-        /* === ЧИПЫ === */
-        .chips-row {
-            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px;
-        }
-        .chip {
-            padding: 8px 16px; background: var(--bg-card);
-            border: 1px solid var(--border); border-radius: 20px;
-            cursor: pointer; font-size: 14px; font-weight: 500;
-            transition: 0.2s; color: var(--text);
-        }
-        .chip:hover { border-color: var(--primary); }
-        .chip.active {
-            background: var(--primary); color: white;
-            border-color: var(--primary);
-        }
-        .chip.chip-revoked.active { background: var(--danger); border-color: var(--danger); }
-
-        /* === ТАБЛИЦА === */
-        .table-wrap {
-            background: var(--bg-card); border-radius: 12px;
-            box-shadow: var(--shadow); overflow: hidden;
-            margin-bottom: 15px;
-        }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        table {
-            width: 100%; border-collapse: collapse; min-width: 700px;
-        }
-        th, td {
-            padding: 14px 16px; text-align: left;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
-        }
-        th {
-            background: var(--bg-muted); color: var(--text-muted);
-            font-weight: 700; font-size: 12px;
-            text-transform: uppercase; letter-spacing: 0.3px;
-            cursor: pointer; user-select: none; white-space: nowrap;
-        }
-        th:hover { background: var(--primary-soft); color: var(--primary-dark); }
-        th .sort-arrow { margin-left: 4px; font-size: 10px; opacity: 0.6; }
-        th.sorted .sort-arrow { opacity: 1; }
-        tbody tr:hover { background: var(--bg-muted); }
-        tbody tr:last-child td { border-bottom: none; }
-
-        .status-badge {
-            display: inline-block; padding: 4px 10px;
-            border-radius: 20px; font-size: 12px; font-weight: bold;
-            white-space: nowrap;
-        }
-        .status-active { background: rgba(16,185,129,0.15); color: var(--primary); }
-        .status-revoked { background: rgba(220,38,38,0.15); color: var(--danger); }
+        .section-title { font-size: 20px; margin-bottom: 20px; color: var(--text); }
         
-        /* Статусы заявлений */
-        .status-new { background: rgba(245,158,11,0.15); color: var(--warning); }
-        .status-in_progress { background: rgba(59,130,246,0.15); color: #3b82f6; }
-        .status-approved { background: rgba(16,185,129,0.15); color: var(--primary); }
-        .status-rejected { background: rgba(220,38,38,0.15); color: var(--danger); }
-        .status-needs_clarification { background: rgba(139,92,246,0.15); color: #8b5cf6; }
-        .status-cancelled { background: var(--bg-muted); color: var(--text-muted); }
+        /* Плитки (Сетки) */
+        .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .tile { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: 0.2s; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
+        .tile:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .tile-icon { font-size: 40px; margin-bottom: 15px; }
+        .tile h3 { margin: 0; font-size: 18px; color: var(--text); }
+        .tile p { margin: 5px 0 0 0; font-size: 13px; color: #6b7280; }
 
-        .doc-num-cell { display: flex; align-items: center; gap: 6px; }
-        .copy-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px; opacity: 0.5; transition: 0.2s; }
-        .copy-btn:hover { opacity: 1; }
+        /* Навигация (Хлебные крошки) */
+        .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 14px; color: #6b7280; }
+        .btn-back { background: #f3f4f6; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; color: #374151; font-weight: bold; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-back:hover { background: #e5e7eb; }
 
-        .btn-view, .btn-dl {
-            padding: 6px 12px; border-radius: 6px; font-weight: 600;
-            font-size: 13px; display: inline-flex; align-items: center;
-            gap: 4px; text-decoration: none; border: none;
-            cursor: pointer; margin-right: 4px;
+        /* Фильтры для Всех документов */
+        .filters { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .filters select { padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; outline: none; cursor: pointer; flex: 1; min-width: 200px; }
+        .filters select:focus { border-color: var(--primary); }
+
+        /* Карточки документов */
+        .docs-list { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .doc-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid #e5e7eb; }
+        .doc-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .doc-info h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--text); display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .doc-info p { margin: 0; color: #6b7280; font-size: 14px; }
+        .doc-org { display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; font-weight: bold; }
+        
+        /* Статусы документов */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            vertical-align: middle;
         }
-        .btn-view { background: var(--bg-muted); color: var(--text); }
-        .btn-view:hover { background: var(--border); }
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-revoked { background: #fee2e2; color: #991b1b; }
+
+        .doc-actions { display: flex; gap: 10px; }
+        .btn-view, .btn-dl { padding: 10px 15px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; text-decoration: none; border: none; cursor: pointer; }
+        .btn-view { background: #f3f4f6; color: #374151; }
         .btn-dl { background: var(--primary); color: white; }
-        .btn-dl:hover { background: var(--primary-dark); }
+        
+        .empty-state { text-align: center; padding: 50px; background: white; border-radius: 12px; color: #6b7280; border: 2px dashed #d1d5db; }
 
-        /* === ПАГИНАЦИЯ === */
-        .pagination {
-            display: flex; justify-content: center; align-items: center;
-            gap: 8px; flex-wrap: wrap; padding: 15px 0;
-        }
-        .page-btn {
-            background: var(--bg-card); border: 1px solid var(--border);
-            padding: 8px 14px; border-radius: 6px; cursor: pointer;
-            font-weight: 600; color: var(--text); min-width: 40px;
-        }
-        .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
-        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .page-info { color: var(--text-muted); font-size: 14px; margin: 0 10px; }
-
-        /* === ЭКСПОРТ === */
-        .actions-bottom { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-        .btn-export {
-            background: var(--bg-card); border: 1px solid var(--border);
-            padding: 10px 18px; border-radius: 8px; cursor: pointer;
-            font-weight: 600; color: var(--text); font-size: 14px;
-        }
-        .btn-export:hover { border-color: var(--primary); color: var(--primary); }
-
-        /* === ПРОФИЛЬ === */
-        .profile-card {
-            background: var(--bg-card); padding: 25px;
-            border-radius: 12px; box-shadow: var(--shadow);
-            max-width: 600px;
-        }
-        .profile-row {
-            display: flex; border-bottom: 1px solid var(--border);
-            padding: 14px 0;
-        }
+        .profile-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-width: 600px; }
+        .profile-row { display: flex; border-bottom: 1px solid #f3f4f6; padding: 15px 0; }
         .profile-row:last-child { border-bottom: none; }
-        .profile-label {
-            width: 200px; font-weight: 600; color: var(--text-muted);
-            font-size: 14px;
-        }
+        .profile-label { width: 200px; font-weight: 600; color: #6b7280; }
         .profile-value { flex: 1; color: var(--text); font-weight: 500; }
 
-        /* === ПУСТОЕ СОСТОЯНИЕ === */
-        .empty-state {
-            text-align: center; padding: 50px 20px;
-            background: var(--bg-card); border-radius: 12px;
-            color: var(--text-muted);
-            border: 2px dashed var(--border);
-        }
-
-        /* === МОДАЛКА ПРОСМОТРА === */
-        #preview-modal {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.9);
-            z-index: 1000; justify-content: center; align-items: center;
-            flex-direction: column;
-        }
-        .preview-container {
-            width: 95%; height: 95%; background: var(--bg-card);
-            border-radius: 8px; display: flex; flex-direction: column;
-            overflow: hidden;
-        }
-        .preview-header {
-            padding: 15px 20px; background: var(--bg-muted);
-            display: flex; justify-content: space-between;
-            align-items: center; border-bottom: 1px solid var(--border);
-            gap: 10px; flex-wrap: wrap;
-        }
-        .preview-header h3 { margin: 0; color: var(--text); font-size: 16px; }
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-header h3 { margin: 0; color: #333; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
-        .btn-close-prev {
-            background: var(--danger); color: white; border: none;
-            padding: 10px 20px; border-radius: 6px; cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* === МОДАЛКА УВЕДОМЛЕНИЙ === */
-        #notif-modal {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.7);
-            z-index: 1500; justify-content: center; align-items: center;
-            padding: 15px;
-        }
-        .notif-box {
-            background: var(--bg-card); border-radius: 12px;
-            width: 100%; max-width: 500px; max-height: 85vh;
-            display: flex; flex-direction: column; overflow: hidden;
-        }
-        .notif-header {
-            padding: 20px; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between;
-            align-items: center;
-        }
-        .notif-header h3 { margin: 0; color: var(--text); font-size: 18px; }
-        .notif-body { flex: 1; overflow-y: auto; padding: 15px 20px; }
-        .notif-item {
-            padding: 12px; background: var(--bg-muted);
-            border-radius: 8px; margin-bottom: 10px;
-            border-left: 3px solid var(--primary);
-        }
-        .notif-item h4 { margin: 0 0 5px 0; font-size: 15px; color: var(--text); }
-        .notif-item p { margin: 0; font-size: 13px; color: var(--text-muted); }
-        .notif-actions {
-            padding: 15px 20px; border-top: 1px solid var(--border);
-            display: flex; gap: 10px;
-        }
-        .notif-actions button {
-            flex: 1; padding: 12px; border: none; border-radius: 8px;
-            cursor: pointer; font-weight: bold; font-size: 14px;
-        }
-        .btn-mark-read { background: var(--primary); color: white; }
-        .btn-close-notif { background: var(--bg-muted); color: var(--text); }
-
-        /* === TOAST === */
-        #toast {
-            position: fixed; bottom: 90px; left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: var(--text); color: var(--bg-card);
-            padding: 12px 24px; border-radius: 8px;
-            font-weight: 600; font-size: 14px;
-            opacity: 0; pointer-events: none;
-            transition: 0.3s; z-index: 2000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        /* === МОБИЛЬНОЕ МЕНЮ === */
-        .mobile-nav { display: none; }
+        .btn-close-prev { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
         /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
-        @media (max-width: 768px) {
-            body { padding-bottom: 75px; }
-            .sidebar { display: none; }
-            .main-content { margin-left: 0; }
-            .topbar { padding: 12px 15px; }
-            .topbar-title { display: none; }
-            .topbar-actions { margin-left: auto; }
-            .icon-btn { width: 40px; height: 40px; font-size: 17px; }
-            .content-area { padding: 15px; }
-
-            .welcome-banner { padding: 20px; margin-bottom: 15px; }
-            .welcome-banner h1 { font-size: 19px; }
-            .welcome-banner p { font-size: 13px; }
-
-            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-            .stat-card { padding: 14px; }
-            .stat-card h3 { font-size: 11px; }
-            .stat-card .value { font-size: 22px; }
-            .stat-card.stat-orgs .value { font-size: 11px; gap: 4px; }
-            .org-mini-chip { font-size: 10px; padding: 3px 8px; }
-
-            .section-title { font-size: 17px; margin-bottom: 15px; }
-
-            .tiles-grid { grid-template-columns: 1fr; gap: 12px; }
-            .tile { padding: 18px; min-height: 100px; }
-            .tile-icon { font-size: 32px; margin-bottom: 10px; }
-            .tile h3 { font-size: 15px; }
-
-            .chips-row { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 5px; }
-            .chip { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
-
-            th, td { padding: 10px 12px; font-size: 13px; }
-            th { font-size: 11px; }
-
-            .btn-view, .btn-dl { padding: 5px 10px; font-size: 12px; }
-
-            .pagination { padding: 10px 0; gap: 5px; }
-            .page-btn { padding: 8px 12px; font-size: 13px; min-width: 36px; }
-            .page-info { font-size: 12px; }
-
-            .actions-bottom { flex-direction: column; }
-            .btn-export { width: 100%; text-align: center; }
-
-            .profile-row { flex-direction: column; gap: 4px; padding: 12px 0; }
-            .profile-label { width: 100%; font-size: 12px; }
-
-            .preview-header { padding: 10px 12px; }
-            .preview-header h3 { font-size: 14px; }
-            .btn-close-prev { padding: 8px 14px; font-size: 13px; }
-
-            .notif-box { max-height: 90vh; }
-            .notif-header { padding: 15px; }
-            .notif-header h3 { font-size: 16px; }
-
-            .mobile-nav {
-                display: flex; position: fixed; bottom: 0; left: 0;
-                width: 100%; background: var(--bg-card);
-                border-top: 1px solid var(--border);
-                z-index: 1000;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                padding: 5px 0;
-                padding-bottom: max(5px, env(safe-area-inset-bottom));
-            }
-            .mobile-nav .menu-item {
-                flex: 1; flex-direction: column;
-                padding: 8px 4px; font-size: 10px;
-                border-left: none; border-top: 3px solid transparent;
-                text-align: center; gap: 2px;
-                color: var(--text-muted);
-            }
-            .mobile-nav .menu-item.active {
-                border-top-color: var(--primary);
-                color: var(--primary); background: transparent;
-            }
-            .mobile-nav .menu-item span { display: block; font-size: 18px; }
-        }
-
-        @media (max-width: 380px) {
-            .stat-card .value { font-size: 20px; }
-            .mobile-nav .menu-item { font-size: 9px; }
-        }
+        .mobile-nav { display: none; }
         
-        /* === СПЕЦИФИКА ЗАЯВЛЕНИЙ === */
-        .app-card { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); }
-        .app-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
-        .app-title { font-weight: bold; font-size: 16px; color: var(--text); margin: 0; }
-        .app-date { font-size: 13px; color: var(--text-muted); }
-        .app-body { font-size: 14px; color: var(--text); margin-bottom: 10px; white-space: pre-wrap; }
-        .app-comment { background: var(--bg-muted); padding: 10px; border-radius: 6px; font-size: 13px; margin-top: 10px; }
-        .app-comment b { color: var(--primary-dark); }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 15px; }
+            
+            .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+            .mobile-nav .menu-item { flex: 1; flex-direction: column; padding: 10px 5px; font-size: 11px; border-left: none; border-top: 3px solid transparent; text-align: center; gap: 4px; color: #64748b; }
+            .mobile-nav .menu-item.active { border-top-color: var(--primary); color: var(--primary); background: transparent; }
+            
+            .doc-card { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .doc-actions { width: 100%; }
+            .doc-actions button, .doc-actions a { flex: 1; justify-content: center; }
+            .profile-row { flex-direction: column; gap: 5px; }
+            .profile-label { width: 100%; }
+            .welcome-banner { padding: 20px; }
+            .welcome-banner h1 { font-size: 20px; }
+            .preview-header { flex-direction: column; align-items: flex-start; }
+            .preview-header > div { display: flex; width: 100%; gap: 10px; margin-top: 10px; }
+            .preview-header > div > a, .preview-header > div > button { flex: 1; text-align: center; }
+            .filters { flex-direction: column; }
+            .tiles-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-
     <!-- ВХОД -->
     <div id="auth-screen">
         <div class="auth-box">
             <h2>Кабинет гражданина</h2>
-            <p style="color:var(--text-muted); margin-bottom:25px;">Портал Единой Службы Спасения</p>
+            <p style="color:#666; margin-bottom:25px;">Портал Единой Службы Спасения</p>
             <div id="auth-error" class="error-msg"></div>
             <form id="login-form">
                 <input type="email" id="email" placeholder="Ваш Email" required>
                 <input type="password" id="password" placeholder="Пароль" required>
                 <button type="submit" class="btn">Войти в кабинет</button>
             </form>
-            <a href="index.html" style="display:block; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:14px;">Вход для сотрудников</a>
+            <a href="index.html" style="display:block; margin-top:20px; color:#888; text-decoration:none; font-size:14px;">Вход для сотрудников</a>
         </div>
     </div>
 
     <!-- КАБИНЕТ -->
     <div id="dashboard-screen">
-        <!-- SIDEBAR -->
+        <!-- САЙДБАР ДЛЯ ПК -->
         <div class="sidebar">
             <div class="logo-area">
                 <h2>ЕСС</h2>
@@ -564,7 +157,6 @@
             <div class="menu">
                 <div class="menu-item active" onclick="switchTab('home', this)">🏠 Главная</div>
                 <div class="menu-item" onclick="switchTab('docs', this)">📄 Мои документы</div>
-                <div class="menu-item" onclick="switchTab('apps', this)">📝 Мои заявления</div> <!-- НОВОЕ -->
                 <div class="menu-item" onclick="switchTab('all_docs', this)">🗂️ Все документы</div>
                 <div class="menu-item" onclick="switchTab('profile', this)">👤 Мой профиль</div>
             </div>
@@ -573,140 +165,95 @@
             </div>
         </div>
 
-        <!-- МОБИЛЬНОЕ МЕНЮ -->
+        <!-- НИЖНЕЕ МЕНЮ ДЛЯ ТЕЛЕФОНА -->
         <div class="mobile-nav">
-            <div class="menu-item active" onclick="switchTab('home', this)"><span>🏠</span>Главная</div>
-            <div class="menu-item" onclick="switchTab('docs', this)"><span>📄</span>Мои</div>
-            <div class="menu-item" onclick="switchTab('apps', this)"><span>📝</span>Заявки</div> <!-- НОВОЕ -->
-            <div class="menu-item" onclick="switchTab('all_docs', this)"><span>🗂️</span>Все</div>
-            <div class="menu-item" onclick="switchTab('profile', this)"><span>👤</span>Профиль</div>
+            <div class="menu-item active" onclick="switchTab('home', this)">🏠<br>Главная</div>
+            <div class="menu-item" onclick="switchTab('docs', this)">📄<br>Мои</div>
+            <div class="menu-item" onclick="switchTab('all_docs', this)">🗂️<br>Все</div>
+            <div class="menu-item" onclick="switchTab('profile', this)">👤<br>Профиль</div>
+            <div class="menu-item" onclick="document.getElementById('logout-btn').click()" style="color:#ef4444;">🚪<br>Выход</div>
         </div>
 
-        <!-- MAIN -->
         <div class="main-content">
-            <!-- TOPBAR -->
-            <header class="topbar">
-                <div class="topbar-title" id="topbar-title">Главная</div>
-                <div class="topbar-actions">
-                    <button class="icon-btn" onclick="openNotifications()" title="Уведомления">
-                        🔔
-                        <span id="bell-badge" class="bell-badge" style="display:none;">0</span>
-                    </button>
-                    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Сменить тему">🌙</button>
+            <!-- ВКЛАДКА: ГЛАВНАЯ -->
+            <div id="tab-home">
+                <div class="welcome-banner">
+                    <h1 id="welcome-text">Здравствуйте!</h1>
+                    <p>Здесь вы можете просматривать и скачивать свои документы.</p>
                 </div>
-            </header>
 
-            <div class="content-area">
-                <!-- ВКЛАДКА: ГЛАВНАЯ -->
-                <div id="tab-home">
-                    <div class="welcome-banner">
-                        <h1 id="welcome-text">Здравствуйте!</h1>
-                        <p>Здесь вы можете просматривать и скачивать свои документы.</p>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Всего документов</h3>
+                        <div class="value" id="stat-total-docs">0</div>
                     </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <h3>Всего документов</h3>
-                            <div class="value" id="stat-total">0</div>
-                        </div>
-                        <div class="stat-card stat-active">
-                            <h3>Активных</h3>
-                            <div class="value" id="stat-active">0</div>
-                        </div>
-                        <div class="stat-card stat-revoked">
-                            <h3>Аннулированных</h3>
-                            <div class="value" id="stat-revoked">0</div>
-                        </div>
-                        <div class="stat-card stat-orgs">
-                            <h3>По организациям</h3>
-                            <div class="value" id="stat-orgs">—</div>
-                        </div>
-                    </div>
-
-                    <h2 class="section-title">Последние документы</h2>
-                    <div id="home-recent-docs">
-                        <p style="color:var(--text-muted);">Загрузка...</p>
+                    <div class="stat-card">
+                        <h3>Последнее обновление</h3>
+                        <div class="value" id="stat-last-doc" style="font-size: 18px;">Нет данных</div>
                     </div>
                 </div>
 
-                <!-- ВКЛАДКА: МОИ ДОКУМЕНТЫ -->
-                <div id="tab-docs" style="display:none;">
-                    <div id="docs-breadcrumb" style="display: none;" class="breadcrumb">
-                        <button class="btn-back" onclick="navDocsBack()">← Назад</button>
-                        <span id="breadcrumb-text"></span>
-                    </div>
+                <h2 class="section-title">Последние документы</h2>
+                <div class="docs-list" id="home-recent-docs">
+                    <p style="color: #888;">Загрузка...</p>
+                </div>
+            </div>
 
-                    <h2 class="section-title" id="docs-page-title">Выберите организацию</h2>
-
-                    <div id="orgs-grid" class="tiles-grid"></div>
-                    <div id="types-grid" class="tiles-grid" style="display: none;"></div>
-                    <div id="specific-docs-list" style="display: none;"></div>
+            <!-- ВКЛАДКА: МОИ ДОКУМЕНТЫ (ПЛИТКИ) -->
+            <div id="tab-docs" style="display:none;">
+                <!-- Навигация -->
+                <div id="docs-breadcrumb" style="display: none;" class="breadcrumb">
+                    <button class="btn-back" onclick="navDocsBack()">← Назад</button>
+                    <span id="breadcrumb-text"></span>
                 </div>
 
-                <!-- ВКЛАДКА: МОИ ЗАЯВЛЕНИЯ (НОВОЕ) -->
-                <div id="tab-apps" style="display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-                        <h2 class="section-title" style="margin:0;">Мои заявления</h2>
-                        <button class="btn" onclick="openCreateAppModal()" style="width:auto; padding: 10px 20px;">➕ Подать заявление</button>
-                    </div>
-                    
-                    <div id="apps-list-container">
-                        <p style="color:var(--text-muted);">Загрузка...</p>
-                    </div>
+                <h2 class="section-title" id="docs-page-title">Выберите организацию</h2>
+                
+                <!-- Уровень 1: Организации -->
+                <div id="orgs-grid" class="tiles-grid">
+                    <!-- Заполняется через JS -->
                 </div>
 
-                <!-- ВКЛАДКА: ВСЕ ДОКУМЕНТЫ -->
-                <div id="tab-all_docs" style="display:none;">
-                    <h2 class="section-title">Все документы</h2>
-
-                    <input type="text" id="search-all" class="search-bar"
-                           placeholder="🔍 Поиск по номеру, типу или организации..."
-                           oninput="onAllDocsSearch()">
-
-                    <div class="chips-row" id="status-chips">
-                        <div class="chip active" data-status="all" onclick="setStatusFilter('all')">Все</div>
-                        <div class="chip" data-status="active" onclick="setStatusFilter('active')">Активные</div>
-                        <div class="chip chip-revoked" data-status="revoked" onclick="setStatusFilter('revoked')">Аннулированные</div>
-                    </div>
-
-                    <div class="chips-row" id="org-chips"></div>
-
-                    <div class="table-wrap">
-                        <div class="table-responsive">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th onclick="changeSort('doc_number')">Номер<span class="sort-arrow" id="sort-doc_number"></span></th>
-                                        <th onclick="changeSort('document_type')">Тип<span class="sort-arrow" id="sort-document_type"></span></th>
-                                        <th onclick="changeSort('org_name')">Организация<span class="sort-arrow" id="sort-org_name"></span></th>
-                                        <th onclick="changeSort('created_at')">Дата<span class="sort-arrow" id="sort-created_at">▼</span></th>
-                                        <th onclick="changeSort('status')">Статус<span class="sort-arrow" id="sort-status"></span></th>
-                                        <th>Действия</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="all-docs-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="pagination" id="pagination"></div>
-
-                    <div class="actions-bottom">
-                        <button class="btn-export" onclick="exportToCSV()">📥 Экспорт в CSV</button>
-                    </div>
+                <!-- Уровень 2: Типы документов -->
+                <div id="types-grid" class="tiles-grid" style="display: none;">
+                    <!-- Заполняется через JS -->
                 </div>
 
-                <!-- ВКЛАДКА: ПРОФИЛЬ -->
-                <div id="tab-profile" style="display:none;">
-                    <h2 class="section-title">Мой профиль</h2>
-                    <div class="profile-card">
-                        <div class="profile-row"><div class="profile-label">ФИО</div><div class="profile-value" id="prof-name">—</div></div>
-                        <div class="profile-row"><div class="profile-label">Дата рождения</div><div class="profile-value" id="prof-dob">—</div></div>
-                        <div class="profile-row"><div class="profile-label">Место рождения</div><div class="profile-value" id="prof-pob">—</div></div>
-                        <div class="profile-row"><div class="profile-label">Адрес</div><div class="profile-value" id="prof-address">—</div></div>
-                        <div class="profile-row"><div class="profile-label">Паспорт</div><div class="profile-value" id="prof-passport">—</div></div>
-                        <div class="profile-row"><div class="profile-label">№ В/У</div><div class="profile-value" id="prof-driver-license">—</div></div>
-                    </div>
+                <!-- Уровень 3: Сами документы -->
+                <div id="specific-docs-list" class="docs-list" style="display: none;">
+                    <!-- Заполняется через JS -->
+                </div>
+            </div>
+
+            <!-- ВКЛАДКА: ВСЕ ДОКУМЕНТЫ (С ФИЛЬТРАМИ) -->
+            <div id="tab-all_docs" style="display:none;">
+                <h2 class="section-title">Все документы</h2>
+                
+                <div class="filters">
+                    <select id="filter-org" onchange="renderAllDocs()">
+                        <option value="all">Все организации</option>
+                        <!-- Заполняется через JS -->
+                    </select>
+                    <select id="filter-type" onchange="renderAllDocs()">
+                        <option value="all">Все типы документов</option>
+                        <!-- Заполняется через JS -->
+                    </select>
+                </div>
+
+                <div class="docs-list" id="all-docs-list">
+                    <p style="color: #888;">Загрузка...</p>
+                </div>
+            </div>
+
+            <!-- ВКЛАДКА: ПРОФИЛЬ -->
+            <div id="tab-profile" style="display:none;">
+                <h2 class="section-title">Мой профиль</h2>
+                <div class="profile-card">
+                    <div class="profile-row"><div class="profile-label">ФИО</div><div class="profile-value" id="prof-name">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Дата рождения</div><div class="profile-value" id="prof-dob">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Место рождения</div><div class="profile-value" id="prof-pob">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Адрес</div><div class="profile-value" id="prof-address">—</div></div>
+                    <div class="profile-row"><div class="profile-label">Паспорт</div><div class="profile-value" id="prof-passport">—</div></div>
                 </div>
             </div>
         </div>
@@ -718,7 +265,7 @@
             <div class="preview-header">
                 <h3>Просмотр документа</h3>
                 <div>
-                    <a id="preview-download-btn" href="#" class="btn-dl" download style="padding: 10px 20px;">Скачать</a>
+                    <a id="preview-download-btn" href="#" class="btn-dl" download style="display:inline-flex; padding: 10px 20px;">Скачать</a>
                     <button class="btn-close-prev" onclick="closePreview()">Закрыть</button>
                 </div>
             </div>
@@ -726,891 +273,285 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА УВЕДОМЛЕНИЙ -->
-    <div id="notif-modal">
-        <div class="notif-box">
-            <div class="notif-header">
-                <h3>🔔 Новые документы</h3>
-                <button class="icon-btn" onclick="closeNotifications()">✕</button>
-            </div>
-            <div class="notif-body" id="notif-body"></div>
-            <div class="notif-actions">
-                <button class="btn-mark-read" onclick="markAllRead()">Прочитать все</button>
-                <button class="btn-close-notif" onclick="closeNotifications()">Закрыть</button>
-            </div>
-        </div>
-    </div>
+    <script>
+        const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    <!-- МОДАЛКА ВЫБОРА ЗАЯВЛЕНИЯ (НОВОЕ) -->
-    <div id="create-app-modal" class="notif-box" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1500; justify-content:center; align-items:center; padding:15px; max-height:none;">
-        <div class="notif-box" style="max-height:85vh;">
-            <div class="notif-header">
-                <h3>Выберите тип заявления</h3>
-                <button class="icon-btn" onclick="closeCreateAppModal()">✕</button>
-            </div>
-            <div class="notif-body" id="create-app-list" style="padding:15px 20px;">
-                <p style="text-align:center;">Загрузка...</p>
-            </div>
-        </div>
-    </div>
+        let globalDocs = [];
+        let orgMap = {}; 
+        
+        let docNavState = { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' };
 
-    <!-- TOAST -->
-    <div id="toast"></div>
-
-<script>
-    const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // ============================================================
-    // СОСТОЯНИЕ
-    // ============================================================
-    const state = {
-        theme: localStorage.getItem('theme') || 'light',
-        currentTab: 'home',
-        currentUser: null,
-        allDocs: [],
-        allApps: [], // НОВОЕ
-        orgMap: {},
-        docNavState: { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' },
-        // Все документы
-        allSearch: '',
-        allStatusFilter: 'all',
-        allOrgFilter: 'all',
-        allSortCol: 'created_at',
-        allSortAsc: false,
-        allPage: 1,
-        allPerPage: 10,
-        unreadCount: 0,
-    };
-
-    // ============================================================
-    // ТЕМА
-    // ============================================================
-    function applyTheme() {
-        document.documentElement.setAttribute('data-theme', state.theme);
-        document.getElementById('theme-btn').textContent = state.theme === 'dark' ? '☀️' : '🌙';
-        localStorage.setItem('theme', state.theme);
-    }
-
-    function toggleTheme() {
-        state.theme = state.theme === 'light' ? 'dark' : 'light';
-        applyTheme();
-    }
-    applyTheme();
-
-    // ============================================================
-    // TOAST
-    // ============================================================
-    let toastTimer;
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.classList.add('show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
-    }
-
-    // ============================================================
-    // АВТОРИЗАЦИЯ
-    // ============================================================
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const { error } = await supabaseClient.auth.signInWithPassword({
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabaseClient.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            });
+            if (error) {
+                document.getElementById('auth-error').textContent = 'Неверный email или пароль.';
+                document.getElementById('auth-error').style.display = 'block';
+            }
         });
-        if (error) {
-            const errBox = document.getElementById('auth-error');
-            errBox.textContent = 'Неверный email или пароль.';
-            errBox.style.display = 'block';
+
+        document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
+
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+                
+                if (profile && profile.role === 'admin') {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const firstName = profile.first_name || 'Гражданин';
+                document.getElementById('welcome-text').textContent = `Здравствуйте, ${firstName}!`;
+
+                document.getElementById('prof-name').textContent = `${profile.last_name || ''} ${profile.first_name || ''} ${profile.patronymic || ''}`;
+                document.getElementById('prof-dob').textContent = profile.dob ? new Date(profile.dob).toLocaleDateString('ru-RU') : '—';
+                document.getElementById('prof-pob').textContent = profile.pob || '—';
+                document.getElementById('prof-address').textContent = profile.address || '—';
+                document.getElementById('prof-passport').textContent = (profile.pass_series || '') + ' ' + (profile.pass_number || '');
+
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('dashboard-screen').style.display = 'block';
+                loadMyDocs(session.user.id);
+            } else {
+                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('dashboard-screen').style.display = 'none';
+            }
+        });
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll(`.menu-item[onclick*="${tabId}"]`).forEach(el => el.classList.add('active'));
+            
+            document.getElementById('tab-home').style.display = 'none';
+            document.getElementById('tab-docs').style.display = 'none';
+            document.getElementById('tab-all_docs').style.display = 'none';
+            document.getElementById('tab-profile').style.display = 'none';
+            
+            document.getElementById(`tab-${tabId}`).style.display = 'block';
+
+            if (tabId === 'docs') resetDocsNav();
+            if (tabId === 'all_docs') renderAllDocs();
         }
-    });
 
-    document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
+        function closePreview() {
+            document.getElementById('preview-modal').style.display = 'none';
+            document.getElementById('preview-frame').src = ''; 
+        }
 
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        if (session) {
-            const { data: profile } = await supabaseClient
-                .from('profiles').select('*').eq('id', session.user.id).single();
+        function previewDoc(url) {
+            document.getElementById('preview-frame').src = url;
+            document.getElementById('preview-download-btn').href = url;
+            document.getElementById('preview-modal').style.display = 'flex';
+        }
 
-            if (profile && profile.role === 'admin') {
-                window.location.href = 'index.html';
+        async function loadMyDocs(userId) {
+            const { data: docs, error } = await supabaseClient
+                .from('documents')
+                .select('*')
+                .eq('patient_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                document.getElementById('all-docs-list').innerHTML = `<p style="color:red">Ошибка: ${error.message}</p>`;
+                return;
+            }
+            
+            globalDocs = docs || [];
+            
+            const { data: orgs } = await supabaseClient.from('organizations').select('id, name');
+            if (orgs) orgs.forEach(o => orgMap[o.id] = o.name);
+
+            document.getElementById('stat-total-docs').textContent = globalDocs.length;
+            if (globalDocs.length > 0) {
+                document.getElementById('stat-last-doc').textContent = new Date(globalDocs[0].created_at).toLocaleDateString('ru-RU');
+            }
+
+            renderDocsList('home-recent-docs', globalDocs.slice(0, 3));
+            initAllDocsFilters();
+        }
+
+        // НАВИГАЦИЯ ПО ПЛИТКАМ
+        function resetDocsNav() {
+            docNavState = { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' };
+            document.getElementById('docs-breadcrumb').style.display = 'none';
+            document.getElementById('docs-page-title').textContent = 'Выберите организацию';
+            
+            document.getElementById('orgs-grid').style.display = 'grid';
+            document.getElementById('types-grid').style.display = 'none';
+            document.getElementById('specific-docs-list').style.display = 'none';
+            renderOrgsGrid();
+        }
+
+        function renderOrgsGrid() {
+            const container = document.getElementById('orgs-grid');
+            container.innerHTML = '';
+
+            if (globalDocs.length === 0) {
+                container.innerHTML = '<div class="empty-state">У вас пока нет документов.</div>';
                 return;
             }
 
-            state.currentUser = session.user;
-            const firstName = (profile && profile.first_name) || 'Гражданин';
-            document.getElementById('welcome-text').textContent = `Здравствуйте, ${firstName}!`;
+            const orgCounts = {};
+            globalDocs.forEach(d => {
+                if (!orgCounts[d.organization_id]) orgCounts[d.organization_id] = 0;
+                orgCounts[d.organization_id]++;
+            });
 
-            if (profile) {
-                document.getElementById('prof-name').textContent =
-                    `${profile.last_name || ''} ${profile.first_name || ''} ${profile.patronymic || ''}`.trim() || '—';
-                document.getElementById('prof-dob').textContent =
-                    profile.dob ? new Date(profile.dob).toLocaleDateString('ru-RU') : '—';
-                document.getElementById('prof-pob').textContent = profile.pob || '—';
-                document.getElementById('prof-address').textContent = profile.address || '—';
-                document.getElementById('prof-passport').textContent =
-                    `${profile.pass_series || ''} ${profile.pass_number || ''}`.trim() || '—';
-                document.getElementById('prof-driver-license').textContent = profile.driver_license || '—';
-            }
-
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('dashboard-screen').style.display = 'block';
-            
-            // Загружаем и документы, и заявления
-            await loadMyDocs(session.user.id);
-            await loadMyApps(session.user.id);
-        } else {
-            document.getElementById('auth-screen').style.display = 'flex';
-            document.getElementById('dashboard-screen').style.display = 'none';
-        }
-    });
-
-    // ============================================================
-    // НАВИГАЦИЯ
-    // ============================================================
-    function switchTab(tabId, element) {
-        state.currentTab = tabId;
-
-        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-        if (element) element.classList.add('active');
-        else {
-            document.querySelectorAll(`.menu-item[onclick*="${tabId}"]`).forEach(el => el.classList.add('active'));
-        }
-
-        ['home', 'docs', 'apps', 'all_docs', 'profile'].forEach(t => {
-            document.getElementById(`tab-${t}`).style.display = 'none';
-        });
-        document.getElementById(`tab-${tabId}`).style.display = 'block';
-
-        const titles = { home: 'Главная', docs: 'Мои документы', apps: 'Мои заявления', all_docs: 'Все документы', profile: 'Профиль' };
-        document.getElementById('topbar-title').textContent = titles[tabId] || '';
-
-        if (tabId === 'docs') resetDocsNav();
-        if (tabId === 'all_docs') renderAllDocs();
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // ============================================================
-    // ЗАГРУЗКА ДОКУМЕНТОВ
-    // ============================================================
-    async function loadMyDocs(userId) {
-        const { data: docs, error } = await supabaseClient
-            .from('documents').select('*')
-            .eq('patient_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error(error);
-            return;
-        }
-
-        state.allDocs = docs || [];
-
-        const { data: orgs } = await supabaseClient.from('organizations').select('id, name');
-        state.orgMap = {};
-        (orgs || []).forEach(o => state.orgMap[o.id] = o.name);
-
-        state.unreadCount = state.allDocs.filter(d => d.is_read === false).length;
-        updateBellBadge();
-
-        renderHomeStats();
-        renderHomeRecent();
-        renderOrgChips();
-        renderAllDocs();
-    }
-
-    // ============================================================
-    // ЗАГРУЗКА ЗАЯВЛЕНИЙ (НОВОЕ)
-    // ============================================================
-    async function loadMyApps(userId) {
-        const { data, error } = await supabaseClient
-            .from('app_requests')
-            .select('*, app_templates(name)')
-            .eq('patient_id', userId)
-            .order('created_at', { ascending: false });
-        
-        if (error) {
-            console.error("Ошибка загрузки заявлений:", error);
-            return;
-        }
-        state.allApps = data || [];
-        renderApps();
-    }
-
-    function renderApps() {
-        const container = document.getElementById('apps-list-container');
-        if (state.allApps.length === 0) {
-            container.innerHTML = '<div class="empty-state">Вы пока не подавали заявлений.</div>';
-            return;
-        }
-
-        const statusMap = {
-            'new': { text: 'Новое', class: 'status-new' },
-            'in_progress': { text: 'В работе', class: 'status-in_progress' },
-            'approved': { text: 'Одобрено', class: 'status-approved' },
-            'rejected': { text: 'Отклонено', class: 'status-rejected' },
-            'needs_clarification': { text: 'Требует уточнения', class: 'status-needs_clarification' },
-            'cancelled': { text: 'Отозвано', class: 'status-cancelled' }
-        };
-
-        container.innerHTML = '';
-        state.allApps.forEach(app => {
-            const tplName = app.app_templates ? app.app_templates.name : 'Заявление';
-            const date = new Date(app.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const status = statusMap[app.status] || { text: app.status, class: '' };
-            
-            let pdfBtn = '';
-            if (app.pdf_path) {
-                const { data: { publicUrl } } = supabaseClient.storage.from('applications').getPublicUrl(app.pdf_path);
-                pdfBtn = `<button class="btn-view" onclick="previewDoc('${publicUrl}')">👁️ Ваше заявление</button>`;
-            }
-            
-            let responseBtn = '';
-            if (app.response_pdf_path) {
-                const { data: { publicUrl } } = supabaseClient.storage.from('applications').getPublicUrl(app.response_pdf_path);
-                responseBtn = `<button class="btn-dl" onclick="previewDoc('${publicUrl}')">📄 Скачать ответ</button>`;
-            }
-
-            let commentHtml = '';
-            if (app.admin_comment) {
-                commentHtml = `<div class="app-comment"><b>Комментарий ведомства:</b><br>${app.admin_comment}</div>`;
-            }
-
-            container.innerHTML += `
-                <div class="app-card">
-                    <div class="app-header">
-                        <div>
-                            <h3 class="app-title">${tplName}</h3>
-                            <div class="app-date">Подано: ${date}</div>
-                        </div>
-                        <span class="status-badge ${status.class}">${status.text}</span>
-                    </div>
-                    <div class="app-body">
-                        ${app.subject ? `<b>Тема:</b> ${app.subject}<br>` : ''}
-                        ${pdfBtn} ${responseBtn}
-                    </div>
-                    ${commentHtml}
-                </div>
-            `;
-        });
-    }
-
-    async function openCreateAppModal() {
-        document.getElementById('create-app-modal').style.display = 'flex';
-        const list = document.getElementById('create-app-list');
-        list.innerHTML = '<p>Загрузка...</p>';
-        
-        const { data: templates, error } = await supabaseClient.from('app_templates').select('*');
-        if (error || !templates || templates.length === 0) {
-            list.innerHTML = '<p style="text-align:center;">Нет доступных форм.</p>';
-            return;
-        }
-
-        list.innerHTML = '';
-        templates.forEach(tpl => {
-            const div = document.createElement('div');
-            div.className = 'notif-item';
-            div.style.cursor = 'pointer';
-            div.innerHTML = `<h4>${tpl.name}</h4><p>${tpl.description || ''}</p>`;
-            div.onclick = () => {
-                window.location.href = tpl.form_url;
-            };
-            list.appendChild(div);
-        });
-    }
-
-    function closeCreateAppModal() {
-        document.getElementById('create-app-modal').style.display = 'none';
-    }
-
-    // ============================================================
-    // УВЕДОМЛЕНИЯ
-    // ============================================================
-    function updateBellBadge() {
-        const badge = document.getElementById('bell-badge');
-        if (state.unreadCount > 0) {
-            badge.textContent = state.unreadCount > 99 ? '99+' : state.unreadCount;
-            badge.style.display = 'flex';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-
-    function openNotifications() {
-        const unread = state.allDocs.filter(d => d.is_read === false);
-        const body = document.getElementById('notif-body');
-
-        if (unread.length === 0) {
-            body.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 30px 0;">Нет новых документов</p>';
-        } else {
-            body.innerHTML = '';
-            unread.forEach(doc => {
-                const orgName = state.orgMap[doc.organization_id] || 'Архив';
-                const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-                body.innerHTML += `
-                    <div class="notif-item">
-                        <h4>${doc.document_type} № ${doc.doc_number}</h4>
-                        <p>${orgName} · ${date}</p>
+            for (const [orgId, count] of Object.entries(orgCounts)) {
+                const orgName = orgMap[orgId] || 'Неизвестная организация';
+                container.innerHTML += `
+                    <div class="tile" onclick="navToTypes(${orgId}, '${orgName}')">
+                        <div class="tile-icon">🏢</div>
+                        <h3>${orgName}</h3>
+                        <p>Документов: ${count}</p>
                     </div>
                 `;
-            });
-        }
-        document.getElementById('notif-modal').style.display = 'flex';
-    }
-
-    function closeNotifications() {
-        document.getElementById('notif-modal').style.display = 'none';
-    }
-
-    async function markAllRead() {
-        if (state.unreadCount === 0) {
-            closeNotifications();
-            return;
-        }
-        const { error } = await supabaseClient
-            .from('documents')
-            .update({ is_read: true })
-            .eq('patient_id', state.currentUser.id)
-            .eq('is_read', false);
-
-        if (error) {
-            showToast('Ошибка: ' + error.message);
-            return;
-        }
-
-        state.allDocs.forEach(d => d.is_read = true);
-        state.unreadCount = 0;
-        updateBellBadge();
-        closeNotifications();
-        showToast('Все уведомления прочитаны');
-    }
-
-    // ============================================================
-    // ГЛАВНАЯ — СТАТИСТИКА
-    // ============================================================
-    function renderHomeStats() {
-        const total = state.allDocs.length;
-        const active = state.allDocs.filter(d => d.status === 'active' || !d.status).length;
-        const revoked = total - active;
-
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-active').textContent = active;
-        document.getElementById('stat-revoked').textContent = revoked;
-
-        // По организациям
-        const byOrg = {};
-        state.allDocs.forEach(d => {
-            byOrg[d.organization_id] = (byOrg[d.organization_id] || 0) + 1;
-        });
-
-        const orgsEl = document.getElementById('stat-orgs');
-        if (Object.keys(byOrg).length === 0) {
-            orgsEl.innerHTML = '—';
-        } else {
-            orgsEl.innerHTML = Object.entries(byOrg)
-                .map(([orgId, count]) => {
-                    const name = state.orgMap[orgId] || 'Архив';
-                    return `<span class="org-mini-chip">${name}: ${count}</span>`;
-                })
-                .join('');
-        }
-    }
-
-    function renderHomeRecent() {
-        const container = document.getElementById('home-recent-docs');
-        const recent = state.allDocs.slice(0, 3);
-
-        if (recent.length === 0) {
-            container.innerHTML = '<div class="empty-state">У вас пока нет документов.</div>';
-            return;
-        }
-
-        container.innerHTML = `
-            <div class="table-wrap">
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr>
-                            <th>Номер</th><th>Тип</th><th>Организация</th><th>Дата</th><th>Действия</th>
-                        </tr></thead>
-                        <tbody id="home-recent-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        const tbody = document.getElementById('home-recent-body');
-        recent.forEach(doc => {
-            const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-            const orgName = state.orgMap[doc.organization_id] || 'Архив';
-            const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            const isActive = doc.status === 'active' || !doc.status;
-            const statusBadge = isActive
-                ? '<span class="status-badge status-active">Действителен</span>'
-                : '<span class="status-badge status-revoked">Аннулирован</span>';
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${doc.doc_number}</td>
-                    <td>${doc.document_type} ${statusBadge}</td>
-                    <td>${orgName}</td>
-                    <td>${date}</td>
-                    <td>
-                        <button class="btn-view" onclick="previewDoc('${publicUrl}')">👁️</button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-
-    // ============================================================
-    // ЧИПЫ ОРГАНИЗАЦИЙ
-    // ============================================================
-    function renderOrgChips() {
-        const container = document.getElementById('org-chips');
-        const usedOrgs = new Set(state.allDocs.map(d => d.organization_id));
-
-        let html = `<div class="chip ${state.allOrgFilter === 'all' ? 'active' : ''}" onclick="setOrgFilter('all')">Все организации</div>`;
-
-        const orgIcons = { 1: '🚑', 2: '🚓', 3: '🏛️', 4: '🪖' };
-        const orgShort = { 1: 'ЕСС', 2: 'МВД', 3: 'Правительство', 4: 'ВЧ' };
-
-        [1, 2, 3, 4].forEach(orgId => {
-            if (!usedOrgs.has(orgId)) return;
-            const isActive = state.allOrgFilter === orgId;
-            html += `<div class="chip ${isActive ? 'active' : ''}" onclick="setOrgFilter(${orgId})">${orgIcons[orgId] || '📁'} ${orgShort[orgId] || state.orgMap[orgId]}</div>`;
-        });
-
-        container.innerHTML = html;
-    }
-
-    // ============================================================
-    // ВСЕ ДОКУМЕНТЫ — ТАБЛИЦА
-    // ============================================================
-    function onAllDocsSearch() {
-        state.allSearch = document.getElementById('search-all').value.toLowerCase();
-        state.allPage = 1;
-        renderAllDocs();
-    }
-
-    function setStatusFilter(status) {
-        state.allStatusFilter = status;
-        document.querySelectorAll('#status-chips .chip').forEach(c => {
-            c.classList.toggle('active', c.dataset.status === status);
-        });
-        state.allPage = 1;
-        renderAllDocs();
-    }
-
-    function setOrgFilter(orgId) {
-        state.allOrgFilter = orgId;
-        renderOrgChips();
-        state.allPage = 1;
-        renderAllDocs();
-    }
-
-    function changeSort(col) {
-        if (state.allSortCol === col) {
-            state.allSortAsc = !state.allSortAsc;
-        } else {
-            state.allSortCol = col;
-            state.allSortAsc = true;
-        }
-        document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '');
-        document.querySelectorAll('th').forEach(el => el.classList.remove('sorted'));
-        const arrowEl = document.getElementById(`sort-${col}`);
-        if (arrowEl) {
-            arrowEl.textContent = state.allSortAsc ? '▲' : '▼';
-            arrowEl.closest('th').classList.add('sorted');
-        }
-        renderAllDocs();
-    }
-
-    function getFilteredDocs() {
-        let filtered = [...state.allDocs];
-
-        if (state.allStatusFilter === 'active') {
-            filtered = filtered.filter(d => d.status === 'active' || !d.status);
-        } else if (state.allStatusFilter === 'revoked') {
-            filtered = filtered.filter(d => d.status === 'revoked');
-        }
-
-        if (state.allOrgFilter !== 'all') {
-            filtered = filtered.filter(d => d.organization_id == state.allOrgFilter);
-        }
-
-        if (state.allSearch) {
-            const q = state.allSearch;
-            filtered = filtered.filter(d => {
-                const orgName = (state.orgMap[d.organization_id] || '').toLowerCase();
-                return d.doc_number.toLowerCase().includes(q)
-                    || d.document_type.toLowerCase().includes(q)
-                    || orgName.includes(q);
-            });
-        }
-
-        filtered.sort((a, b) => {
-            let va = a[state.allSortCol];
-            let vb = b[state.allSortCol];
-
-            if (state.allSortCol === 'org_name') {
-                va = state.orgMap[a.organization_id] || '';
-                vb = state.orgMap[b.organization_id] || '';
             }
-            if (state.allSortCol === 'created_at') {
-                va = new Date(va).getTime();
-                vb = new Date(vb).getTime();
-            }
-            if (state.allSortCol === 'status') {
-                va = (a.status === 'revoked') ? 1 : 0;
-                vb = (b.status === 'revoked') ? 1 : 0;
-            }
-
-            if (va < vb) return state.allSortAsc ? -1 : 1;
-            if (va > vb) return state.allSortAsc ? 1 : -1;
-            return 0;
-        });
-
-        return filtered;
-    }
-
-    function renderAllDocs() {
-        const tbody = document.getElementById('all-docs-body');
-        const filtered = getFilteredDocs();
-        const total = filtered.length;
-        const totalPages = Math.max(1, Math.ceil(total / state.allPerPage));
-
-        if (state.allPage > totalPages) state.allPage = totalPages;
-
-        const start = (state.allPage - 1) * state.allPerPage;
-        const pageItems = filtered.slice(start, start + state.allPerPage);
-
-        if (pageItems.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color:var(--text-muted);">Документов не найдено</td></tr>';
-        } else {
-            tbody.innerHTML = '';
-            pageItems.forEach(doc => {
-                const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-                const orgName = state.orgMap[doc.organization_id] || 'Архив';
-                const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-                const isActive = doc.status === 'active' || !doc.status;
-                const statusBadge = isActive
-                    ? '<span class="status-badge status-active">Действителен</span>'
-                    : '<span class="status-badge status-revoked">Аннулирован</span>';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>
-                            <div class="doc-num-cell">
-                                <b>${doc.doc_number}</b>
-                                <button class="copy-btn" onclick="copyDocNumber('${doc.doc_number}')" title="Скопировать">📋</button>
-                            </div>
-                        </td>
-                        <td>${doc.document_type}</td>
-                        <td>${orgName}</td>
-                        <td>${date}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <button class="btn-view" onclick="previewDoc('${publicUrl}')">👁️</button>
-                            <a href="${publicUrl}" target="_blank" class="btn-dl">⬇️</a>
-                        </td>
-                    </tr>
-                `;
-            });
         }
 
-        renderPagination(totalPages);
-    }
+        function navToTypes(orgId, orgName) {
+            docNavState.level = 2;
+            docNavState.selectedOrgId = orgId;
+            docNavState.selectedOrgName = orgName;
 
-    function renderPagination(totalPages) {
-        const container = document.getElementById('pagination');
-        if (totalPages <= 1) {
+            document.getElementById('docs-breadcrumb').style.display = 'flex';
+            document.getElementById('breadcrumb-text').textContent = ` / ${orgName}`;
+            document.getElementById('docs-page-title').textContent = `Типы документов (${orgName})`;
+            
+            document.getElementById('orgs-grid').style.display = 'none';
+            document.getElementById('types-grid').style.display = 'grid';
+            document.getElementById('specific-docs-list').style.display = 'none';
+            renderTypesGrid();
+        }
+
+        function renderTypesGrid() {
+            const container = document.getElementById('types-grid');
             container.innerHTML = '';
-            return;
-        }
 
-        let html = '';
-        html += `<button class="page-btn" onclick="changePage(-1)" ${state.allPage === 1 ? 'disabled' : ''}>←</button>`;
+            const filteredDocs = globalDocs.filter(d => d.organization_id == docNavState.selectedOrgId);
+            const typeCounts = {};
+            filteredDocs.forEach(d => {
+                if (!typeCounts[d.document_type]) typeCounts[d.document_type] = 0;
+                typeCounts[d.document_type]++;
+            });
 
-        const pages = [];
-        if (totalPages <= 7) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            pages.push(1);
-            if (state.allPage > 3) pages.push('...');
-            for (let i = Math.max(2, state.allPage - 1); i <= Math.min(totalPages - 1, state.allPage + 1); i++) {
-                pages.push(i);
+            for (const [type, count] of Object.entries(typeCounts)) {
+                let icon = '📄';
+                if (type.includes('ВВК')) icon = '🩺';
+                if (type.includes('Повестка')) icon = '✉️';
+                if (type.includes('Приказ')) icon = '📜';
+                if (type.includes('билет')) icon = '📘';
+                if (type.includes('Аренда')) icon = '🚗';
+
+                container.innerHTML += `
+                    <div class="tile" onclick="navToSpecificDocs('${type}')">
+                        <div class="tile-icon">${icon}</div>
+                        <h3>${type}</h3>
+                        <p>Документов: ${count}</p>
+                    </div>
+                `;
             }
-            if (state.allPage < totalPages - 2) pages.push('...');
-            pages.push(totalPages);
         }
 
-        pages.forEach(p => {
-            if (p === '...') {
-                html += `<span class="page-info">...</span>`;
-            } else {
-                html += `<button class="page-btn ${p === state.allPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+        function navToSpecificDocs(type) {
+            docNavState.level = 3;
+            docNavState.selectedType = type;
+
+            document.getElementById('breadcrumb-text').textContent = ` / ${docNavState.selectedOrgName} / ${type}`;
+            document.getElementById('docs-page-title').textContent = type;
+            
+            document.getElementById('orgs-grid').style.display = 'none';
+            document.getElementById('types-grid').style.display = 'none';
+            document.getElementById('specific-docs-list').style.display = 'grid';
+            renderSpecificDocs();
+        }
+
+        function navDocsBack() {
+            if (docNavState.level === 3) navToTypes(docNavState.selectedOrgId, docNavState.selectedOrgName);
+            else if (docNavState.level === 2) resetDocsNav();
+        }
+
+        function renderSpecificDocs() {
+            const container = document.getElementById('specific-docs-list');
+            container.innerHTML = '';
+            const filtered = globalDocs.filter(d => d.organization_id == docNavState.selectedOrgId && d.document_type === docNavState.selectedType);
+            if (filtered.length === 0) { container.innerHTML = '<div class="empty-state">Нет документов.</div>'; return; }
+            renderDocsList('specific-docs-list', filtered);
+        }
+
+        // ВСЕ ДОКУМЕНТЫ
+        function initAllDocsFilters() {
+            const orgSelect = document.getElementById('filter-org');
+            const typeSelect = document.getElementById('filter-type');
+            const uniqueOrgs = [...new Set(globalDocs.map(d => d.organization_id))];
+            const uniqueTypes = [...new Set(globalDocs.map(d => d.document_type))];
+
+            orgSelect.innerHTML = '<option value="all">Все организации</option>';
+            uniqueOrgs.forEach(orgId => {
+                orgSelect.innerHTML += `<option value="${orgId}">${orgMap[orgId] || 'Неизвестная'}</option>`;
+            });
+
+            typeSelect.innerHTML = '<option value="all">Все типы документов</option>';
+            uniqueTypes.forEach(type => {
+                typeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+            });
+        }
+
+        function renderAllDocs() {
+            const orgFilter = document.getElementById('filter-org').value;
+            const typeFilter = document.getElementById('filter-type').value;
+            let filtered = globalDocs;
+
+            if (orgFilter !== 'all') filtered = filtered.filter(d => d.organization_id == orgFilter);
+            if (typeFilter !== 'all') filtered = filtered.filter(d => d.document_type === typeFilter);
+
+            renderDocsList('all-docs-list', filtered);
+        }
+
+        // УНИВЕРСАЛЬНАЯ ОТРИСОВКА (СО СТАТУСАМИ)
+        function renderDocsList(containerId, docs) {
+            const container = document.getElementById(containerId);
+            
+            if (docs.length === 0) {
+                container.innerHTML = '<div class="empty-state">Нет документов.</div>';
+                return;
             }
-        });
 
-        html += `<button class="page-btn" onclick="changePage(1)" ${state.allPage === totalPages ? 'disabled' : ''}>→</button>`;
-        html += `<div class="page-info" style="width:100%; text-align:center; margin-top:8px;">Страница ${state.allPage} из ${totalPages} (всего: ${getFilteredDocs().length})</div>`;
+            container.innerHTML = '';
+            docs.forEach(doc => {
+                const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                const dateStr = new Date(doc.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+                const orgName = orgMap[doc.organization_id] || 'Архив';
 
-        container.innerHTML = html;
-    }
+                // ЛОГИКА СТАТУСОВ
+                let statusHtml = '';
+                if (doc.status === 'revoked') {
+                    statusHtml = '<span class="status-badge status-revoked">Аннулирован</span>';
+                } else {
+                    statusHtml = '<span class="status-badge status-active">Действителен</span>';
+                }
 
-    function changePage(delta) {
-        const filtered = getFilteredDocs();
-        const totalPages = Math.max(1, Math.ceil(filtered.length / state.allPerPage));
-        state.allPage = Math.min(totalPages, Math.max(1, state.allPage + delta));
-        renderAllDocs();
-    }
-
-    function goToPage(p) {
-        state.allPage = p;
-        renderAllDocs();
-    }
-
-    // ============================================================
-    // КОПИРОВАНИЕ НОМЕРА
-    // ============================================================
-    function copyDocNumber(num) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(num).then(() => {
-                showToast(`Номер ${num} скопирован`);
-            }).catch(() => fallbackCopy(num));
-        } else {
-            fallbackCopy(num);
-        }
-    }
-    function fallbackCopy(text) {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); showToast(`Номер ${text} скопирован`); }
-        catch(e) { showToast('Не удалось скопировать'); }
-        document.body.removeChild(ta);
-    }
-
-    // ============================================================
-    // ЭКСПОРТ CSV
-    // ============================================================
-    function exportToCSV() {
-        const filtered = getFilteredDocs();
-        if (filtered.length === 0) {
-            showToast('Нет документов для экспорта');
-            return;
-        }
-
-        const rows = [['Номер', 'Тип', 'Организация', 'Дата', 'Статус']];
-        filtered.forEach(doc => {
-            const orgName = state.orgMap[doc.organization_id] || 'Архив';
-            const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            const isActive = doc.status === 'active' || !doc.status;
-            rows.push([
-                doc.doc_number,
-                doc.document_type,
-                orgName,
-                date,
-                isActive ? 'Действителен' : 'Аннулирован'
-            ]);
-        });
-
-        const csv = '\uFEFF' + rows.map(row =>
-            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')
-        ).join('\r\n');
-
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Документы_${new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
-
-        showToast(`Экспортировано ${filtered.length} документов`);
-    }
-
-    // ============================================================
-    // МОИ ДОКУМЕНТЫ (ПЛИТКИ)
-    // ============================================================
-    function resetDocsNav() {
-        state.docNavState = { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' };
-        document.getElementById('docs-breadcrumb').style.display = 'none';
-        document.getElementById('docs-page-title').textContent = 'Выберите организацию';
-        document.getElementById('orgs-grid').style.display = 'grid';
-        document.getElementById('types-grid').style.display = 'none';
-        document.getElementById('specific-docs-list').style.display = 'none';
-        renderOrgsGrid();
-    }
-
-    function renderOrgsGrid() {
-        const container = document.getElementById('orgs-grid');
-        container.innerHTML = '';
-
-        if (state.allDocs.length === 0) {
-            container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">У вас пока нет документов.</div>';
-            return;
-        }
-
-        const orgCounts = {};
-        state.allDocs.forEach(d => {
-            orgCounts[d.organization_id] = (orgCounts[d.organization_id] || 0) + 1;
-        });
-
-        const orgIcons = { 1: '🚑', 2: '🚓', 3: '🏛️', 4: '🪖' };
-
-        for (const [orgId, count] of Object.entries(orgCounts)) {
-            const orgName = state.orgMap[orgId] || 'Неизвестная';
-            container.innerHTML += `
-                <div class="tile" onclick="navToTypes(${orgId}, '${orgName.replace(/'/g, "\\'")}')">
-                    <div class="tile-icon">${orgIcons[orgId] || '🏢'}</div>
-                    <h3>${orgName}</h3>
-                    <p>Документов: ${count}</p>
-                </div>
-            `;
-        }
-    }
-
-    function navToTypes(orgId, orgName) {
-        state.docNavState.level = 2;
-        state.docNavState.selectedOrgId = orgId;
-        state.docNavState.selectedOrgName = orgName;
-
-        document.getElementById('docs-breadcrumb').style.display = 'flex';
-        document.getElementById('breadcrumb-text').textContent = ` / ${orgName}`;
-        document.getElementById('docs-page-title').textContent = `Типы документов`;
-        document.getElementById('orgs-grid').style.display = 'none';
-        document.getElementById('types-grid').style.display = 'grid';
-        document.getElementById('specific-docs-list').style.display = 'none';
-        renderTypesGrid();
-    }
-
-    function renderTypesGrid() {
-        const container = document.getElementById('types-grid');
-        container.innerHTML = '';
-
-        const filtered = state.allDocs.filter(d => d.organization_id == state.docNavState.selectedOrgId);
-        const typeCounts = {};
-        filtered.forEach(d => {
-            typeCounts[d.document_type] = (typeCounts[d.document_type] || 0) + 1;
-        });
-
-        for (const [type, count] of Object.entries(typeCounts)) {
-            let icon = '📄';
-            if (type.includes('ВВК') || type.includes('Медицин')) icon = '🩺';
-            if (type.includes('Повестка')) icon = '✉️';
-            if (type.includes('Приказ')) icon = '📜';
-            if (type.includes('билет')) icon = '📘';
-            if (type.includes('Аренда')) icon = '🚗';
-            if (type.includes('задержан')) icon = '🚔';
-            if (type.includes('досмотр')) icon = '🔍';
-
-            container.innerHTML += `
-                <div class="tile" onclick="navToSpecificDocs('${type.replace(/'/g, "\\'")}')">
-                    <div class="tile-icon">${icon}</div>
-                    <h3>${type}</h3>
-                    <p>Документов: ${count}</p>
-                </div>
-            `;
-        }
-    }
-
-    function navToSpecificDocs(type) {
-        state.docNavState.level = 3;
-        state.docNavState.selectedType = type;
-
-        document.getElementById('breadcrumb-text').textContent =
-            ` / ${state.docNavState.selectedOrgName} / ${type}`;
-        document.getElementById('docs-page-title').textContent = type;
-        document.getElementById('orgs-grid').style.display = 'none';
-        document.getElementById('types-grid').style.display = 'none';
-        document.getElementById('specific-docs-list').style.display = 'block';
-        renderSpecificDocs();
-    }
-
-    function navDocsBack() {
-        if (state.docNavState.level === 3) navToTypes(state.docNavState.selectedOrgId, state.docNavState.selectedOrgName);
-        else if (state.docNavState.level === 2) resetDocsNav();
-    }
-
-    function renderSpecificDocs() {
-        const container = document.getElementById('specific-docs-list');
-        const filtered = state.allDocs.filter(d =>
-            d.organization_id == state.docNavState.selectedOrgId &&
-            d.document_type === state.docNavState.selectedType
-        );
-
-        if (filtered.length === 0) {
-            container.innerHTML = '<div class="empty-state">Нет документов.</div>';
-            return;
-        }
-
-        container.innerHTML = `
-            <div class="table-wrap">
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr>
-                            <th>Номер</th><th>Дата</th><th>Статус</th><th>Действия</th>
-                        </tr></thead>
-                        <tbody id="specific-docs-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        const tbody = document.getElementById('specific-docs-body');
-        filtered.forEach(doc => {
-            const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-            const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            const isActive = doc.status === 'active' || !doc.status;
-            const statusBadge = isActive
-                ? '<span class="status-badge status-active">Действителен</span>'
-                : '<span class="status-badge status-revoked">Аннулирован</span>';
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>
-                        <div class="doc-num-cell">
-                            <b>${doc.doc_number}</b>
-                            <button class="copy-btn" onclick="copyDocNumber('${doc.doc_number}')" title="Скопировать">📋</button>
+                container.innerHTML += `
+                    <div class="doc-card">
+                        <div class="doc-info">
+                            <div class="doc-org">${orgName}</div>
+                            <h4>${doc.document_type} ${statusHtml}</h4>
+                            <p>Номер: <b>${doc.doc_number}</b> &nbsp;|&nbsp; Дата: ${dateStr}</p>
                         </div>
-                    </td>
-                    <td>${date}</td>
-                    <td>${statusBadge}</td>
-                    <td>
-                        <button class="btn-view" onclick="previewDoc('${publicUrl}')">👁️</button>
-                        <a href="${publicUrl}" target="_blank" class="btn-dl">⬇️</a>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-
-    // ============================================================
-    // ПРОСМОТР PDF
-    // ============================================================
-    function previewDoc(url) {
-        document.getElementById('preview-frame').src = url;
-        document.getElementById('preview-download-btn').href = url;
-        document.getElementById('preview-modal').style.display = 'flex';
-    }
-    function closePreview() {
-        document.getElementById('preview-modal').style.display = 'none';
-        document.getElementById('preview-frame').src = '';
-    }
-
-    // Закрытие модалок по клику вне
-    document.getElementById('preview-modal').addEventListener('click', e => {
-        if (e.target.id === 'preview-modal') closePreview();
-    });
-    document.getElementById('notif-modal').addEventListener('click', e => {
-        if (e.target.id === 'notif-modal') closeNotifications();
-    });
-    document.getElementById('create-app-modal').addEventListener('click', e => {
-        if (e.target.id === 'create-app-modal') closeCreateAppModal();
-    });
-</script>
+                        <div class="doc-actions">
+                            <button onclick="previewDoc('${publicUrl}')" class="btn-view">👁️ Просмотр</button>
+                            <a href="${publicUrl}" target="_blank" class="btn-dl">⬇️ Скачать</a>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
 </body>
 </html>
