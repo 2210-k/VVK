@@ -91,7 +91,7 @@
         }
         .logo-area h2 { margin: 0; color: var(--primary-dark); font-size: 20px; }
         .logo-area p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 12px; }
-        .menu { flex: 1; padding: 20px 0; }
+        .menu { flex: 1; padding: 20px 0; overflow-y: auto; }
         .menu-item {
             padding: 15px 25px; cursor: pointer;
             display: flex; align-items: center; gap: 12px;
@@ -291,15 +291,17 @@
         }
         .status-active { background: rgba(16,185,129,0.15); color: var(--primary); }
         .status-revoked { background: rgba(220,38,38,0.15); color: var(--danger); }
+        
+        /* Статусы заявлений */
+        .status-new { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .status-in_progress { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .status-approved { background: rgba(16,185,129,0.15); color: var(--primary); }
+        .status-rejected { background: rgba(220,38,38,0.15); color: var(--danger); }
+        .status-needs_clarification { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+        .status-cancelled { background: var(--bg-muted); color: var(--text-muted); }
 
-        .doc-num-cell {
-            display: flex; align-items: center; gap: 6px;
-        }
-        .copy-btn {
-            background: none; border: none; cursor: pointer;
-            font-size: 14px; padding: 2px; opacity: 0.5;
-            transition: 0.2s;
-        }
+        .doc-num-cell { display: flex; align-items: center; gap: 6px; }
+        .copy-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px; opacity: 0.5; transition: 0.2s; }
         .copy-btn:hover { opacity: 1; }
 
         .btn-view, .btn-dl {
@@ -323,22 +325,13 @@
             padding: 8px 14px; border-radius: 6px; cursor: pointer;
             font-weight: 600; color: var(--text); min-width: 40px;
         }
-        .page-btn:hover:not(:disabled) {
-            border-color: var(--primary); color: var(--primary);
-        }
-        .page-btn.active {
-            background: var(--primary); color: white; border-color: var(--primary);
-        }
+        .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .page-info {
-            color: var(--text-muted); font-size: 14px; margin: 0 10px;
-        }
+        .page-info { color: var(--text-muted); font-size: 14px; margin: 0 10px; }
 
         /* === ЭКСПОРТ === */
-        .actions-bottom {
-            display: flex; justify-content: flex-end;
-            gap: 10px; margin-top: 10px;
-        }
+        .actions-bottom { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
         .btn-export {
             background: var(--bg-card); border: 1px solid var(--border);
             padding: 10px 18px; border-radius: 8px; cursor: pointer;
@@ -361,9 +354,7 @@
             width: 200px; font-weight: 600; color: var(--text-muted);
             font-size: 14px;
         }
-        .profile-value {
-            flex: 1; color: var(--text); font-weight: 500;
-        }
+        .profile-value { flex: 1; color: var(--text); font-weight: 500; }
 
         /* === ПУСТОЕ СОСТОЯНИЕ === */
         .empty-state {
@@ -452,9 +443,7 @@
         /* === МОБИЛЬНОЕ МЕНЮ === */
         .mobile-nav { display: none; }
 
-        /* =============================================================
-           📱 МОБИЛЬНАЯ АДАПТАЦИЯ
-           ============================================================= */
+        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         @media (max-width: 768px) {
             body { padding-bottom: 75px; }
             .sidebar { display: none; }
@@ -469,10 +458,7 @@
             .welcome-banner h1 { font-size: 19px; }
             .welcome-banner p { font-size: 13px; }
 
-            .stats-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px; margin-bottom: 20px;
-            }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
             .stat-card { padding: 14px; }
             .stat-card h3 { font-size: 11px; }
             .stat-card .value { font-size: 22px; }
@@ -512,7 +498,6 @@
             .notif-header { padding: 15px; }
             .notif-header h3 { font-size: 16px; }
 
-            /* Мобильное меню */
             .mobile-nav {
                 display: flex; position: fixed; bottom: 0; left: 0;
                 width: 100%; background: var(--bg-card);
@@ -540,6 +525,15 @@
             .stat-card .value { font-size: 20px; }
             .mobile-nav .menu-item { font-size: 9px; }
         }
+        
+        /* === СПЕЦИФИКА ЗАЯВЛЕНИЙ === */
+        .app-card { background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); }
+        .app-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+        .app-title { font-weight: bold; font-size: 16px; color: var(--text); margin: 0; }
+        .app-date { font-size: 13px; color: var(--text-muted); }
+        .app-body { font-size: 14px; color: var(--text); margin-bottom: 10px; white-space: pre-wrap; }
+        .app-comment { background: var(--bg-muted); padding: 10px; border-radius: 6px; font-size: 13px; margin-top: 10px; }
+        .app-comment b { color: var(--primary-dark); }
     </style>
 </head>
 <body>
@@ -570,6 +564,7 @@
             <div class="menu">
                 <div class="menu-item active" onclick="switchTab('home', this)">🏠 Главная</div>
                 <div class="menu-item" onclick="switchTab('docs', this)">📄 Мои документы</div>
+                <div class="menu-item" onclick="switchTab('apps', this)">📝 Мои заявления</div> <!-- НОВОЕ -->
                 <div class="menu-item" onclick="switchTab('all_docs', this)">🗂️ Все документы</div>
                 <div class="menu-item" onclick="switchTab('profile', this)">👤 Мой профиль</div>
             </div>
@@ -582,6 +577,7 @@
         <div class="mobile-nav">
             <div class="menu-item active" onclick="switchTab('home', this)"><span>🏠</span>Главная</div>
             <div class="menu-item" onclick="switchTab('docs', this)"><span>📄</span>Мои</div>
+            <div class="menu-item" onclick="switchTab('apps', this)"><span>📝</span>Заявки</div> <!-- НОВОЕ -->
             <div class="menu-item" onclick="switchTab('all_docs', this)"><span>🗂️</span>Все</div>
             <div class="menu-item" onclick="switchTab('profile', this)"><span>👤</span>Профиль</div>
         </div>
@@ -645,6 +641,18 @@
                     <div id="orgs-grid" class="tiles-grid"></div>
                     <div id="types-grid" class="tiles-grid" style="display: none;"></div>
                     <div id="specific-docs-list" style="display: none;"></div>
+                </div>
+
+                <!-- ВКЛАДКА: МОИ ЗАЯВЛЕНИЯ (НОВОЕ) -->
+                <div id="tab-apps" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                        <h2 class="section-title" style="margin:0;">Мои заявления</h2>
+                        <button class="btn" onclick="openCreateAppModal()" style="width:auto; padding: 10px 20px;">➕ Подать заявление</button>
+                    </div>
+                    
+                    <div id="apps-list-container">
+                        <p style="color:var(--text-muted);">Загрузка...</p>
+                    </div>
                 </div>
 
                 <!-- ВКЛАДКА: ВСЕ ДОКУМЕНТЫ -->
@@ -733,6 +741,19 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА ВЫБОРА ЗАЯВЛЕНИЯ (НОВОЕ) -->
+    <div id="create-app-modal" class="notif-box" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1500; justify-content:center; align-items:center; padding:15px; max-height:none;">
+        <div class="notif-box" style="max-height:85vh;">
+            <div class="notif-header">
+                <h3>Выберите тип заявления</h3>
+                <button class="icon-btn" onclick="closeCreateAppModal()">✕</button>
+            </div>
+            <div class="notif-body" id="create-app-list" style="padding:15px 20px;">
+                <p style="text-align:center;">Загрузка...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST -->
     <div id="toast"></div>
 
@@ -749,6 +770,7 @@
         currentTab: 'home',
         currentUser: null,
         allDocs: [],
+        allApps: [], // НОВОЕ
         orgMap: {},
         docNavState: { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' },
         // Все документы
@@ -835,7 +857,10 @@
 
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('dashboard-screen').style.display = 'block';
+            
+            // Загружаем и документы, и заявления
             await loadMyDocs(session.user.id);
+            await loadMyApps(session.user.id);
         } else {
             document.getElementById('auth-screen').style.display = 'flex';
             document.getElementById('dashboard-screen').style.display = 'none';
@@ -854,17 +879,17 @@
             document.querySelectorAll(`.menu-item[onclick*="${tabId}"]`).forEach(el => el.classList.add('active'));
         }
 
-        ['home', 'docs', 'all_docs', 'profile'].forEach(t => {
+        ['home', 'docs', 'apps', 'all_docs', 'profile'].forEach(t => {
             document.getElementById(`tab-${t}`).style.display = 'none';
         });
         document.getElementById(`tab-${tabId}`).style.display = 'block';
 
-        const titles = { home: 'Главная', docs: 'Мои документы', all_docs: 'Все документы', profile: 'Профиль' };
+        const titles = { home: 'Главная', docs: 'Мои документы', apps: 'Мои заявления', all_docs: 'Все документы', profile: 'Профиль' };
         document.getElementById('topbar-title').textContent = titles[tabId] || '';
 
         if (tabId === 'docs') resetDocsNav();
         if (tabId === 'all_docs') renderAllDocs();
-
+        
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -888,15 +913,117 @@
         state.orgMap = {};
         (orgs || []).forEach(o => state.orgMap[o.id] = o.name);
 
-        // Непрочитанные
         state.unreadCount = state.allDocs.filter(d => d.is_read === false).length;
         updateBellBadge();
 
-        // Рендеры
         renderHomeStats();
         renderHomeRecent();
         renderOrgChips();
         renderAllDocs();
+    }
+
+    // ============================================================
+    // ЗАГРУЗКА ЗАЯВЛЕНИЙ (НОВОЕ)
+    // ============================================================
+    async function loadMyApps(userId) {
+        const { data, error } = await supabaseClient
+            .from('app_requests')
+            .select('*, app_templates(name)')
+            .eq('patient_id', userId)
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error("Ошибка загрузки заявлений:", error);
+            return;
+        }
+        state.allApps = data || [];
+        renderApps();
+    }
+
+    function renderApps() {
+        const container = document.getElementById('apps-list-container');
+        if (state.allApps.length === 0) {
+            container.innerHTML = '<div class="empty-state">Вы пока не подавали заявлений.</div>';
+            return;
+        }
+
+        const statusMap = {
+            'new': { text: 'Новое', class: 'status-new' },
+            'in_progress': { text: 'В работе', class: 'status-in_progress' },
+            'approved': { text: 'Одобрено', class: 'status-approved' },
+            'rejected': { text: 'Отклонено', class: 'status-rejected' },
+            'needs_clarification': { text: 'Требует уточнения', class: 'status-needs_clarification' },
+            'cancelled': { text: 'Отозвано', class: 'status-cancelled' }
+        };
+
+        container.innerHTML = '';
+        state.allApps.forEach(app => {
+            const tplName = app.app_templates ? app.app_templates.name : 'Заявление';
+            const date = new Date(app.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const status = statusMap[app.status] || { text: app.status, class: '' };
+            
+            let pdfBtn = '';
+            if (app.pdf_path) {
+                const { data: { publicUrl } } = supabaseClient.storage.from('applications').getPublicUrl(app.pdf_path);
+                pdfBtn = `<button class="btn-view" onclick="previewDoc('${publicUrl}')">👁️ Ваше заявление</button>`;
+            }
+            
+            let responseBtn = '';
+            if (app.response_pdf_path) {
+                const { data: { publicUrl } } = supabaseClient.storage.from('applications').getPublicUrl(app.response_pdf_path);
+                responseBtn = `<button class="btn-dl" onclick="previewDoc('${publicUrl}')">📄 Скачать ответ</button>`;
+            }
+
+            let commentHtml = '';
+            if (app.admin_comment) {
+                commentHtml = `<div class="app-comment"><b>Комментарий ведомства:</b><br>${app.admin_comment}</div>`;
+            }
+
+            container.innerHTML += `
+                <div class="app-card">
+                    <div class="app-header">
+                        <div>
+                            <h3 class="app-title">${tplName}</h3>
+                            <div class="app-date">Подано: ${date}</div>
+                        </div>
+                        <span class="status-badge ${status.class}">${status.text}</span>
+                    </div>
+                    <div class="app-body">
+                        ${app.subject ? `<b>Тема:</b> ${app.subject}<br>` : ''}
+                        ${pdfBtn} ${responseBtn}
+                    </div>
+                    ${commentHtml}
+                </div>
+            `;
+        });
+    }
+
+    async function openCreateAppModal() {
+        document.getElementById('create-app-modal').style.display = 'flex';
+        const list = document.getElementById('create-app-list');
+        list.innerHTML = '<p>Загрузка...</p>';
+        
+        const { data: templates, error } = await supabaseClient.from('app_templates').select('*');
+        if (error || !templates || templates.length === 0) {
+            list.innerHTML = '<p style="text-align:center;">Нет доступных форм.</p>';
+            return;
+        }
+
+        list.innerHTML = '';
+        templates.forEach(tpl => {
+            const div = document.createElement('div');
+            div.className = 'notif-item';
+            div.style.cursor = 'pointer';
+            div.innerHTML = `<h4>${tpl.name}</h4><p>${tpl.description || ''}</p>`;
+            div.onclick = () => {
+                window.location.href = tpl.form_url;
+            };
+            list.appendChild(div);
+        });
+    }
+
+    function closeCreateAppModal() {
+        document.getElementById('create-app-modal').style.display = 'none';
     }
 
     // ============================================================
@@ -1060,7 +1187,7 @@
     }
 
     // ============================================================
-    // ВСЕ ДОКУМЕНТЫ — ТАБЛИЦА С СОРТИРОВКОЙ И ПАГИНАЦИЕЙ
+    // ВСЕ ДОКУМЕНТЫ — ТАБЛИЦА
     // ============================================================
     function onAllDocsSearch() {
         state.allSearch = document.getElementById('search-all').value.toLowerCase();
@@ -1091,7 +1218,6 @@
             state.allSortCol = col;
             state.allSortAsc = true;
         }
-        // Иконки
         document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '');
         document.querySelectorAll('th').forEach(el => el.classList.remove('sorted'));
         const arrowEl = document.getElementById(`sort-${col}`);
@@ -1105,19 +1231,16 @@
     function getFilteredDocs() {
         let filtered = [...state.allDocs];
 
-        // Статус
         if (state.allStatusFilter === 'active') {
             filtered = filtered.filter(d => d.status === 'active' || !d.status);
         } else if (state.allStatusFilter === 'revoked') {
             filtered = filtered.filter(d => d.status === 'revoked');
         }
 
-        // Организация
         if (state.allOrgFilter !== 'all') {
             filtered = filtered.filter(d => d.organization_id == state.allOrgFilter);
         }
 
-        // Поиск
         if (state.allSearch) {
             const q = state.allSearch;
             filtered = filtered.filter(d => {
@@ -1128,7 +1251,6 @@
             });
         }
 
-        // Сортировка
         filtered.sort((a, b) => {
             let va = a[state.allSortCol];
             let vb = b[state.allSortCol];
@@ -1212,7 +1334,6 @@
         let html = '';
         html += `<button class="page-btn" onclick="changePage(-1)" ${state.allPage === 1 ? 'disabled' : ''}>←</button>`;
 
-        // Логика отображения номеров
         const pages = [];
         if (totalPages <= 7) {
             for (let i = 1; i <= totalPages; i++) pages.push(i);
@@ -1486,6 +1607,9 @@
     });
     document.getElementById('notif-modal').addEventListener('click', e => {
         if (e.target.id === 'notif-modal') closeNotifications();
+    });
+    document.getElementById('create-app-modal').addEventListener('click', e => {
+        if (e.target.id === 'create-app-modal') closeCreateAppModal();
     });
 </script>
 </body>
