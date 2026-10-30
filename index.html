@@ -885,5 +885,224 @@
             document.getElementById('page-subtitle').textContent = citizenName;
             
             document.getElementById('content-docs').style.display = 'none';
+            document.getElementById('content-inbox').style.display = 'none';
             document.getElementById('content-citizens-view').style.display = 'none';
-            document.getElementById('content
+            document.getElementById('content-manage-citizens').style.display = 'none';
+            document.getElementById('view-org-tabs').style.display = 'none';
+            document.getElementById('view-all-tabs').style.display = 'none';
+            document.getElementById('btn-create-doc').style.display = 'none';
+            
+            document.getElementById('content-citizen-details').style.display = 'block';
+            document.getElementById('citizen-details-name').textContent = citizenName;
+            document.getElementById('search-citizen-docs').value = '';
+
+            let query = supabaseClient.from('documents').select('*').eq('patient_id', citizenId);
+            if (currentState.originView === 'org') {
+                query = query.eq('organization_id', currentState.originOrgId);
+            }
+
+            const { data: docs } = await query.order('created_at', { ascending: false });
+            currentCitizenDocs = docs || [];
+
+            renderCitizenDocsTable();
+        }
+
+        function renderCitizenDocsTable() {
+            const tbody = document.getElementById('citizen-details-table-body');
+            const query = document.getElementById('search-citizen-docs').value.toLowerCase();
+            
+            let filtered = currentCitizenDocs.filter(doc => 
+                doc.doc_number.toLowerCase().includes(query) || 
+                doc.document_type.toLowerCase().includes(query)
+            );
+
+            tbody.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет документов по вашему запросу.</td></tr>';
+                return;
+            }
+
+            filtered.forEach(doc => {
+                const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+                
+                const isActive = doc.status === 'active' || !doc.status;
+                const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${doc.doc_number}</b></td>
+                        <td>${doc.document_type}</td>
+                        <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+                        <td>${statusHtml}</td>
+                        <td>
+                            <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function goBack() {
+            if (currentState.originView === 'all_docs') {
+                switchView('all_docs');
+            } else {
+                const orgName = orgNames[currentState.originOrgId] || 'ЕСС';
+                switchView('org', currentState.originOrgId, orgName);
+            }
+        }
+
+        // --- СТАТИСТИКА ---
+        async function updateStats() {
+            const { count: citizensCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'patient');
+            document.getElementById('stat-citizens').textContent = citizensCount || 0;
+
+            if (currentState.view === 'org') {
+                const { count: docsCount } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('organization_id', currentState.orgId);
+                document.getElementById('stat-docs').textContent = docsCount || 0;
+                document.getElementById('stat-docs-title').textContent = 'Документов в организации';
+            } else if (currentState.view === 'all_docs') {
+                const { count: docsCount } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true });
+                document.getElementById('stat-docs').textContent = docsCount || 0;
+                document.getElementById('stat-docs-title').textContent = 'Всего документов в базе';
+            } else if (currentState.view === 'inbox') {
+                const { count: newApps } = await supabaseClient.from('app_requests').select('*', { count: 'exact', head: true }).eq('status', 'new');
+                document.getElementById('stat-docs').textContent = newApps || 0;
+                document.getElementById('stat-docs-title').textContent = 'Новых заявлений';
+            } else {
+                document.getElementById('stat-docs').textContent = '-';
+                document.getElementById('stat-docs-title').textContent = 'Документы';
+            }
+        }
+
+        // --- ВСПОМОГАТЕЛЬНЫЕ ---
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closePreview() { document.getElementById('preview-modal').style.display = 'none'; document.getElementById('preview-frame').src = ''; }
+        function previewDoc(url) {
+            document.getElementById('preview-frame').src = url;
+            document.getElementById('preview-download-btn').href = url;
+            document.getElementById('preview-modal').style.display = 'flex';
+        }
+
+        async function openCreateDocModal() {
+            document.getElementById('create-doc-title').textContent = `Создать документ (${currentState.orgName})`;
+            document.getElementById('create-doc-modal').style.display = 'flex';
+            const list = document.getElementById('templates-list');
+            list.innerHTML = '<p>Загрузка...</p>';
+            const { data: templates, error } = await supabaseClient.from('document_templates').select('*').eq('organization_id', currentState.orgId);
+            if (error) { list.innerHTML = `<p style="color:red;">Ошибка: ${error.message}</p>`; return; }
+            list.innerHTML = '';
+            if (!templates || templates.length === 0) { list.innerHTML = '<p style="color:#888;">Нет доступных шаблонов.</p>'; return; }
+            templates.forEach(tpl => {
+                const div = document.createElement('div');
+                div.className = 'template-card';
+                div.innerHTML = `<h4>${tpl.name}</h4><p>${tpl.description || 'Документ'}</p>`;
+                div.onclick = () => {
+                    if (tpl.url === '#') alert('В разработке');
+                    else window.location.href = `${tpl.url}?org=${currentState.orgId}&t=${Date.now()}`;
+                };
+                list.appendChild(div);
+            });
+        }
+
+        async function openEdit(id) {
+            const { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
+            if (error) return alert("Ошибка загрузки: " + error.message);
+            if (!p) return;
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('edit-last-name').value = p.last_name || '';
+            document.getElementById('edit-first-name').value = p.first_name || '';
+            document.getElementById('edit-patronymic').value = p.patronymic || '';
+            document.getElementById('edit-dob').value = p.dob || '';
+            document.getElementById('edit-pob').value = p.pob || '';
+            document.getElementById('edit-address').value = p.address || '';
+            document.getElementById('edit-pass-series').value = p.pass_series || '';
+            document.getElementById('edit-pass-number').value = p.pass_number || '';
+            document.getElementById('edit-driver-license').value = p.driver_license || '';
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        async function saveCitizen() {
+            const id = document.getElementById('edit-id').value;
+            const updates = {
+                last_name: document.getElementById('edit-last-name').value,
+                first_name: document.getElementById('edit-first-name').value,
+                patronymic: document.getElementById('edit-patronymic').value,
+                dob: document.getElementById('edit-dob').value || null,
+                pob: document.getElementById('edit-pob').value,
+                address: document.getElementById('edit-address').value,
+                pass_series: document.getElementById('edit-pass-series').value,
+                pass_number: document.getElementById('edit-pass-number').value,
+                driver_license: document.getElementById('edit-driver-license').value
+            };
+            const { error } = await supabaseClient.from('profiles').update(updates).eq('id', id);
+            if (error) alert("Ошибка: " + error.message);
+            else { closeModal('edit-modal'); loadCitizens(); }
+        }
+
+        function openAddCitizenModal() {
+            document.getElementById('add-email').value = '';
+            document.getElementById('add-last-name').value = '';
+            document.getElementById('add-first-name').value = '';
+            document.getElementById('add-patronymic').value = '';
+            document.getElementById('add-dob').value = '';
+            document.getElementById('add-pob').value = '';
+            document.getElementById('add-driver-license').value = '';
+            document.getElementById('add-modal').style.display = 'flex';
+        }
+
+        async function addCitizen() {
+            const btn = document.querySelector('#add-modal .btn-save');
+            btn.disabled = true;
+            btn.textContent = 'Создание...';
+
+            const email = document.getElementById('add-email').value;
+            const password = document.getElementById('add-password').value;
+
+            const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+            });
+            
+            const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
+            
+            if (authError) {
+                alert("ОШИБКА СОЗДАНИЯ: " + authError.message);
+                btn.disabled = false;
+                btn.textContent = 'Создать';
+                return;
+            }
+
+            const updates = {
+                last_name: document.getElementById('add-last-name').value,
+                first_name: document.getElementById('add-first-name').value,
+                patronymic: document.getElementById('add-patronymic').value,
+                dob: document.getElementById('add-dob').value || null,
+                pob: document.getElementById('add-pob').value,
+                driver_license: document.getElementById('add-driver-license').value,
+                role: 'patient'
+            };
+
+            const { error: profileError } = await supabaseClient.from('profiles').update(updates).eq('id', authData.user.id);
+            
+            btn.disabled = false;
+            btn.textContent = 'Создать';
+
+            if (profileError) {
+                alert("Пользователь создан, но данные не сохранились: " + profileError.message);
+            } else { 
+                alert("Гражданин добавлен!"); 
+                closeModal('add-modal'); 
+                loadCitizens(); 
+            }
+        }
+
+        // Закрытие модалок по клику вне
+        document.getElementById('preview-modal').addEventListener('click', e => {
+            if (e.target.id === 'preview-modal') closePreview();
+        });
+        document.getElementById('app-detail-modal').addEventListener('click', e => {
+            if (e.target.id === 'app-detail-modal') closeAppDetail();
+        });
+    </script>
+</body>
+</html>
