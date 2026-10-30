@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявление на увольнение</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 15px; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 120px; }
+        .date-group { display: flex; gap: 5px; }
+        .date-group input, .date-group select { text-align: center; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        
+        /* Автокомплит */
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
+        .autocomplete-item:hover { background-color: #eef5ff; }
+
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-close { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="citizen.html" class="back-btn">← Вернуться в кабинет</a>
+    <h2>Заявление на увольнение</h2>
+
+    <form id="resignationForm">
+        <div class="form-group">
+            <label>Ваши ФИО и паспорт (заполнятся автоматически)</label>
+            <input type="text" id="citizenInfo" readonly style="background:#eee;">
+        </div>
+
+        <div class="form-group">
+            <label>Организация и должность (начните вводить для поиска)</label>
+            <input type="text" id="orgPosSearch" placeholder="Например: Водитель ЕСС" required autocomplete="off">
+            <div id="orgDropdown" class="autocomplete-dropdown"></div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Дата</label>
+                <div class="date-group">
+                    <input type="text" id="dateDay" class="part" maxlength="2" placeholder="ДД" required>
+                    <select id="dateMonth" class="part" required></select>
+                    <input type="text" id="dateYear" class="part" maxlength="2" placeholder="ГГ" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер дня</label>
+                <input type="text" id="dayNumber" style="text-align:center;" maxlength="3" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Причина увольнения</label>
+            <select id="template-reason" class="form-select" style="background:#eef5ff; padding:8px; margin-bottom:5px; border-radius:4px; border:1px solid #ccc; width:100%;">
+                <option value="">-- Шаблон --</option>
+                <option value="собственному желанию">собственному желанию</option>
+            </select>
+            <input type="text" id="reason" required>
+        </div>
+
+        <button type="submit" id="submitBtn">Отправить заявление</button>
+    </form>
+</div>
+
+<!-- Модалка предпросмотра -->
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Заявление сформировано</h3>
+            <div>
+                <button class="btn-preview btn-close" id="close-btn">Вернуться в кабинет</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient(
+        'https://omnrekfdjurrfzrwfzzn.supabase.co',
+        'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg'
+    );
+
+    // =====================================================================
+    // ✅ ТВОИ КООРДИНАТЫ
+    // =====================================================================
+    const COORDS = {
+        to: { x: 319, y: 214, maxWidth: 147, lineHeight: 13 },       // Кому
+        from: { x: 304, y: 197, maxWidth: 263, lineHeight: 13 },     // От
+        pos: { x: 218, y: 130, maxWidth: 127 },                      // Прошу уволить с должности (центр)
+        org: { x: 359, y: 130, maxWidth: 199 },                      // в организации (центр)
+        reason: { x: 45, y: 113, maxWidth: 267 },                    // по (причина) (центр)
+        
+        // Дата в самом предложении (сразу после "с")
+        dateInSentence: {
+            day:   { xStart: 330, xEnd: 347, y: 113 },
+            month: { xStart: 357, xEnd: 436, y: 113 },
+            year:  { xStart: 452, xEnd: 470, y: 113 },
+            dayNum:{ xStart: 487, xEnd: 505, y: 113 }
+        },
+        
+        // Дата внизу (ЗАГЛУШКИ - подгони сам, раз ты сказал "2 раза")
+        dateBottom: {
+            day:   { xStart: 68, xEnd: 86, y: 84 },
+            month: { xStart: 95, xEnd: 175, y: 84 },
+            year:  { xStart: 191, xEnd: 208, y: 84 },
+            dayNum:{ xStart: 226, xEnd: 243, y: 84 }
+        }
+    };
+
+    const MONTHS_NUMERIC = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+    const MONTHS_GENITIVE = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+
+    let currentProfile = null;
+    let selectedOrgPos = null;
+
+    const ORG_DATABASE = [
+        {
+            org_head: "Единой службы спасения",
+            org_body: "Единой службе спасения",
+            boss: "Иванову И.И.",
+            positions: [
+                { head: "Водителю", body: "водителя" },
+                { head: "Пожарному", body: "пожарного" },
+                { head: "Спасателю", body: "спасателя" }
+            ]
+        },
+        {
+            org_head: "Министерства внутренних дел",
+            org_body: "Министерстве внутренних дел",
+            boss: "Петрову П.П.",
+            positions: [
+                { head: "Инспектору ДПС", body: "инспектора ДПС" },
+                { head: "Участковому", body: "участкового" }
+            ]
+        },
+        {
+            org_head: "Правительства Оренбургской области",
+            org_body: "Правительстве Оренбургской области",
+            boss: "Сидорову С.С.",
+            positions: [
+                { head: "Специалисту", body: "специалиста" },
+                { head: "Советнику", body: "советника" }
+            ]
+        }
+    ];
+
+    function initDates() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+        
+        const sel = document.getElementById('dateMonth');
+        MONTHS_NUMERIC.forEach((num, i) => sel.add(new Option(MONTHS_GENITIVE[i], num)));
+        sel.value = MONTHS_NUMERIC[today.getMonth()];
+
+        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+
+        document.getElementById('template-reason').addEventListener('change', (e) => {
+            if (e.target.value) document.getElementById('reason').value = e.target.value;
+        });
+    }
+
+    async function loadProfile() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) { window.location.href = 'citizen.html'; return; }
+
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+        if (profile) {
+            currentProfile = profile;
+            document.getElementById('citizenInfo').value = `${profile.last_name} ${profile.first_name} ${profile.patronymic || ''}, паспорт: ${profile.pass_series} ${profile.pass_number}`;
+        }
+    }
+
+    function initAutocomplete() {
+        const input = document.getElementById('orgPosSearch');
+        const dropdown = document.getElementById('orgDropdown');
+
+        const flatList = [];
+        ORG_DATABASE.forEach(org => {
+            org.positions.forEach(pos => {
+                flatList.push({
+                    label: `${pos.head} ${org.org_head}`,
+                    org: org,
+                    pos: pos
+                });
+            });
+        });
+
+        input.addEventListener('input', () => {
+            const q = input.value.toLowerCase();
+            dropdown.innerHTML = '';
+            if (!q) { dropdown.style.display = 'none'; return; }
+
+            const matches = flatList.filter(item => item.label.toLowerCase().includes(q));
+            if (matches.length) {
+                matches.forEach(match => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerHTML = `<b>${match.pos.head}</b> — ${match.org.org_head}`;
+                    div.onclick = () => {
+                        input.value = `${match.pos.head} ${match.org.org_head}`;
+                        selectedOrgPos = match;
+                        dropdown.style.display = 'none';
+                    };
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', e => {
+            if (e.target !== input && e.target !== dropdown) dropdown.style.display = 'none';
+        });
+    }
+
+    // Функция для точного центрирования текста
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const w = options.font.widthOfTextAtSize(text, options.size);
+        page.drawText(text, { ...options, x: xStart + ((xEnd - xStart) - w) / 2, y });
+    }
+
+    document.getElementById('resignationForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!selectedOrgPos) { alert('Выберите организацию и должность из списка!'); return; }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Формирование...';
+
+        try {
+            const getVal = id => document.getElementById(id).value;
+            const reason = getVal('reason');
+            const day = getVal('dateDay');
+            const month = getVal('dateMonth');
+            const year = getVal('dateYear');
+            const dayNum = getVal('dayNumber');
+            const monthWord = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(month)];
+
+            const toText = `Начальнику ${selectedOrgPos.org.org_head}\n${selectedOrgPos.org.boss}`;
+            const fromText = `${selectedOrgPos.pos.head}, ${currentProfile.first_name} ${currentProfile.patronymic || ''}, № ${currentProfile.pass_series} ${currentProfile.pass_number}`;
+
+            const existingPdfBytes = await fetch('./resignation_template.pdf').then(r => r.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytes);
+
+            const page = pdfDoc.getPages()[0];
+            const opt = { size: 11, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+
+            function drawParagraph(page, text, x, y, maxWidth, lineHeight) {
+                if (!text) return;
+                const words = text.split(' ');
+                let lines = [], cur = '';
+                for (const word of words) {
+                    const test = cur === '' ? word : cur + ' ' + word;
+                    if (customFont.widthOfTextAtSize(test, opt.size) <= maxWidth) cur = test;
+                    else { lines.push(cur); cur = word; }
+                }
+                if (cur) lines.push(cur);
+                let cy = y;
+                for (const ln of lines) {
+                    page.drawText(ln, { x: x, y: cy, ...opt });
+                    cy -= lineHeight;
+                }
+            }
+
+            // Шапка
+            drawParagraph(page, toText, COORDS.to.x, COORDS.to.y, COORDS.to.maxWidth, COORDS.to.lineHeight);
+            drawParagraph(page, fromText, COORDS.from.x, COORDS.from.y, COORDS.from.maxWidth, COORDS.from.lineHeight);
+            
+            // Основной текст (строго по центру выделенных зон)
+            drawCenteredInRange(page, selectedOrgPos.pos.body, COORDS.pos.x, COORDS.pos.x + COORDS.pos.maxWidth, COORDS.pos.y, opt);
+            drawCenteredInRange(page, selectedOrgPos.org.org_body, COORDS.org.x, COORDS.org.x + COORDS.org.maxWidth, COORDS.org.y, opt);
+            drawCenteredInRange(page, reason, COORDS.reason.x, COORDS.reason.x + COORDS.reason.maxWidth, COORDS.reason.y, opt);
+
+            // Дата в предложении
+            drawCenteredInRange(page, day, COORDS.dateInSentence.day.xStart, COORDS.dateInSentence.day.xEnd, COORDS.dateInSentence.day.y, opt);
+            drawCenteredInRange(page, monthWord, COORDS.dateInSentence.month.xStart, COORDS.dateInSentence.month.xEnd, COORDS.dateInSentence.month.y, opt);
+            drawCenteredInRange(page, year, COORDS.dateInSentence.year.xStart, COORDS.dateInSentence.year.xEnd, COORDS.dateInSentence.year.y, opt);
+            drawCenteredInRange(page, dayNum, COORDS.dateInSentence.dayNum.xStart, COORDS.dateInSentence.dayNum.xEnd, COORDS.dateInSentence.dayNum.y, opt);
+
+            // Дата внизу (Второй раз)
+            drawCenteredInRange(page, day, COORDS.dateBottom.day.xStart, COORDS.dateBottom.day.xEnd, COORDS.dateBottom.day.y, opt);
+            drawCenteredInRange(page, monthWord, COORDS.dateBottom.month.xStart, COORDS.dateBottom.month.xEnd, COORDS.dateBottom.month.y, opt);
+            drawCenteredInRange(page, year, COORDS.dateBottom.year.xStart, COORDS.dateBottom.year.xEnd, COORDS.dateBottom.year.y, opt);
+            drawCenteredInRange(page, dayNum, COORDS.dateBottom.dayNum.xStart, COORDS.dateBottom.dayNum.xEnd, COORDS.dateBottom.dayNum.y, opt);
+
+            const pdfBytes = await pdfDoc.save();
+            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const fileName = `${Date.now()}_RESIGNATION_${currentProfile.last_name}.pdf`;
+
+            await supabaseClient.storage.from('applications').upload(fileName, pdfBlob, { contentType: 'application/pdf' });
+
+            const { error: reqError } = await supabaseClient.from('app_requests').insert({
+                patient_id: currentProfile.id,
+                template_id: 1, // ID твоего шаблона увольнения
+                content: {
+                    org: selectedOrgPos.org.org_head,
+                    pos: selectedOrgPos.pos.head,
+                    reason: reason,
+                    date: `${day}.${month}.${year}`
+                },
+                pdf_path: fileName,
+                status: 'new'
+            });
+
+            if (reqError) throw reqError;
+
+            const fileUrl = URL.createObjectURL(pdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl;
+            document.getElementById('preview-modal').style.display = 'flex';
+
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Отправить заявление';
+        }
+    });
+
+    document.getElementById('close-btn').addEventListener('click', () => {
+        window.location.href = 'citizen.html';
+    });
+
+    initDates();
+    initAutocomplete();
+    loadProfile();
+</script>
+</body>
+</html>
