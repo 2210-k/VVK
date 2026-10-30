@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Протокол задержания</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;
+            box-sizing: border-box; font-size: 15px; font-family: inherit;
+        }
+        textarea { resize: vertical; height: 60px; }
+        .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        button[type="submit"]:disabled { background: #ccc; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 140px; }
+        .date-group { display: flex; gap: 5px; }
+        .date-group input, .date-group select { text-align: center; }
+        .date-group .part { flex: 1; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
+        .section-title { background: #e2e8f0; padding: 8px 12px; border-radius: 4px; margin: 20px 0 12px; font-weight: bold; color: #1e3a8a; font-size: 14px; }
+        
+        .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 6px; }
+        .checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
+        .checkbox-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; cursor: pointer; }
+        .checkbox-row label { margin: 0; font-weight: normal; cursor: pointer; }
+        .term-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+        .term-row input[type="text"] { width: 200px; }
+
+        .radio-inline { display: flex; gap: 20px; padding: 8px 0; }
+        .radio-inline label { display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; }
+        .radio-inline input { width: auto; }
+
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 0 0 4px 4px; max-height: 220px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
+        .autocomplete-item:hover { background-color: #eef5ff; }
+        .autocomplete-item b { color: #0056b3; }
+
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-close { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Вернуться на портал</a>
+
+    <div class="patient-selector">
+        <label>👤 Задержанный (данные подставятся автоматически)</label>
+        <select id="detainedSelect" class="form-select">
+            <option value="none">-- Выберите гражданина --</option>
+        </select>
+    </div>
+
+    <h2>Протокол задержания</h2>
+
+    <form id="detentionForm">
+
+        <div class="section-title">Общие реквизиты (заполняются один раз)</div>
+        <div class="row">
+            <div class="form-group">
+                <label>Дата (ДД / МММ / ГГ)</label>
+                <div class="date-group">
+                    <input type="text" id="globalDay" class="part" maxlength="2" placeholder="ДД" required>
+                    <select id="globalMonth" class="part" required></select>
+                    <input type="text" id="globalYear" class="part" maxlength="2" placeholder="ГГ" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер дня (000–999)</label>
+                <input type="text" id="dayNumber" style="text-align:center;" maxlength="3" required>
+            </div>
+            <div class="form-group">
+                <label>№ документа (0118ННН)</label>
+                <input type="text" id="docNumber" style="text-align:center;" required>
+            </div>
+        </div>
+
+        <div class="section-title">Тип и время составления</div>
+        <div class="form-group">
+            <label>Тип задержания (подчеркнуть)</label>
+            <div class="radio-inline">
+                <label><input type="radio" name="detentionType" value="criminal" checked> преступления</label>
+                <label><input type="radio" name="detentionType" value="admin"> административного правонарушения</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Время составления (ЧЧ : ММ)</label>
+                <div class="date-group">
+                    <input type="text" id="compTimeH" class="part" maxlength="2" placeholder="ЧЧ" required>
+                    <input type="text" id="compTimeM" class="part" maxlength="2" placeholder="ММ" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Место составления</label>
+                <select id="template-compPlace" class="form-select">
+                    <option value="">-- Шаблон --</option>
+                    <option value="г. Соль-Илецк, ул. Васильковая, д. 40/1 (Отдел МВД)">г. Соль-Илецк, ул. Васильковая, д. 40/1 (Отдел МВД)</option>
+                </select>
+                <input type="text" id="compPlace" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Сотрудник, составивший протокол</label>
+            <select id="template-official" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="Начальник МВД по Соль-Илецкому г.о., генерал полиции">Начальник МВД по Соль-Илецкому г.о., генерал полиции</option>
+            </select>
+            <input type="text" id="official" required>
+        </div>
+
+        <div class="section-title">Сведения о задержанном лице</div>
+        <div class="form-group">
+            <label>Фамилия, имя, отчество</label>
+            <input type="text" id="detainedFio" required>
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label>Дата рождения (ДД / МММ / ГГ)</label>
+                <div class="date-group">
+                    <input type="text" id="dobDay" class="part" maxlength="2" placeholder="ДД">
+                    <select id="dobMonth" class="part"></select>
+                    <input type="text" id="dobYear" class="part" maxlength="2" placeholder="ГГ">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Место рождения</label>
+                <input type="text" id="pob">
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label>Паспорт: серия</label>
+                <input type="text" id="passSeries" maxlength="4" style="text-align:center;">
+            </div>
+            <div class="form-group">
+                <label>Паспорт: номер</label>
+                <input type="text" id="passNumber" maxlength="6" style="text-align:center;">
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label>Адрес регистрации</label>
+                <input type="text" id="address">
+            </div>
+            <div class="form-group">
+                <label>Номер телефона</label>
+                <input type="text" id="phone" style="text-align:center;">
+            </div>
+            <div class="form-group">
+                <label>Семейное положение</label>
+                <select id="maritalStatus" class="form-select">
+                    <option value="Женат">Женат</option>
+                    <option value="Холост">Холост</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Место работы (учёбы)</label>
+            <input type="text" id="workPlace" placeholder="Начните вводить для поиска..." autocomplete="off">
+            <div id="workDropdown" class="autocomplete-dropdown"></div>
+        </div>
+
+        <div class="section-title">Обстоятельства задержания</div>
+        <div class="row">
+            <div class="form-group">
+                <label>Время фактического задержания (ЧЧ : ММ)</label>
+                <div class="date-group">
+                    <input type="text" id="detTimeH" class="part" maxlength="2" placeholder="ЧЧ" required>
+                    <input type="text" id="detTimeM" class="part" maxlength="2" placeholder="ММ" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Адрес задержания</label>
+                <input type="text" id="detAddress" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Основания задержания</label>
+            <div class="checkbox-group">
+                <div class="checkbox-row"><input type="checkbox" id="g1"><label for="g1">лицо застигнуто при совершении правонарушения (преступления);</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="g2"><label for="g2">очевидцы прямо указали на данное лицо;</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="g3"><label for="g3">на лице, одежде или при нём обнаружены явные следы;</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="g4"><label for="g4">лицо пыталось скрыться;</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="g5"><label for="g5">отсутствуют документы, удостоверяющие личность;</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="g6"><label for="g6">иное:</label></div>
+                <input type="text" id="groundsOther" placeholder="Укажите иное основание" style="margin-left: 28px; width: calc(100% - 28px);">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Статья (пункт, часть) закона, инкриминируемая задержанному</label>
+            <input type="text" id="articleInput" placeholder="Начните вводить (например: 1.1 или убийство)" required autocomplete="off">
+            <div id="articleDropdown" class="autocomplete-dropdown"></div>
+        </div>
+
+        <!-- ИСПРАВЛЕННЫЙ БЛОК СРОК ЗАДЕРЖАНИЯ -->
+        <div class="form-group">
+            <label>Срок задержания</label>
+            <div class="checkbox-group">
+                <div class="term-row">
+                    <input type="checkbox" id="termCheckAdmin" class="term-category" style="width: 18px; height: 18px;">
+                    <label for="termCheckAdmin" style="margin: 0; font-weight: bold;">административное задержание:</label>
+                    <input type="text" id="termTextAdmin" placeholder="до 3 часов / до 48 часов" style="width: 250px;">
+                </div>
+                <div class="term-row">
+                    <input type="checkbox" id="termCheckCriminal" class="term-category" style="width: 18px; height: 18px;">
+                    <label for="termCheckCriminal" style="margin: 0; font-weight: bold;">задержание по подозрению в совершении преступления:</label>
+                    <input type="text" id="termTextCriminal" placeholder="до 48 часов" style="width: 250px;">
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">Страница 2</div>
+        
+        <div class="form-group">
+            <label>Объяснения по существу задержания</label>
+            <select id="template-explanations" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="От дачи объяснений отказался, воспользовавшись правом, предусмотренным статьей 51 Конституции Российской Федерации (право не свидетельствовать против себя и своих близких)">От дачи объяснений отказался...</option>
+            </select>
+            <textarea id="explanations"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Ходатайства и заявления задержанного</label>
+            <select id="template-petitions" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="Не поступало">Не поступало</option>
+            </select>
+            <textarea id="petitions"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Защитник (если участвовал)</label>
+            <select id="template-defender" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="Не участвовал">Не участвовал</option>
+            </select>
+            <input type="text" id="defender" placeholder="Фамилия, имя, отчество, № удостоверения, № ордера">
+        </div>
+
+        <div class="form-group">
+            <label>Понятой 1 (выбор из базы)</label>
+            <select id="witness1Select" class="form-select">
+                <option value="none">-- Выбрать из базы --</option>
+            </select>
+            <input type="text" id="witness1" placeholder="Фамилия, имя, отчество, № паспорта, адрес регистрации">
+        </div>
+
+        <div class="form-group">
+            <label>Понятой 2 (выбор из базы)</label>
+            <select id="witness2Select" class="form-select">
+                <option value="none">-- Выбрать из базы --</option>
+            </select>
+            <input type="text" id="witness2" placeholder="Фамилия, имя, отчество, № паспорта, адрес регистрации">
+        </div>
+
+        <div class="form-group">
+            <label>Иные участвующие лица</label>
+            <select id="template-others" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="отсутствуют">отсутствуют</option>
+            </select>
+            <input type="text" id="others">
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Личный обыск проводился</label>
+                <div class="radio-inline">
+                    <label><input type="radio" name="searchConducted" value="yes" checked> Да</label>
+                    <label><input type="radio" name="searchConducted" value="no"> Нет</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер протокола личного досмотра</label>
+                <select id="searchProtocolSelect" class="form-select">
+                    <option value="">-- Загрузка... --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Замечания к протоколу</label>
+            <select id="template-notes" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="не выявлено">не выявлено</option>
+            </select>
+            <textarea id="notes"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Отметка о направлении в место содержания (ИВС, КПЗ)</label>
+            <select id="template-direction" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="Направлен для содержания в КПЗ МВД по Соль-Илецкому г.о.">Направлен для содержания в КПЗ МВД по Соль-Илецкому г.о.</option>
+            </select>
+            <textarea id="direction"></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn">Сгенерировать и сохранить PDF</button>
+    </form>
+</div>
+
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Предпросмотр протокола</h3>
+            <div>
+                <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-preview btn-close" id="close-preview-btn">Закрыть</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient(
+        'https://omnrekfdjurrfzrwfzzn.supabase.co',
+        'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg'
+    );
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentOrgId = parseInt(urlParams.get('org')) || 2;
+
+    // =====================================================================
+    // ✅ КООРДИНАТЫ (ПОЛЬЗОВАТЕЛЬСКИЕ)
+    // =====================================================================
+    const COORDS = {
+        qrCode: { x: 28, y: 740, width: 70, height: 70 },
+        barcode: { x: 496, y: 770, width: 70, height: 40 },
+
+        // Page 1
+        typeUnderline: {
+            criminal: { xStart: 274, xEnd: 340, y: 711 },
+            admin: { xStart: 350, xEnd: 530, y: 711 }
+        },
+        globalDate: {
+            day:   { xStart: 34, xEnd: 49, y: 683 },
+            month: { xStart: 57, xEnd: 124, y: 683 },
+            year:  { xStart: 138, xEnd: 153, y: 683 }
+        },
+        globalDayNumber: { xStart: 167, xEnd: 182, y: 683 },
+        docNumber: { xStart: 519, xEnd: 567, y: 683 },
+
+        compDate: {
+            day:   { xStart: 133, xEnd: 148, y: 657 },
+            month: { xStart: 156, xEnd: 223, y: 657 },
+            year:  { xStart: 237, xEnd: 252, y: 657 }
+        },
+        compDayNumber: { xStart: 267, xEnd: 281, y: 657 },
+        compTime: {
+            h: { xStart: 467, xEnd: 494, y: 657 },
+            m: { xStart: 507, xEnd: 534, y: 657 }
+        },
+        compPlace: { x: 134, y: 642, maxWidth: 425, lineHeight: 13, indent: 0 },
+        official: { x: 211, y: 620, maxWidth: 347, lineHeight: 13, indent: 0 },
+
+        // Section I
+        detainedFio: { x: 158, y: 564 },
+        detainedDob: {
+            day:   { xStart: 119, xEnd: 135, y: 550 },
+            month: { xStart: 143, xEnd: 206, y: 550 },
+            year:  { xStart: 219, xEnd: 241, y: 550 }
+        },
+        pob: { x: 403, y: 550 },
+        passSeries: { xStart: 110, xEnd: 140, y: 535 },
+        passNumber: { xStart: 159, xEnd: 230, y: 535 },
+        address: { x: 202, y: 521, maxWidth: 357, lineHeight: 13, indent: 0 },
+        phone: { xStart: 119, xEnd: 182, y: 506 },
+        maritalStatus: { x: 138, y: 492 },
+        workPlace: { x: 397, y: 506 }, // ✅ ДОБАВЛЕНО
+
+        // Section II
+        detTimePlace: {
+            day:   { xStart: 250, xEnd: 266, y: 445 },
+            month: { xStart: 275, xEnd: 348, y: 445 },
+            year:  { xStart: 361, xEnd: 378, y: 445 },
+            dayNum:{ xStart: 393, xEnd: 409, y: 445 },
+            h:     { xStart: 448, xEnd: 478, y: 445 },
+            m:     { xStart: 491, xEnd: 521, y: 445 }
+        },
+        detAddress: { x: 63, y: 431, maxWidth: 495, lineHeight: 13, indent: 0 },
+
+        grounds: {
+            g1: { x: 30, y: 395 },
+            g2: { x: 30, y: 380 },
+            g3: { x: 30, y: 366 },
+            g4: { x: 30, y: 352 },
+            g5: { x: 30, y: 337 },
+            g6: { x: 30, y: 323 },
+            otherText: { x: 66, y: 321, maxWidth: 492, lineHeight: 13, indent: 0 }
+        },
+        article: { x: 356, y: 299, maxWidth: 203, lineHeight: 13, indent: 0 },
+
+        // ✅ ИСПРАВЛЕННЫЙ БЛОК СРОКОВ
+        terms: {
+            checkAdmin: { x: 29, y: 263 },
+            checkCriminal: { x: 29, y: 249 },
+            textAdmin: { x: 189, y: 262 },
+            textCriminal: { x: 308, y: 248 }
+        },
+        signatureDetained: { xStart: 286, xEnd: 489, y: 48 },
+
+        // Page 2
+        explanations: { x: 28, y: 792, maxWidth: 530, lineHeight: 13, indent: 188 },
+        petitions: { x: 28, y: 60, maxWidth: 530, lineHeight: 13, indent: 209 },
+        defender: { x: 177, y: 526, maxWidth: 381, lineHeight: 13, indent: 0 },
+        witness1: { x: 39, y: 487, maxWidth: 517, lineHeight: 13, indent: 0 },
+        witness2: { x: 39, y: 464, maxWidth: 517, lineHeight: 13, indent: 0 },
+        others: { x: 157, y: 440, maxWidth: 400, lineHeight: 13, indent: 0 },
+
+        searchUnderline: {
+            yes: { xStart: 162, xEnd: 175, y: 415 },
+            no:  { xStart: 183, xEnd: 201, y: 415 }
+        },
+        searchProtocol: { x: 320, y: 403, maxWidth: 97, lineHeight: 13, indent: 0 },
+
+        notes: { x: 28, y: 380, maxWidth: 530, lineHeight: 13, indent: 122 },
+        
+        readUnderline: {
+            personally: { xStart: 136, xEnd: 164, y: 342 },
+            aloud:      { xStart: 174, xEnd: 198, y: 342 }
+        },
+
+        signatures: {
+            detained: { xStart: 103, xEnd: 312, y: 297 },
+            defender: { xStart: 175, xEnd: 382, y: 282 },
+            witness1: { xStart: 39, xEnd: 241, y: 253 },
+            witness2: { xStart: 39, xEnd: 241, y: 350 },
+            official: { xStart: 211, xEnd: 418, y: 216 }
+        },
+
+        direction: { x: 28, y: 173, maxWidth: 530, lineHeight: 13, indent: 286 }
+    };
+
+    const MONTHS_NUMERIC = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+    const MONTHS_GENITIVE = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+
+    // =====================================================================
+    // 📋 Список мест работы (для автокомплита)
+    // =====================================================================
+    const WORK_PLACES = [
+        'Безработный',
+        'Студент',
+        'ООО "Ромашка"',
+        'ПАО "Газпром"',
+        'МБОУ СОШ №1',
+        'ИП Иванов'
+    ];
+
+    // =====================================================================
+    // 📕 Мок-база статей (пользователь потом заполнит)
+    // =====================================================================
+    const ARTICLES_DB = [
+        { code: '1.1', desc: 'Убийство', full: 'ст. 1.1 Уголовного кодекса РФ' },
+        { code: '1.2', desc: 'Умышленное причинение тяжкого вреда здоровью', full: 'ст. 1.2 Уголовного кодекса РФ' },
+        { code: '2.1', desc: 'Кража', full: 'ст. 2.1 Уголовного кодекса РФ' },
+        { code: '1.1.1', desc: 'Управление ТС без водительского удостоверения', full: 'ст. 1.1.1 Кодекса об административных правонарушениях РФ' },
+        { code: '1.2.1', desc: 'Управление ТС в состоянии опьянения', full: 'ст. 1.2.1 Кодекса об административных правонарушениях РФ' },
+        { code: '1.1', desc: 'Превышение скорости', full: 'ст. 1.1 Дорожного кодекса РФ' }
+    ];
+
+    let currentPdfBlob = null;
+    let allCitizensCache = [];
+    let currentArticle = null;
+
+    // =====================================================================
+    // ИНИЦИАЛИЗАЦИЯ
+    // =====================================================================
+    function initDates() {
+        const today = new Date();
+        const d = String(today.getDate()).padStart(2, '0');
+        const m = MONTHS_NUMERIC[today.getMonth()];
+        const y = String(today.getFullYear()).slice(-2);
+
+        document.getElementById('globalDay').value = d;
+        document.getElementById('globalYear').value = y;
+        document.getElementById('compTimeH').value = String(today.getHours()).padStart(2, '0');
+        document.getElementById('compTimeM').value = String(today.getMinutes()).padStart(2, '0');
+        document.getElementById('detTimeH').value = String(today.getHours()).padStart(2, '0');
+        document.getElementById('detTimeM').value = String(today.getMinutes()).padStart(2, '0');
+
+        const sel1 = document.getElementById('globalMonth');
+        const sel2 = document.getElementById('dobMonth');
+        [sel1, sel2].forEach(sel => {
+            MONTHS_NUMERIC.forEach((num, i) => sel.add(new Option(MONTHS_GENITIVE[i], num)));
+        });
+        sel1.value = m;
+        sel2.value = '01';
+
+        document.getElementById('docNumber').value = `0118${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+    }
+
+    function initTemplates() {
+        const map = {
+            'template-compPlace': 'compPlace',
+            'template-official': 'official',
+            'template-explanations': 'explanations',
+            'template-petitions': 'petitions',
+            'template-defender': 'defender',
+            'template-others': 'others',
+            'template-notes': 'notes',
+            'template-direction': 'direction'
+        };
+        for (const [selId, inpId] of Object.entries(map)) {
+            const sel = document.getElementById(selId);
+            const inp = document.getElementById(inpId);
+            sel.addEventListener('change', e => { if (e.target.value) inp.value = e.target.value; });
+        }
+    }
+
+    // Логика сроков задержания (взаимоисключающие)
+    document.querySelectorAll('.term-category').forEach(cb => {
+        cb.addEventListener('change', e => {
+            if (e.target.checked) {
+                document.querySelectorAll('.term-category').forEach(other => {
+                    if (other !== e.target) other.checked = false;
+                });
+                // Автоподстановка в зависимости от выбора
+                if (e.target.id === 'termCheckAdmin') {
+                    if (!document.getElementById('termTextAdmin').value) document.getElementById('termTextAdmin').value = 'до 3 часов';
+                    document.getElementById('termTextCriminal').value = '';
+                } else {
+                    if (!document.getElementById('termTextCriminal').value) document.getElementById('termTextCriminal').value = 'до 48 часов';
+                    document.getElementById('termTextAdmin').value = '';
+                }
+            }
+        });
+    });
+
+    // =====================================================================
+    // Загрузка данных
+    // =====================================================================
+    async function loadData() {
+        // Граждане
+        const { data: citizens } = await supabaseClient
+            .from('profiles')
+            .select('id, last_name, first_name, patronymic, dob, pob, address, pass_series, pass_number')
+            .eq('role', 'patient')
+            .order('last_name');
+        
+        if (citizens) {
+            allCitizensCache = citizens;
+            const dSelect = document.getElementById('detainedSelect');
+            const w1 = document.getElementById('witness1Select');
+            const w2 = document.getElementById('witness2Select');
+            
+            dSelect.innerHTML = '<option value="none">-- Выберите гражданина --</option>';
+            w1.innerHTML = '<option value="none">-- Выбрать из базы --</option>';
+            w2.innerHTML = '<option value="none">-- Выбрать из базы --</option>';
+
+            citizens.forEach(p => {
+                const fio = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`.trim();
+                dSelect.add(new Option(fio, p.id));
+                
+                const wLabel = `${p.last_name} ${p.first_name} ${p.patronymic || ''}, № ${p.pass_series || ''} ${p.pass_number || ''}, ${p.address || ''}`.trim();
+                w1.add(new Option(wLabel, p.id));
+                w2.add(new Option(wLabel, p.id));
+            });
+        }
+
+        // Протоколы личного досмотра
+        const { data: protocols } = await supabaseClient
+            .from('documents')
+            .select('doc_number')
+            .eq('document_type', 'Протокол личного досмотра')
+            .order('created_at', { ascending: false });
+
+        if (protocols) {
+            const pSelect = document.getElementById('searchProtocolSelect');
+            pSelect.innerHTML = '<option value="">-- Не проводился --</option>';
+            protocols.forEach(p => {
+                pSelect.add(new Option(p.doc_number, p.doc_number));
+            });
+        }
+    }
+
+    // Автозаполнение задержанного
+    document.getElementById('detainedSelect').addEventListener('change', e => {
+        const id = e.target.value;
+        if (!id || id === 'none') {
+            ['detainedFio','dobDay','dobYear','pob','passSeries','passNumber','address','phone','workPlace'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('dobMonth').value = '01';
+            return;
+        }
+        const c = allCitizensCache.find(x => x.id === id);
+        if (!c) return;
+
+        document.getElementById('detainedFio').value = `${c.last_name} ${c.first_name} ${c.patronymic || ''}`.trim();
+        document.getElementById('pob').value = c.pob || '';
+        document.getElementById('passSeries').value = c.pass_series || '';
+        document.getElementById('passNumber').value = c.pass_number || '';
+        document.getElementById('address').value = c.address || '';
+        
+        if (c.dob) {
+            const [y, m, d] = c.dob.split('-');
+            document.getElementById('dobDay').value = d;
+            document.getElementById('dobMonth').value = m;
+            document.getElementById('dobYear').value = y.slice(-2);
+        }
+    });
+
+    // Автозаполнение понятых
+    function bindWitness(selectId, inputId) {
+        document.getElementById(selectId).addEventListener('change', e => {
+            const id = e.target.value;
+            if (!id || id === 'none') return;
+            const c = allCitizensCache.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById(inputId).value = 
+                `${c.last_name} ${c.first_name} ${c.patronymic || ''}, № ${c.pass_series || ''} ${c.pass_number || ''}, ${c.address || ''}`.trim();
+        });
+    }
+    bindWitness('witness1Select', 'witness1');
+    bindWitness('witness2Select', 'witness2');
+
+    // =====================================================================
+    // Автокомплит: Место работы
+    // =====================================================================
+    function initWorkAutocomplete() {
+        const inp = document.getElementById('workPlace');
+        const dd = document.getElementById('workDropdown');
+
+        inp.addEventListener('input', () => {
+            const q = inp.value.toLowerCase();
+            dd.innerHTML = '';
+            if (!q) { dd.style.display = 'none'; return; }
+            const matches = WORK_PLACES.filter(w => w.toLowerCase().includes(q));
+            if (matches.length) {
+                matches.forEach(w => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.textContent = w;
+                    div.onclick = () => { inp.value = w; dd.style.display = 'none'; };
+                    dd.appendChild(div);
+                });
+                dd.style.display = 'block';
+            } else dd.style.display = 'none';
+        });
+
+        inp.addEventListener('focus', () => { if (inp.value) inp.dispatchEvent(new Event('input')); });
+        document.addEventListener('click', e => {
+            if (e.target !== inp && e.target !== dd) dd.style.display = 'none';
+        });
+    }
+
+    // =====================================================================
+    // Автокомплит: Статья
+    // =====================================================================
+    function initArticleAutocomplete() {
+        const inp = document.getElementById('articleInput');
+        const dd = document.getElementById('articleDropdown');
+
+        inp.addEventListener('input', () => {
+            const q = inp.value.toLowerCase();
+            dd.innerHTML = '';
+            if (!q) { dd.style.display = 'none'; currentArticle = null; return; }
+            const matches = ARTICLES_DB.filter(a =>
+                a.code.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q) || a.full.toLowerCase().includes(q)
+            );
+            if (matches.length) {
+                matches.forEach(a => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    div.innerHTML = `<b>${a.full}</b> — ${a.desc}`;
+                    div.onclick = () => { 
+                        inp.value = a.full; 
+                        dd.style.display = 'none'; 
+                        currentArticle = a; 
+                    };
+                    dd.appendChild(div);
+                });
+                dd.style.display = 'block';
+            } else dd.style.display = 'none';
+        });
+
+        inp.addEventListener('focus', () => { if (inp.value) inp.dispatchEvent(new Event('input')); });
+        document.addEventListener('click', e => {
+            if (e.target !== inp && e.target !== dd) dd.style.display = 'none';
+        });
+    }
+
+    // =====================================================================
+    // PDF helpers
+    // =====================================================================
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const w = options.font.widthOfTextAtSize(text, options.size);
+        page.drawText(text, { ...options, x: xStart + ((xEnd - xStart) - w) / 2, y });
+    }
+
+    function drawParagraph(page, text, x, y, options) {
+        if (!text) return y;
+        const { font, size, color, maxWidth, lineHeight, indent } = options;
+        const words = text.split(' ');
+        let lines = [], cur = '', isFirst = true;
+        for (const word of words) {
+            const avail = isFirst ? (maxWidth - indent) : maxWidth;
+            const test = cur === '' ? word : cur + ' ' + word;
+            if (font.widthOfTextAtSize(test, size) <= avail) cur = test;
+            else { lines.push({ t: cur, f: isFirst }); cur = word; isFirst = false; }
+        }
+        if (cur) lines.push({ t: cur, f: isFirst });
+        let cy = y;
+        for (const ln of lines) {
+            page.drawText(ln.t, { x: ln.f ? x + indent : x, y: cy, font, size, color });
+            cy -= lineHeight;
+        }
+        return cy;
+    }
+
+    function drawCross(page, x, y, size = 4) {
+        page.drawLine({ start: { x: x - size, y: y - size }, end: { x: x + size, y: y + size }, thickness: 1.2, color: PDFLib.rgb(0, 0, 0) });
+        page.drawLine({ start: { x: x - size, y: y + size }, end: { x: x + size, y: y - size }, thickness: 1.2, color: PDFLib.rgb(0, 0, 0) });
+    }
+
+    async function createBarcodeImage(text) {
+        const canvas = document.createElement('canvas');
+        JsBarcode(canvas, text, { format: 'CODE128', width: 2, height: 60, displayValue: false, margin: 0 });
+        return await fetch(canvas.toDataURL('image/png')).then(r => r.arrayBuffer());
+    }
+
+    async function createQrImage(text) {
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+        return await fetch(url).then(r => r.arrayBuffer());
+    }
+
+    // =====================================================================
+    // Кнопки
+    // =====================================================================
+    document.getElementById('close-preview-btn').addEventListener('click', () => {
+        document.getElementById('preview-modal').style.display = 'none';
+        document.getElementById('pdf-preview-frame').src = '';
+        window.location.href = 'index.html';
+    });
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+        if (!currentPdfBlob) return;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(currentPdfBlob);
+        link.download = `Протокол_задержания_${document.getElementById('docNumber').value}.pdf`;
+        link.click();
+    });
+
+    // =====================================================================
+    // Генерация PDF
+    // =====================================================================
+    document.getElementById('detentionForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const citizenVal = document.getElementById('detainedSelect').value;
+        const actualCitizenId = (citizenVal === 'none' || !citizenVal) ? null : citizenVal;
+
+        btn.disabled = true;
+        btn.textContent = 'Генерация...';
+
+        try {
+            const getVal = id => document.getElementById(id).value;
+            const docNumber = getVal('docNumber');
+            const dayNum = getVal('dayNumber');
+            const globalMonthWord = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(getVal('globalMonth'))];
+
+            const existingPdfBytes = await fetch('./detention_template.pdf').then(r => r.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytes);
+
+            const pages = pdfDoc.getPages();
+            const page1 = pages[0];
+            const page2 = pages[1];
+            const opt = { size: 9, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+
+            // --- СТРАНИЦА 1 ---
+            
+            // QR & Barcode
+            const qrText = `ПРОТОКОЛ ЗАДЕРЖАНИЯ\n№ ${docNumber}\nЗадержанный: ${getVal('detainedFio')}\nДата: ${getVal('globalDay')}.${getVal('globalMonth')}.${getVal('globalYear')}`;
+            const qrImg = await pdfDoc.embedPng(await createQrImage(qrText));
+            page1.drawImage(qrImg, { x: COORDS.qrCode.x, y: COORDS.qrCode.y, width: COORDS.qrCode.width, height: COORDS.qrCode.height });
+            const bcImg = await pdfDoc.embedPng(await createBarcodeImage(docNumber));
+            page1.drawImage(bcImg, { x: COORDS.barcode.x, y: COORDS.barcode.y, width: COORDS.barcode.width, height: COORDS.barcode.height });
+
+            // Подчеркивание типа
+            const detType = document.querySelector('input[name="detentionType"]:checked').value;
+            const ul = detType === 'criminal' ? COORDS.typeUnderline.criminal : COORDS.typeUnderline.admin;
+            page1.drawLine({ start: { x: ul.xStart, y: ul.y }, end: { x: ul.xEnd, y: ul.y }, thickness: 1, color: PDFLib.rgb(0, 0, 0) });
+
+            // Global Date & Day Number
+            drawCenteredInRange(page1, getVal('globalDay'), COORDS.globalDate.day.xStart, COORDS.globalDate.day.xEnd, COORDS.globalDate.day.y, opt);
+            drawCenteredInRange(page1, globalMonthWord, COORDS.globalDate.month.xStart, COORDS.globalDate.month.xEnd, COORDS.globalDate.month.y, opt);
+            drawCenteredInRange(page1, getVal('globalYear'), COORDS.globalDate.year.xStart, COORDS.globalDate.year.xEnd, COORDS.globalDate.year.y, opt);
+            drawCenteredInRange(page1, dayNum, COORDS.globalDayNumber.xStart, COORDS.globalDayNumber.xEnd, COORDS.globalDayNumber.y, opt);
+            drawCenteredInRange(page1, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt);
+
+            // Compilation Date, Time, Place, Official
+            drawCenteredInRange(page1, getVal('globalDay'), COORDS.compDate.day.xStart, COORDS.compDate.day.xEnd, COORDS.compDate.day.y, opt);
+            drawCenteredInRange(page1, globalMonthWord, COORDS.compDate.month.xStart, COORDS.compDate.month.xEnd, COORDS.compDate.month.y, opt);
+            drawCenteredInRange(page1, getVal('globalYear'), COORDS.compDate.year.xStart, COORDS.compDate.year.xEnd, COORDS.compDate.year.y, opt);
+            drawCenteredInRange(page1, dayNum, COORDS.compDayNumber.xStart, COORDS.compDayNumber.xEnd, COORDS.compDayNumber.y, opt);
+            drawCenteredInRange(page1, getVal('compTimeH'), COORDS.compTime.h.xStart, COORDS.compTime.h.xEnd, COORDS.compTime.h.y, opt);
+            drawCenteredInRange(page1, getVal('compTimeM'), COORDS.compTime.m.xStart, COORDS.compTime.m.xEnd, COORDS.compTime.m.y, opt);
+            
+            drawParagraph(page1, getVal('compPlace'), COORDS.compPlace.x, COORDS.compPlace.y, { ...opt, maxWidth: COORDS.compPlace.maxWidth, lineHeight: COORDS.compPlace.lineHeight, indent: 0 });
+            drawParagraph(page1, getVal('official'), COORDS.official.x, COORDS.official.y, { ...opt, maxWidth: COORDS.official.maxWidth, lineHeight: COORDS.official.lineHeight, indent: 0 });
+
+            // Detained Info
+            page1.drawText(getVal('detainedFio'), { x: COORDS.detainedFio.x, y: COORDS.detainedFio.y, ...opt });
+            const dobMonthWord = MONTHS_GENITIVE[MONTHS_NUMERIC.indexOf(getVal('dobMonth'))];
+            drawCenteredInRange(page1, getVal('dobDay'), COORDS.detainedDob.day.xStart, COORDS.detainedDob.day.xEnd, COORDS.detainedDob.day.y, opt);
+            drawCenteredInRange(page1, dobMonthWord, COORDS.detainedDob.month.xStart, COORDS.detainedDob.month.xEnd, COORDS.detainedDob.month.y, opt);
+            drawCenteredInRange(page1, getVal('dobYear'), COORDS.detainedDob.year.xStart, COORDS.detainedDob.year.xEnd, COORDS.detainedDob.year.y, opt);
+            
+            page1.drawText(getVal('pob'), { x: COORDS.pob.x, y: COORDS.pob.y, ...opt });
+            drawCenteredInRange(page1, getVal('passSeries'), COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt);
+            drawCenteredInRange(page1, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt);
+            
+            drawParagraph(page1, getVal('address'), COORDS.address.x, COORDS.address.y, { ...opt, maxWidth: COORDS.address.maxWidth, lineHeight: COORDS.address.lineHeight, indent: 0 });
+            drawCenteredInRange(page1, getVal('phone'), COORDS.phone.xStart, COORDS.phone.xEnd, COORDS.phone.y, opt);
+            page1.drawText(getVal('maritalStatus'), { x: COORDS.maritalStatus.x, y: COORDS.maritalStatus.y, ...opt });
+
+            // WORK PLACE ✅
+            page1.drawText(getVal('workPlace'), { x: COORDS.workPlace.x, y: COORDS.workPlace.y, ...opt });
+
+            // Detention Circumstances
+            drawCenteredInRange(page1, getVal('globalDay'), COORDS.detTimePlace.day.xStart, COORDS.detTimePlace.day.xEnd, COORDS.detTimePlace.day.y, opt);
+            drawCenteredInRange(page1, globalMonthWord, COORDS.detTimePlace.month.xStart, COORDS.detTimePlace.month.xEnd, COORDS.detTimePlace.month.y, opt);
+            drawCenteredInRange(page1, getVal('globalYear'), COORDS.detTimePlace.year.xStart, COORDS.detTimePlace.year.xEnd, COORDS.detTimePlace.year.y, opt);
+            drawCenteredInRange(page1, dayNum, COORDS.detTimePlace.dayNum.xStart, COORDS.detTimePlace.dayNum.xEnd, COORDS.detTimePlace.dayNum.y, opt);
+            drawCenteredInRange(page1, getVal('detTimeH'), COORDS.detTimePlace.h.xStart, COORDS.detTimePlace.h.xEnd, COORDS.detTimePlace.h.y, opt);
+            drawCenteredInRange(page1, getVal('detTimeM'), COORDS.detTimePlace.m.xStart, COORDS.detTimePlace.m.xEnd, COORDS.detTimePlace.m.y, opt);
+
+            drawParagraph(page1, getVal('detAddress'), COORDS.detAddress.x, COORDS.detAddress.y, { ...opt, maxWidth: COORDS.detAddress.maxWidth, lineHeight: COORDS.detAddress.lineHeight, indent: 0 });
+
+            // Grounds
+            if (document.getElementById('g1').checked) drawCross(page1, COORDS.grounds.g1.x, COORDS.grounds.g1.y);
+            if (document.getElementById('g2').checked) drawCross(page1, COORDS.grounds.g2.x, COORDS.grounds.g2.y);
+            if (document.getElementById('g3').checked) drawCross(page1, COORDS.grounds.g3.x, COORDS.grounds.g3.y);
+            if (document.getElementById('g4').checked) drawCross(page1, COORDS.grounds.g4.x, COORDS.grounds.g4.y);
+            if (document.getElementById('g5').checked) drawCross(page1, COORDS.grounds.g5.x, COORDS.grounds.g5.y);
+            if (document.getElementById('g6').checked) {
+                drawCross(page1, COORDS.grounds.g6.x, COORDS.grounds.g6.y);
+                drawParagraph(page1, getVal('groundsOther'), COORDS.grounds.otherText.x, COORDS.grounds.otherText.y, { ...opt, maxWidth: COORDS.grounds.otherText.maxWidth, lineHeight: COORDS.grounds.otherText.lineHeight, indent: 0 });
+            }
+
+            // Article
+            drawParagraph(page1, getVal('articleInput'), COORDS.article.x, COORDS.article.y, { ...opt, maxWidth: COORDS.article.maxWidth, lineHeight: COORDS.article.lineHeight, indent: 0 });
+
+            // ✅ ИСПРАВЛЕННАЯ ЛОГИКА СРОКОВ
+            if (document.getElementById('termCheckAdmin').checked) {
+                drawCross(page1, COORDS.terms.checkAdmin.x, COORDS.terms.checkAdmin.y);
+                if (getVal('termTextAdmin')) {
+                    page1.drawText(getVal('termTextAdmin'), { x: COORDS.terms.textAdmin.x, y: COORDS.terms.textAdmin.y, ...opt });
+                }
+            }
+            if (document.getElementById('termCheckCriminal').checked) {
+                drawCross(page1, COORDS.terms.checkCriminal.x, COORDS.terms.checkCriminal.y);
+                if (getVal('termTextCriminal')) {
+                    page1.drawText(getVal('termTextCriminal'), { x: COORDS.terms.textCriminal.x, y: COORDS.terms.textCriminal.y, ...opt });
+                }
+            }
+
+            // Signature Detained
+            drawCenteredInRange(page1, getVal('detainedFio'), COORDS.signatureDetained.xStart, COORDS.signatureDetained.xEnd, COORDS.signatureDetained.y, opt);
+
+            // --- СТРАНИЦА 2 ---
+
+            drawParagraph(page2, getVal('explanations'), COORDS.explanations.x, COORDS.explanations.y, { ...opt, maxWidth: COORDS.explanations.maxWidth, lineHeight: COORDS.explanations.lineHeight, indent: COORDS.explanations.indent });
+            drawParagraph(page2, getVal('petitions'), COORDS.petitions.x, COORDS.petitions.y, { ...opt, maxWidth: COORDS.petitions.maxWidth, lineHeight: COORDS.petitions.lineHeight, indent: COORDS.petitions.indent });
+
+            drawParagraph(page2, getVal('defender'), COORDS.defender.x, COORDS.defender.y, { ...opt, maxWidth: COORDS.defender.maxWidth, lineHeight: COORDS.defender.lineHeight, indent: 0 });
+            drawParagraph(page2, getVal('witness1'), COORDS.witness1.x, COORDS.witness1.y, { ...opt, maxWidth: COORDS.witness1.maxWidth, lineHeight: COORDS.witness1.lineHeight, indent: 0 });
+            drawParagraph(page2, getVal('witness2'), COORDS.witness2.x, COORDS.witness2.y, { ...opt, maxWidth: COORDS.witness2.maxWidth, lineHeight: COORDS.witness2.lineHeight, indent: 0 });
+            drawParagraph(page2, getVal('others'), COORDS.others.x, COORDS.others.y, { ...opt, maxWidth: COORDS.others.maxWidth, lineHeight: COORDS.others.lineHeight, indent: 0 });
+
+            // Search Underline
+            const searchVal = document.querySelector('input[name="searchConducted"]:checked').value;
+            const searchUl = searchVal === 'yes' ? COORDS.searchUnderline.yes : COORDS.searchUnderline.no;
+            page2.drawLine({ start: { x: searchUl.xStart, y: searchUl.y }, end: { x: searchUl.xEnd, y: searchUl.y }, thickness: 1, color: PDFLib.rgb(0, 0, 0) });
+
+            drawParagraph(page2, getVal('searchProtocolSelect'), COORDS.searchProtocol.x, COORDS.searchProtocol.y, { ...opt, maxWidth: COORDS.searchProtocol.maxWidth, lineHeight: COORDS.searchProtocol.lineHeight, indent: 0 });
+
+            drawParagraph(page2, getVal('notes'), COORDS.notes.x, COORDS.notes.y, { ...opt, maxWidth: COORDS.notes.maxWidth, lineHeight: COORDS.notes.lineHeight, indent: COORDS.notes.indent });
+
+            // Read Underline
+            const readUl = COORDS.readUnderline.personally;
+            page2.drawLine({ start: { x: readUl.xStart, y: readUl.y }, end: { x: readUl.xEnd, y: readUl.y }, thickness: 1, color: PDFLib.rgb(0, 0, 0) });
+
+            // Signatures Page 2
+            drawCenteredInRange(page2, getVal('detainedFio'), COORDS.signatures.detained.xStart, COORDS.signatures.detained.xEnd, COORDS.signatures.detained.y, opt);
+            drawCenteredInRange(page2, getVal('defender'), COORDS.signatures.defender.xStart, COORDS.signatures.defender.xEnd, COORDS.signatures.defender.y, opt);
+            drawCenteredInRange(page2, getVal('witness1'), COORDS.signatures.witness1.xStart, COORDS.signatures.witness1.xEnd, COORDS.signatures.witness1.y, opt);
+            drawCenteredInRange(page2, getVal('witness2'), COORDS.signatures.witness2.xStart, COORDS.signatures.witness2.xEnd, COORDS.signatures.witness2.y, opt);
+            
+            // Инициалы сотрудника
+            const officialInit = getVal('official').split(',')[1] || '';
+            drawCenteredInRange(page2, officialInit.trim(), COORDS.signatures.official.xStart, COORDS.signatures.official.xEnd, COORDS.signatures.official.y, opt);
+
+            drawParagraph(page2, getVal('direction'), COORDS.direction.x, COORDS.direction.y, { ...opt, maxWidth: COORDS.direction.maxWidth, lineHeight: COORDS.direction.lineHeight, indent: COORDS.direction.indent });
+
+            // Сохранение
+            const pdfBytes = await pdfDoc.save();
+            currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+            const fileName = `${Date.now()}_DETENTION_${docNumber}.pdf`;
+
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            await supabaseClient.from('documents').insert({
+                patient_id: actualCitizenId,
+                organization_id: currentOrgId,
+                doc_number: docNumber,
+                document_type: 'Протокол задержания',
+                file_path: fileName,
+                status: 'active'
+            });
+
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl + '#' + Date.now();
+            document.getElementById('preview-modal').style.display = 'flex';
+
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка: ' + err.message + '\nУбедись, что файл detention_template.pdf лежит рядом с генератором!');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать и сохранить PDF';
+        }
+    });
+
+    // =====================================================================
+    // Старт
+    // =====================================================================
+    initDates();
+    initTemplates();
+    initWorkAutocomplete();
+    initArticleAutocomplete();
+    loadData();
+</script>
+</body>
+</html>
