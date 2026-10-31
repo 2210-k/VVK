@@ -140,8 +140,13 @@
                 <input type="text" id="driverLicense" style="text-align:center;">
             </div>
             <div class="form-group">
-                <label>№ документа на Т/С</label>
-                <input type="text" id="vehicleDoc" style="text-align:center;">
+                <label>№ документа на Т/С (выбор из базы)</label>
+                <!-- ДОБАВЛЕН ВЫПАДАЮЩИЙ СПИСОК -->
+                <select id="vehicleDocSelect" class="form-select" onchange="onVehicleDocSelect()">
+                    <option value="">-- Загрузка или ручной ввод --</option>
+                </select>
+                <!-- САМО ПОЛЕ ОСТАЕТСЯ РЕДАКТИРУЕМЫМ -->
+                <input type="text" id="vehicleDoc" style="text-align:center;" placeholder="Введите вручную или выберите выше">
             </div>
         </div>
 
@@ -266,13 +271,12 @@
     const currentOrgId = parseInt(urlParams.get('org')) || 2;
 
     // =====================================================================
-    // ✅ КООРДИНАТЫ (откалиброваны пользователем)
+    // ✅ КООРДИНАТЫ
     // =====================================================================
     const COORDS = {
         qrCode: { x: 22, y: 747, width: 70, height: 70 },
         barcode: { x: 507, y: 777, width: 70, height: 40 },
 
-        // Заголовок
         date: {
             day:   { xStart: 204, xEnd: 227, y: 685 },
             month: { xStart: 235, xEnd: 297, y: 685 },
@@ -281,41 +285,27 @@
         dayNumber: { xStart: 348, xEnd: 368, y: 685 },
         docNumber: { xStart: 313, xEnd: 383, y: 721 },
 
-        // "Я, [должностное лицо], рассмотрев..."
         official: { x: 33, y: 666, maxWidth: 411, lineHeight: 13, indent: 0 },
-
-        // "установил, что гражданин [ИО]"
         citizenName: { x: 387, y: 644 },
 
-        // Дата рождения гражданина
         dob: {
             day:   { xStart: 107, xEnd: 120, y: 622 },
             month: { xStart: 128, xEnd: 191, y: 622 },
             year:  { xStart: 205, xEnd: 226, y: 622 }
         },
 
-        // Паспорт
         passport: {
             series: { xStart: 299, xEnd: 328, y: 606.8 },
             number: { xStart: 367, xEnd: 429, y: 606.8 }
         },
 
-        // Водительское удостоверение
         driverLicense: { xStart: 184, xEnd: 280, y: 595 },
-
-        // Документ на Т/С
         vehicleDoc: { xStart: 476, xEnd: 546, y: 595 },
 
-        // Адрес регистрации (многострочный)
         regAddress: { x: 196, y: 583, maxWidth: 372, lineHeight: 13, indent: 0 },
-
-        // Фактический адрес (многострочный)
         actualAddress: { x: 175, y: 569, maxWidth: 395, lineHeight: 13, indent: 0 },
-
-        // Полное описание ТС: "модель, цвет, госномер"
         vehicleFull: { x: 189, y: 548, maxWidth: 380, lineHeight: 13, indent: 0 },
 
-        // Дата нарушения
         offenseDate: {
             day:   { xStart: 27,  xEnd: 50,  y: 526 },
             month: { xStart: 58,  xEnd: 120, y: 526 },
@@ -327,22 +317,12 @@
             m: { xStart: 257, xEnd: 277, y: 526 }
         },
 
-        // Место
         offensePlace: { x: 292, y: 526, maxWidth: 276, lineHeight: 13, indent: 0 },
-
-        // Обстоятельства (многострочный с отступом)
         circumstances: { x: 22, y: 504, maxWidth: 548, lineHeight: 13, indent: 164 },
-
-        // Статья (первое вхождение)
         article1: { xStart: 418, xEnd: 474, y: 469 },
-
-        // "Признать гражданина(ку) [ИО]"
         admitName: { x: 144, y: 393.6 },
-
-        // Статья (второе вхождение)
         article2: { xStart: 236, xEnd: 296, y: 382 },
 
-        // Наказания
         punishment: {
             fine: {
                 check:  { x: 26.5, y: 358.5 },
@@ -358,24 +338,16 @@
                 term:  { x: 204, y: 329 }
             }
         },
-
-        // Должностное лицо (низ) — только должность/звание
         finalOfficial: { x: 248, y: 112, maxWidth: 320, lineHeight: 13, indent: 0 }
     };
 
     const MONTHS_NUMERIC = ["01","02","03","04","05","06","07","08","09","10","11","12"];
     const MONTHS_GENITIVE = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
 
-    // =====================================================================
-    // 📋 Шаблоны должностного лица (только должность + звание)
-    // =====================================================================
     const OFFICIAL_TEMPLATES = [
         "инспектор ДПС УМВД России по Оренбургской области, генерал полиции"
     ];
 
-    // =====================================================================
-    // 🚗 База транспортных средств
-    // =====================================================================
     const VEHICLES = [
         'Горный велосипед','Электрический велосипед','ЗАЗ-966 «Запорожец»',
         'Lada -1111 «Ока»','Ваз-2105','Ваз-2104','Ваз-2107','Ваз-2114',
@@ -395,9 +367,6 @@
         'Курьерский скутер Honda Dio AF62','Can-am SPYDER F3'
     ];
 
-    // =====================================================================
-    // 📕 Статьи Дорожного кодекса
-    // =====================================================================
     const ARTICLES = [
         { code: '1.1.1', desc: 'Управление ТС без водительского удостоверения (соответствующей категории)', fine: 5000 },
         { code: '1.1.2', desc: 'Управление ТС водителем, лишенным права управления', fine: 6500, arrest: true },
@@ -436,31 +405,18 @@
         { code: '5.2', desc: 'Оказание сопротивления или неповиновение законному распоряжению сотрудника полиции', fine: 7000, arrest: true }
     ];
 
-    // =====================================================================
-    // 💰 Расшифровка сумм (без «рублей»)
-    // =====================================================================
     const FINE_DECODE = {
-        500: 'пятьсот',
-        1000: 'одна тысяча',
-        1500: 'одна тысяча пятьсот',
-        2000: 'две тысячи',
-        3000: 'три тысячи',
-        4000: 'четыре тысячи',
-        5000: 'пять тысяч',
-        6000: 'шесть тысяч',
-        6500: 'шесть тысяч пятьсот',
-        7000: 'семь тысяч',
-        8000: 'восемь тысяч',
-        10000: 'десять тысяч'
+        500: 'пятьсот', 1000: 'одна тысяча', 1500: 'одна тысяча пятьсот',
+        2000: 'две тысячи', 3000: 'три тысячи', 4000: 'четыре тысячи',
+        5000: 'пять тысяч', 6000: 'шесть тысяч', 6500: 'шесть тысяч пятьсот',
+        7000: 'семь тысяч', 8000: 'восемь тысяч', 10000: 'десять тысяч'
     };
 
     let currentPdfBlob = null;
     let allCitizensCache = [];
     let currentArticle = null;
+    let activeVehicleDocs = []; // Хранилище для ДАТС и ПТС
 
-    // =====================================================================
-    // ИНИЦИАЛИЗАЦИЯ
-    // =====================================================================
     function initDates() {
         const today = new Date();
         const d = String(today.getDate()).padStart(2, '0');
@@ -514,9 +470,6 @@
         });
     }
 
-    // =====================================================================
-    // Загрузка граждан
-    // =====================================================================
     async function loadCitizens() {
         const { data } = await supabaseClient
             .from('profiles')
@@ -534,6 +487,57 @@
         });
     }
 
+    // ЗАГРУЗКА ДОКУМЕНТОВ НА Т/С
+    async function loadActiveVehicleDocs() {
+        // Ищем действующие ДАТС или ПТС
+        const { data, error } = await supabaseClient
+            .from('documents')
+            .select('doc_number, document_type, metadata')
+            .in('document_type', ['Договор аренды ТС', 'Паспорт ТС'])
+            .eq('status', 'active');
+
+        if (error) {
+            console.error("Ошибка загрузки Т/С:", error);
+            return;
+        }
+
+        // На всякий случай фильтруем те, у которых нет статуса (старые записи)
+        activeVehicleDocs = (data || []).filter(d => d.status === 'active' || !d.status);
+
+        const sel = document.getElementById('vehicleDocSelect');
+        sel.innerHTML = '<option value="">-- Выбрать из базы --</option>';
+        
+        activeVehicleDocs.forEach(doc => {
+            const label = `${doc.doc_number} (${doc.document_type})`;
+            sel.add(new Option(label, doc.doc_number));
+        });
+    }
+
+    // АВТОЗАПОЛНЕНИЕ ПРИ ВЫБОРЕ ДОКУМЕНТА
+    function onVehicleDocSelect() {
+        const selectedNum = document.getElementById('vehicleDocSelect').value;
+        if (!selectedNum) return;
+
+        const doc = activeVehicleDocs.find(d => d.doc_number === selectedNum);
+        if (!doc) return;
+
+        // Подставляем номер документа
+        document.getElementById('vehicleDoc').value = doc.doc_number;
+
+        // Подставляем данные из metadata, если они есть
+        if (doc.metadata) {
+            if (doc.metadata.vehicle_name) {
+                document.getElementById('vehicleModel').value = doc.metadata.vehicle_name;
+            }
+            if (doc.metadata.color) {
+                document.getElementById('vehicleColor').value = doc.metadata.color;
+            }
+            if (doc.metadata.plate) {
+                document.getElementById('vehiclePlate').value = doc.metadata.plate;
+            }
+        }
+    }
+
     document.getElementById('patientSelect').addEventListener('change', e => {
         const id = e.target.value;
         if (!id || id === 'none') {
@@ -541,7 +545,7 @@
             document.getElementById('regAddress').value = '';
             document.getElementById('passSeries').value = '';
             document.getElementById('passNumber').value = '';
-            document.getElementById('driverLicense').value = ''; // ИСПРАВЛЕНО: очистка поля
+            document.getElementById('driverLicense').value = '';
             document.getElementById('dobDay').value = '';
             document.getElementById('dobYear').value = '';
             document.getElementById('dobMonth').value = '01';
@@ -554,7 +558,7 @@
         document.getElementById('regAddress').value = c.address || '';
         document.getElementById('passSeries').value = c.pass_series || '';
         document.getElementById('passNumber').value = c.pass_number || '';
-        document.getElementById('driverLicense').value = c.driver_license || ''; // ИСПРАВЛЕНО: автозаполнение
+        document.getElementById('driverLicense').value = c.driver_license || '';
 
         if (c.dob) {
             const [y, m, d] = c.dob.split('-');
@@ -564,9 +568,6 @@
         }
     });
 
-    // =====================================================================
-    // Автокомплит: ТС
-    // =====================================================================
     function initVehicleAutocomplete() {
         const inp = document.getElementById('vehicleModel');
         const dd = document.getElementById('vehicleDropdown');
@@ -594,9 +595,6 @@
         });
     }
 
-    // =====================================================================
-    // Автокомплит: Статья
-    // =====================================================================
     function initArticleAutocomplete() {
         const inp = document.getElementById('articleInput');
         const dd = document.getElementById('articleDropdown');
@@ -650,9 +648,6 @@
         else { rowArrest.classList.add('disabled'); cbArrest.disabled = true; cbArrest.checked = false; }
     }
 
-    // =====================================================================
-    // PDF helpers
-    // =====================================================================
     function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
         if (!text) return;
         const w = options.font.widthOfTextAtSize(text, options.size);
@@ -695,9 +690,6 @@
         return await fetch(url).then(r => r.arrayBuffer());
     }
 
-    // =====================================================================
-    // Кнопки
-    // =====================================================================
     document.getElementById('close-preview-btn').addEventListener('click', () => {
         document.getElementById('preview-modal').style.display = 'none';
         document.getElementById('pdf-preview-frame').src = '';
@@ -712,9 +704,6 @@
         link.click();
     });
 
-    // =====================================================================
-    // Генерация PDF
-    // =====================================================================
     document.getElementById('adminForm').addEventListener('submit', async e => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -731,9 +720,7 @@
             const articleCode = getVal('articleInput');
             const dayNumberVal = getVal('dayNumber');
 
-            // "Должность/звание, Имя Отчество" для блока "Я, ..."
             const officialFull = `${getVal('official')}, ${getVal('officialName')}`;
-            // Только должность/звание — для низа
             const officialShort = getVal('official');
 
             const existingPdfBytes = await fetch('./admin_order_template.pdf').then(r => r.arrayBuffer());
@@ -765,7 +752,7 @@
             drawCenteredInRange(page, dayNumberVal, COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt);
             drawCenteredInRange(page, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt);
 
-            // Должностное лицо (верх) — "должность, звание, ИО"
+            // Должностное лицо (верх)
             drawParagraph(page, officialFull, COORDS.official.x, COORDS.official.y, {
                 ...opt, maxWidth: COORDS.official.maxWidth, lineHeight: COORDS.official.lineHeight, indent: COORDS.official.indent
             });
@@ -807,7 +794,6 @@
             drawCenteredInRange(page, offMonthWord, COORDS.offenseDate.month.xStart, COORDS.offenseDate.month.xEnd, COORDS.offenseDate.month.y, opt);
             drawCenteredInRange(page, getVal('offYear'), COORDS.offenseDate.year.xStart, COORDS.offenseDate.year.xEnd, COORDS.offenseDate.year.y, opt);
 
-            // Номер дня нарушения — БЕРЁМ ИЗ ТОГО ЖЕ ПОЛЯ dayNumber
             drawCenteredInRange(page, dayNumberVal, COORDS.offenseDayNumber.xStart, COORDS.offenseDayNumber.xEnd, COORDS.offenseDayNumber.y, opt);
 
             drawCenteredInRange(page, getVal('offTimeH'), COORDS.offenseTime.h.xStart, COORDS.offenseTime.h.xEnd, COORDS.offenseTime.h.y, opt);
@@ -823,7 +809,7 @@
                 ...opt, maxWidth: COORDS.circumstances.maxWidth, lineHeight: COORDS.circumstances.lineHeight, indent: COORDS.circumstances.indent
             });
 
-            // Статья в двух местах
+            // Статья
             drawCenteredInRange(page, articleCode, COORDS.article1.xStart, COORDS.article1.xEnd, COORDS.article1.y, opt);
             drawCenteredInRange(page, articleCode, COORDS.article2.xStart, COORDS.article2.xEnd, COORDS.article2.y, opt);
 
@@ -841,7 +827,6 @@
                 drawCenteredInRange(page, fineVal, COORDS.punishment.fine.amount.xStart, COORDS.punishment.fine.amount.xEnd, COORDS.punishment.fine.amount.y, opt);
                 const decoded = FINE_DECODE[parseInt(fineVal)] || '';
                 if (decoded) {
-                    // Без скобок, без «рублей»
                     page.drawText(decoded, { x: COORDS.punishment.fine.text.x, y: COORDS.punishment.fine.text.y, ...opt });
                 }
             }
@@ -856,7 +841,7 @@
                 page.drawText('на срок, установленный законом', { x: COORDS.punishment.arrest.term.x, y: COORDS.punishment.arrest.term.y, ...opt });
             }
 
-            // Должностное лицо (низ) — только должность/звание, без ИО
+            // Должностное лицо (низ)
             drawParagraph(page, officialShort, COORDS.finalOfficial.x, COORDS.finalOfficial.y, {
                 ...opt, maxWidth: COORDS.finalOfficial.maxWidth, lineHeight: COORDS.finalOfficial.lineHeight, indent: COORDS.finalOfficial.indent
             });
@@ -900,6 +885,7 @@
     initVehicleAutocomplete();
     initArticleAutocomplete();
     loadCitizens();
+    loadActiveVehicleDocs(); // Загружаем действующие документы на Т/С
 </script>
 </body>
 </html>
