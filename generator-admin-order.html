@@ -141,7 +141,7 @@
             </div>
             <div class="form-group">
                 <label>№ документа на Т/С (выбор из базы)</label>
-                <!-- ДОБАВЛЕН ВЫПАДАЮЩИЙ СПИСОК -->
+                <!-- ВЫПАДАЮЩИЙ СПИСОК -->
                 <select id="vehicleDocSelect" class="form-select" onchange="onVehicleDocSelect()">
                     <option value="">-- Загрузка или ручной ввод --</option>
                 </select>
@@ -415,7 +415,7 @@
     let currentPdfBlob = null;
     let allCitizensCache = [];
     let currentArticle = null;
-    let activeVehicleDocs = []; // Хранилище для ДАТС и ПТС
+    let activeVehicleDocs = []; 
 
     function initDates() {
         const today = new Date();
@@ -492,7 +492,7 @@
         // Ищем действующие ДАТС или ПТС
         const { data, error } = await supabaseClient
             .from('documents')
-            .select('doc_number, document_type, metadata')
+            .select('doc_number, document_type, metadata, patient_id') 
             .in('document_type', ['Договор аренды ТС', 'Паспорт ТС'])
             .eq('status', 'active');
 
@@ -508,7 +508,17 @@
         sel.innerHTML = '<option value="">-- Выбрать из базы --</option>';
         
         activeVehicleDocs.forEach(doc => {
-            const label = `${doc.doc_number} (${doc.document_type})`;
+            // Ищем ФИО владельца в загруженном кэше граждан
+            let fio = 'В архиве';
+            if (doc.patient_id) {
+                const c = allCitizensCache.find(x => x.id === doc.patient_id);
+                if (c) fio = `${c.first_name} ${c.patronymic || ''}`.trim(); // Имя Отчество
+            }
+
+            // Добавляем марку машины в подсказку для удобства
+            const vName = doc.metadata?.vehicle_name ? ` - ${doc.metadata.vehicle_name}` : '';
+
+            const label = `${doc.doc_number} (${fio})${vName}`;
             sel.add(new Option(label, doc.doc_number));
         });
     }
@@ -884,8 +894,12 @@
     initActualAddressTemplate();
     initVehicleAutocomplete();
     initArticleAutocomplete();
-    loadCitizens();
-    loadActiveVehicleDocs(); // Загружаем действующие документы на Т/С
+    
+    // Делаем последовательный запуск: сначала грузим людей, потом машины
+    (async () => {
+        await loadCitizens(); 
+        await loadActiveVehicleDocs(); 
+    })();
 </script>
 </body>
 </html>
