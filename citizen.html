@@ -1471,10 +1471,20 @@
     // ПРОСМОТР PDF
     // ============================================================
     function previewDoc(url) {
-        document.getElementById('preview-frame').src = url;
-        document.getElementById('preview-download-btn').href = url;
+        // Проверка, мобильное ли устройство
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        
+        let previewUrl = url;
+        if (isMobile) {
+            // Для мобилок используем Google Docs Viewer (открывает PDF внутри iframe)
+            previewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+        }
+        
+        document.getElementById('preview-frame').src = previewUrl;
+        document.getElementById('preview-download-btn').href = url; // Скачивание остается прежним
         document.getElementById('preview-modal').style.display = 'flex';
     }
+    
     function closePreview() {
         document.getElementById('preview-modal').style.display = 'none';
         document.getElementById('preview-frame').src = '';
