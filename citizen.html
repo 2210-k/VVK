@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет | ЕСС</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- ПОДКЛЮЧАЕМ PDF.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         :root {
             --primary: #10b981;
@@ -714,6 +716,9 @@
                     <button class="btn-close-prev" onclick="closePreview()">Закрыть</button>
                 </div>
             </div>
+            <!-- Контейнер для PDF.js (мобилка) -->
+            <div id="preview-canvas-container" style="display:none; flex:1; width:100%; overflow-y:auto; background:#555; align-items:center; flex-direction:column; padding:10px 0;"></div>
+            <!-- Iframe для ПК -->
             <iframe id="preview-frame" class="preview-iframe"></iframe>
         </div>
     </div>
@@ -740,6 +745,9 @@
     const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Настройка PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
     // ============================================================
     // СОСТОЯНИЕ
@@ -1468,35 +1476,37 @@
     }
 
     // ============================================================
-    // ПРОСМОТР PDF
+    // ПРОСМОТР PDF (PDF.JS)
     // ============================================================
-    function previewDoc(url) {
-        // Проверка, мобильное ли устройство
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    async function previewDoc(url) {
+        const isMobile = window.innerWidth <= 768;
+        const iframe = document.getElementById('preview-frame');
+        const container = document.getElementById('preview-canvas-container');
         
-        let previewUrl = url;
-        if (isMobile) {
-            // Для мобилок используем Google Docs Viewer (открывает PDF внутри iframe)
-            previewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-        }
-        
-        document.getElementById('preview-frame').src = previewUrl;
-        document.getElementById('preview-download-btn').href = url; // Скачивание остается прежним
         document.getElementById('preview-modal').style.display = 'flex';
-    }
-    
-    function closePreview() {
-        document.getElementById('preview-modal').style.display = 'none';
-        document.getElementById('preview-frame').src = '';
-    }
+        document.getElementById('preview-download-btn').href = url;
 
-    // Закрытие модалок по клику вне
-    document.getElementById('preview-modal').addEventListener('click', e => {
-        if (e.target.id === 'preview-modal') closePreview();
-    });
-    document.getElementById('notif-modal').addEventListener('click', e => {
-        if (e.target.id === 'notif-modal') closeNotifications();
-    });
-</script>
-</body>
-</html>
+        if (!isMobile) {
+            container.style.display = 'none';
+            iframe.style.display = 'block';
+            iframe.src = url;
+        } else {
+            iframe.style.display = 'none';
+            container.style.display = 'flex';
+            container.innerHTML = '<p style="color:white; padding:20px;">Загрузка документа...</p>';
+            
+            try {
+                const loadingTask = pdfjsLib.getDocument(url);
+                const pdf = await loadingTask.promise;
+                container.innerHTML = '';
+                
+                const scale = window.devicePixelRatio > 1 ? 2 : 1.5;
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: scale });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    canvas
