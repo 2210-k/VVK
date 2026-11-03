@@ -1476,7 +1476,7 @@
     }
 
     // ============================================================
-    // ПРОСМОТР PDF (PDF.JS)
+    // ПРОСМОТР PDF (ВЫСОКОЕ КАЧЕСТВО)
     // ============================================================
     async function previewDoc(url) {
         const isMobile = window.innerWidth <= 768;
@@ -1500,13 +1500,54 @@
                 const pdf = await loadingTask.promise;
                 container.innerHTML = '';
                 
-                const scale = window.devicePixelRatio > 1 ? 2 : 1.5;
+                const containerWidth = container.clientWidth;
+                const pixelRatio = window.devicePixelRatio || 1; 
                 
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: scale });
+                    const viewport = page.getViewport({ scale: 1 });
+                    
+                    // Считаем масштаб для HD-качества
+                    const scale = (containerWidth / viewport.width) * pixelRatio * 1.2;
+                    const scaledViewport = page.getViewport({ scale: scale });
+                    
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    canvas
+                    canvas.height = scaledViewport.height;
+                    canvas.width = scaledViewport.width;
+                    
+                    canvas.style.width = '100%';
+                    canvas.style.height = 'auto';
+                    canvas.style.marginBottom = '10px';
+                    canvas.style.borderRadius = '4px';
+                    canvas.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                    
+                    container.appendChild(canvas);
+                    
+                    await page.render({ 
+                        canvasContext: context, 
+                        viewport: scaledViewport 
+                    }).promise;
+                }
+            } catch (err) {
+                container.innerHTML = '<p style="color:white; padding:20px;">Ошибка загрузки PDF: ' + err.message + '</p>';
+            }
+        }
+    }
+    
+    function closePreview() {
+        document.getElementById('preview-modal').style.display = 'none';
+        document.getElementById('preview-frame').src = '';
+        document.getElementById('preview-canvas-container').innerHTML = '';
+    }
+
+    // Закрытие модалок по клику вне
+    document.getElementById('preview-modal').addEventListener('click', e => {
+        if (e.target.id === 'preview-modal') closePreview();
+    });
+    document.getElementById('notif-modal').addEventListener('click', e => {
+        if (e.target.id === 'notif-modal') closeNotifications();
+    });
+</script>
+</body>
+</html>
