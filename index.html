@@ -803,6 +803,7 @@
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         
         // --- ОБНОВЛЕННЫЙ ПРОСМОТР PDF (PDF.JS ДЛЯ ТЕЛЕФОНА) ---
+        // --- ОБНОВЛЕННЫЙ ПРОСМОТР PDF (ВЫСОКОЕ КАЧЕСТВО) ---
         async function previewDoc(url) {
             const isMobile = window.innerWidth <= 768;
             const iframe = document.getElementById('preview-frame');
@@ -812,12 +813,12 @@
             document.getElementById('preview-download-btn').href = url;
 
             if (!isMobile) {
-                // ПК - используем iframe
+                // ПК - используем iframe (там качество и так хорошее)
                 container.style.display = 'none';
                 iframe.style.display = 'block';
                 iframe.src = url;
             } else {
-                // Телефон - используем PDF.js
+                // Телефон - используем PDF.js в высоком разрешении
                 iframe.style.display = 'none';
                 container.style.display = 'flex';
                 container.innerHTML = '<p style="color:white; padding:20px;">Загрузка документа...</p>';
@@ -827,21 +828,39 @@
                     const pdf = await loadingTask.promise;
                     container.innerHTML = '';
                     
-                    const scale = window.devicePixelRatio > 1 ? 2 : 1.5;
+                    // Считаем масштаб, чтобы документ был четким
+                    const containerWidth = container.clientWidth;
+                    // window.devicePixelRatio делает текст идеально четким на экранах Retina
+                    const pixelRatio = window.devicePixelRatio || 1; 
                     
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
-                        const viewport = page.getViewport({ scale: scale });
+                        
+                        // Базовый вид страницы для расчета пропорций
+                        const viewport = page.getViewport({ scale: 1 });
+                        
+                        // Масштабируем под ширину экрана + умножаем на плотность пикселей (дает HD качество)
+                        const scale = (containerWidth / viewport.width) * pixelRatio * 1.2;
+                        const scaledViewport = page.getViewport({ scale: scale });
+                        
                         const canvas = document.createElement('canvas');
                         const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
+                        canvas.height = scaledViewport.height;
+                        canvas.width = scaledViewport.width;
+                        
+                        // Стили для красивого отображения на телефоне
+                        canvas.style.width = '100%'; // Подгоняем под ширину экрана
+                        canvas.style.height = 'auto'; // Сохраняем пропорции
                         canvas.style.marginBottom = '10px';
-                        canvas.style.maxWidth = '95%';
                         canvas.style.borderRadius = '4px';
                         canvas.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                        
                         container.appendChild(canvas);
-                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        
+                        await page.render({ 
+                            canvasContext: context, 
+                            viewport: scaledViewport 
+                        }).promise;
                     }
                 } catch (err) {
                     container.innerHTML = '<p style="color:white; padding:20px;">Ошибка загрузки PDF: ' + err.message + '</p>';
