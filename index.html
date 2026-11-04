@@ -94,6 +94,20 @@
         .preview-header h3 { margin: 0; color: #333; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
 
+        /* Аккуратные формы кадрового отдела */
+        .hr-modal .modal-content { max-width:560px; padding:26px; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 18px 55px rgba(15,23,42,.22); }
+        .hr-modal .modal-content h3 { padding-bottom:14px; margin-bottom:16px; border-bottom:1px solid #edf1f5; font-size:20px; }
+        .hr-modal .hr-form-field { margin:0 0 13px; }
+        .hr-modal .hr-form-field label { margin:0 0 6px; color:#334155; font-size:12px; }
+        .hr-modal .hr-form-field input, .hr-modal .hr-form-field select, .hr-modal .hr-form-field textarea { display:block; width:100%; padding:11px 12px; margin:0; border:1px solid #d7dee8; border-radius:8px; background:#fbfdff; color:#1e293b; font:14px/1.45 inherit; outline:none; transition:border-color .15s,box-shadow .15s; }
+        .hr-modal .hr-form-field textarea { min-height:78px; resize:vertical; }
+        .hr-modal .hr-form-field input:focus, .hr-modal .hr-form-field select:focus, .hr-modal .hr-form-field textarea:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); background:#fff; }
+        .hr-modal .hr-field-hint { display:block; margin-top:5px; color:#64748b; font-size:11px; }
+        .hr-modal .hr-change-summary { margin:0 0 14px; padding:12px 14px; border-radius:8px; background:#f1f5f9; color:#475569; font-size:13px; }
+        .hr-modal .modal-actions { margin-top:18px; }
+        .hr-modal .modal-actions button { border-radius:8px; min-height:42px; transition:filter .15s,transform .15s; }
+        .hr-modal .modal-actions button:hover { filter:brightness(.97); transform:translateY(-1px); }
+
         /* КАДРОВЫЙ ОТДЕЛ (Внутренние стили) */
         .hr-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: calc(100vh - 200px); }
         .hr-sidebar { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-y: auto; display: flex; flex-direction: column; }
@@ -1249,7 +1263,7 @@
 
         function openHRModal(title, bodyHtml, onConfirm) {
             const modal = document.createElement('div');
-            modal.className = 'modal';
+            modal.className = 'modal hr-modal';
             modal.style.display = 'flex';
             modal.innerHTML = `
                 <div class="modal-content">
@@ -1262,19 +1276,86 @@
                 </div>
             `;
             document.body.appendChild(modal);
+            modal.querySelectorAll('.hr-template-select').forEach(select => {
+                select.addEventListener('change', () => {
+                    const target = modal.querySelector('#' + select.dataset.target);
+                    if (target && select.value) {
+                        target.value = select.value;
+                        target.focus();
+                        target.setSelectionRange(target.value.length, target.value.length);
+                    }
+                });
+            });
             modal.querySelector('#hr-modal-cancel').onclick = () => modal.remove();
             modal.querySelector('#hr-modal-confirm').onclick = () => {
                 if (onConfirm(modal) !== false) modal.remove();
             };
         }
 
+        function hrTemplateField(id, label, templates, defaultValue = '') {
+            const options = templates.map(value => `<option value="${hrEscape(value)}">${hrEscape(value)}</option>`).join('');
+            return `
+                <div class="hr-form-field">
+                    <label for="${id}">${label}</label>
+                    <select class="hr-template-select" data-target="${id}">
+                        <option value="">Выбрать шаблон (можно изменить ниже)</option>
+                        ${options}
+                    </select>
+                    <textarea id="${id}" rows="3" placeholder="Введите причину или основание...">${hrEscape(defaultValue)}</textarea>
+                </div>
+            `;
+        }
+
+        function hrPlacePicker(id, label) {
+            const places = [
+                ...HR_DB.orgs.map(x => ({ type: 'org', name: x.name })),
+                ...HR_DB.works.map(x => ({ type: 'work', name: x.name }))
+            ];
+            const options = places.map(x => `<option value="${hrEscape(x.name)}"></option>`).join('');
+            return `
+                <div class="hr-form-field">
+                    <label for="${id}">${label}</label>
+                    <input type="search" id="${id}" list="${id}-options" autocomplete="off" placeholder="Начните вводить название..." value="${hrEscape(places[0]?.name || '')}">
+                    <datalist id="${id}-options">${options}</datalist>
+                    <small class="hr-field-hint">Начните вводить название — появятся подходящие варианты. Можно выбрать вариант или ввести точное название.</small>
+                </div>
+            `;
+        }
+
+        function hrResolvePlace(value) {
+            const org = HR_DB.orgs.find(x => x.name.toLowerCase() === String(value || '').trim().toLowerCase());
+            if (org) return { type: 'org', name: org.name, positions: org.pos };
+            const work = HR_DB.works.find(x => x.name.toLowerCase() === String(value || '').trim().toLowerCase());
+            if (work) return { type: 'work', name: work.name, positions: work.pos };
+            return null;
+        }
+
+        function hrBindPlacePicker(modal, inputId, positionId) {
+            const input = modal.querySelector('#' + inputId);
+            const positions = modal.querySelector('#' + positionId);
+            if (!input || !positions) return;
+            const update = () => {
+                const place = hrResolvePlace(input.value);
+                positions.innerHTML = place
+                    ? place.positions.map(p => `<option value="${hrEscape(p)}">${hrEscape(p)}</option>`).join('')
+                    : '<option value="">Сначала выберите место работы</option>';
+            };
+            input.addEventListener('input', update);
+            input.addEventListener('change', update);
+            update();
+        }
+
         function hrDateFields() {
             const today = new Date().toISOString().split('T')[0];
             return `
-                <label>Реальная дата (авто)</label>
-                <input type="date" id="hr-date" value="${today}" required>
-                <label>Игровой день (введите вручную)</label>
-                <input type="number" id="hr-game-day" required>
+                <div class="hr-form-field">
+                    <label for="hr-date">Реальная дата</label>
+                    <input type="date" id="hr-date" value="${today}" required>
+                </div>
+                <div class="hr-form-field">
+                    <label for="hr-game-day">Номер дня</label>
+                    <input type="number" id="hr-game-day" min="1" step="1" placeholder="Введите номер дня" required>
+                </div>
             `;
         }
 
@@ -1285,52 +1366,33 @@
             if (type === 'hire') {
                 if (c.current_org) return alert('Уже трудоустроен!');
                 
-                let orgOptions = HR_DB.orgs.map(o => `<option value="org|${o.name}">🏢 Организация: ${o.name}</option>`).join('');
-                let workOptions = HR_DB.works.map(w => `<option value="work|${w.name}">💼 Работа: ${w.name}</option>`).join('');
-                
                 openHRModal('📝 Приём на работу', `
-                    <label>Выберите место работы</label>
-                    <select id="hr-hire-type">${orgOptions}${workOptions}</select>
-                    <label>Должность</label>
-                    <select id="hr-hire-pos"></select>
+                    ${hrPlacePicker('hr-hire-type', 'Место работы или организация')}
+                    <div class="hr-form-field">
+                        <label for="hr-hire-pos">Должность</label>
+                        <select id="hr-hire-pos"></select>
+                    </div>
                     ${hrDateFields()}
                 `, (m) => {
-                    const val = m.querySelector('#hr-hire-type').value;
-                    const [type, name] = val.split('|');
+                    const place = hrResolvePlace(m.querySelector('#hr-hire-type').value);
+                    if (!place) { alert('Выберите организацию или место работы из предложенных вариантов.'); return false; }
                     const pos = m.querySelector('#hr-hire-pos').value;
+                    if (!pos) { alert('Выберите должность.'); return false; }
                     const gameDay = m.querySelector('#hr-game-day').value;
                     const date = m.querySelector('#hr-date').value;
-                    
-                    const text = type === 'org' 
-                        ? `Принят в организацию "${name}" на должность "${pos}"`
-                        : `Принят на работу в "${name}" на должность "${pos}"`;
-                    
-                    saveHRRecord(c.id, 'hire', text, gameDay, date, { current_org: name, current_position: pos });
+                    const text = place.type === 'org'
+                        ? `Принят в организацию "${place.name}" на должность "${pos}"`
+                        : `Принят на работу в "${place.name}" на должность "${pos}"`;
+                    saveHRRecord(c.id, 'hire', text, gameDay, date, { current_org: place.name, current_position: pos });
                 });
-
-                setTimeout(() => {
-                    const sel = document.querySelector('#hr-hire-type');
-                    const posSel = document.querySelector('#hr-hire-pos');
-                    const updatePos = () => {
-                        const val = sel.value;
-                        const [type, name] = val.split('|');
-                        const arr = type === 'org' ? HR_DB.orgs.find(x=>x.name===name).pos : HR_DB.works.find(x=>x.name===name).pos;
-                        posSel.innerHTML = arr.map(p => `<option value="${p}">${p}</option>`).join('');
-                    };
-                    sel.onchange = updatePos;
-                    updatePos();
-                }, 100);
+                const hireModal = document.querySelector('.modal:last-of-type');
+                if (hireModal) hrBindPlacePicker(hireModal, 'hr-hire-type', 'hr-hire-pos');
             }
 
             if (type === 'fire') {
                 if (!c.current_org) return;
                 openHRModal('❌ Увольнение', `
-                    <label>Причина увольнения</label>
-                    <select id="hr-fire-reason">
-                        <option value="собственное желание">Собственное желание</option>
-                        <option value="нарушение устава">Нарушение устава</option>
-                        <option value="грубое нарушение устава">Грубое нарушение устава</option>
-                    </select>
+                    ${hrTemplateField('hr-fire-reason', 'Причина увольнения', ['Собственное желание', 'Нарушение устава', 'Грубое нарушение устава', 'По соглашению сторон', 'Иное основание'])}
                     ${hrDateFields()}
                 `, (m) => {
                     const reason = m.querySelector('#hr-fire-reason').value;
@@ -1361,14 +1423,17 @@
                 const newPos = orgData.pos[newIdx];
                 
                 openHRModal(type === 'promote' ? '⬆️ Повышение' : '⬇️ Понижение', `
-                    <p>Смена должности с <b>${c.current_position}</b> на <b>${newPos}</b></p>
+                    <div class="hr-change-summary">Смена должности: <b>${hrEscape(c.current_position)}</b> → <b>${hrEscape(newPos)}</b></div>
+                    ${hrTemplateField('hr-change-reason', 'Основание', ['Добросовестное исполнение должностных обязанностей', 'Решение руководства', 'По результатам служебной проверки', 'Иное основание'], 'Добросовестное исполнение должностных обязанностей')}
                     ${hrDateFields()}
                 `, (m) => {
                     const gameDay = m.querySelector('#hr-game-day').value;
                     const date = m.querySelector('#hr-date').value;
+                    const reason = m.querySelector('#hr-change-reason').value.trim();
+                    if (!reason) { alert('Укажите основание кадрового изменения.'); return false; }
                     const text = type === 'promote'
-                        ? `Повышен с должности "${c.current_position}" до "${newPos}". Основание: Добросовестное исполнение обязанностей`
-                        : `Понижен с должности "${c.current_position}" до "${newPos}". Основание: Добросовестное исполнение обязанностей`;
+                        ? `Повышен с должности "${c.current_position}" до "${newPos}". Основание: ${reason}`
+                        : `Понижен с должности "${c.current_position}" до "${newPos}". Основание: ${reason}`;
                     
                     saveHRRecord(c.id, type, text, gameDay, date, { current_position: newPos });
                 });
@@ -1378,46 +1443,30 @@
                 if (!c.current_org) return;
                 if (c.reprimands_count > 0) return alert('Нельзя перевести сотрудника с выговорами!');
                 
-                let orgOptions = HR_DB.orgs.map(o => `<option value="org|${o.name}">🏢 Организация: ${o.name}</option>`).join('');
-                let workOptions = HR_DB.works.map(w => `<option value="work|${w.name}">💼 Работа: ${w.name}</option>`).join('');
-                
                 openHRModal('🔄 Перевод', `
-                    <label>Куда перевести</label>
-                    <select id="hr-trans-type">${orgOptions}${workOptions}</select>
-                    <label>Новая должность</label>
-                    <select id="hr-trans-pos"></select>
-                    <label>Основание</label>
-                    <input type="text" id="hr-trans-reason" value="По собственному желанию">
+                    ${hrPlacePicker('hr-trans-type', 'Куда перевести')}
+                    <div class="hr-form-field">
+                        <label for="hr-trans-pos">Новая должность</label>
+                        <select id="hr-trans-pos"></select>
+                    </div>
+                    ${hrTemplateField('hr-trans-reason', 'Основание для перевода', ['По собственному желанию', 'Служебная необходимость', 'По решению руководства', 'По результатам служебной проверки', 'Иное основание'], 'По собственному желанию')}
                     ${hrDateFields()}
                 `, (m) => {
-                    const val = m.querySelector('#hr-trans-type').value;
-                    const [type, name] = val.split('|');
+                    const place = hrResolvePlace(m.querySelector('#hr-trans-type').value);
+                    if (!place) { alert('Выберите организацию или место работы из предложенных вариантов.'); return false; }
                     const pos = m.querySelector('#hr-trans-pos').value;
-                    const reason = m.querySelector('#hr-trans-reason').value;
+                    const reason = m.querySelector('#hr-trans-reason').value.trim();
+                    if (!pos || !reason) { alert('Заполните должность и основание перевода.'); return false; }
                     const gameDay = m.querySelector('#hr-game-day').value;
                     const date = m.querySelector('#hr-date').value;
-                    
                     const isOrgOld = HR_DB.orgs.some(o => o.name === c.current_org);
                     const fromStr = isOrgOld ? `из организации "${c.current_org}"` : `из работы "${c.current_org}"`;
-                    const toStr = type === 'org' ? `в организацию "${name}"` : `в работу "${name}"`;
-                    
+                    const toStr = place.type === 'org' ? `в организацию "${place.name}"` : `в работу "${place.name}"`;
                     const text = `Переведен ${fromStr} с должности "${c.current_position}" ${toStr} на должность "${pos}". Основание: ${reason}`;
-                    
-                    saveHRRecord(c.id, 'transfer', text, gameDay, date, { current_org: name, current_position: pos, reprimands_count: 0 });
+                    saveHRRecord(c.id, 'transfer', text, gameDay, date, { current_org: place.name, current_position: pos, reprimands_count: 0 });
                 });
-
-                setTimeout(() => {
-                    const sel = document.querySelector('#hr-trans-type');
-                    const posSel = document.querySelector('#hr-trans-pos');
-                    const updatePos = () => {
-                        const val = sel.value;
-                        const [type, name] = val.split('|');
-                        const arr = type === 'org' ? HR_DB.orgs.find(x=>x.name===name).pos : HR_DB.works.find(x=>x.name===name).pos;
-                        posSel.innerHTML = arr.map(p => `<option value="${p}">${p}</option>`).join('');
-                    };
-                    sel.onchange = updatePos;
-                    updatePos();
-                }, 100);
+                const transferModal = document.querySelector('.modal:last-of-type');
+                if (transferModal) hrBindPlacePicker(transferModal, 'hr-trans-type', 'hr-trans-pos');
             }
 
             if (type === 'reprimand') {
@@ -1425,11 +1474,7 @@
                 if (c.reprimands_count >= 3) return alert('Уже 3 выговора!');
                 
                 openHRModal('⚠️ Выговор', `
-                    <label>Причина выговора</label>
-                    <select id="hr-rep-reason">
-                        <option value="нарушение устава">Нарушение устава</option>
-                        <option value="грубое нарушение устава">Грубое нарушение устава</option>
-                    </select>
+                    ${hrTemplateField('hr-rep-reason', 'Причина выговора', ['Нарушение устава', 'Грубое нарушение устава', 'Неисполнение должностных обязанностей', 'Нарушение служебной дисциплины', 'Иное нарушение'])}
                     ${hrDateFields()}
                 `, (m) => {
                     const reason = m.querySelector('#hr-rep-reason').value;
@@ -1459,8 +1504,7 @@
                 if (c.reprimands_count === 0) return;
                 
                 openHRModal('✅ Снятие выговора', `
-                    <label>Основание для снятия</label>
-                    <input type="text" id="hr-unrep-reason" value="Положительная характеристика">
+                    ${hrTemplateField('hr-unrep-reason', 'Основание для снятия', ['Положительная характеристика', 'Исправление допущенных нарушений', 'По решению руководства', 'Иное основание'], 'Положительная характеристика')}
                     ${hrDateFields()}
                 `, (m) => {
                     const reason = m.querySelector('#hr-unrep-reason').value;
