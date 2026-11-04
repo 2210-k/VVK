@@ -1059,13 +1059,27 @@
 
     function renderTrBookQR(){
         const target=document.getElementById('tr-book-qr');
-        if(!target||!window.QRCode) return;
+        if(!target) return;
         target.innerHTML='';
-        const p=state.userProfile||{};
-        const payload=['VVK-TR-BOOK','ФИО: '+[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' '),'Организация: '+(p.current_org||'Нет текущего места работы'),'Должность: '+(p.current_position||'—'),'Записей: '+state.trRecords.length,'Последняя запись: '+(state.trRecords[0]?.real_date||'—')].join('\n');
-        new QRCode(target,{text:payload,width:112,height:112,correctLevel:QRCode.CorrectLevel.M});
         const note=document.getElementById('tr-book-qr-note');
-        if(note) note.textContent='QR содержит реквизиты для ручной сверки. Автоматической онлайн-проверки подлинности пока нет.';
+        if(!window.QRCode){
+            if(note) note.textContent='Библиотека QR-кодов не загрузилась. Обновите страницу.';
+            return;
+        }
+        const p=state.userProfile||{};
+        // QR должен хранить только короткий идентификатор, а не всю трудовую книжку.
+        // Полная информация уже отображается в таблице и PDF.
+        const profileId=String(p.id||p.user_id||'').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40);
+        const last=[...state.trRecords].sort((a,b)=>new Date(b.real_date)-new Date(a.real_date))[0];
+        const payload=['VVKTB',profileId||'NO-ID',String(state.trRecords.length),String(last?.real_date||'')].join('|');
+        try{
+            new QRCode(target,{text:payload,width:112,height:112,correctLevel:QRCode.CorrectLevel.M});
+            if(note) note.textContent='Код трудовой книжки: '+(profileId||'идентификатор не указан')+'. Для сверки используйте реестр VVK.';
+        }catch(err){
+            console.error('Не удалось создать QR трудовой книжки:',err);
+            target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
+            if(note) note.textContent='Не удалось сформировать QR-код. Остальные данные трудовой книжки доступны.';
+        }
     }
 
     function formatCitizenTenure(value){
