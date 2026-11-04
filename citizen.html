@@ -10,6 +10,7 @@
     <!-- PDF-lib для генерации PDF трудовой -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #10b981;
@@ -381,6 +382,23 @@
         .tr-text { font-weight: 500; font-size: 15px; line-height: 1.4; }
 
 
+        #tab-tr_book .tr-citizen-tools{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(180px,1fr);gap:12px;margin:0 0 20px;}
+        #tab-tr_book .tr-tool-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0;}
+        #tab-tr_book .tr-tool-card p{color:var(--text-muted);font-size:13px;line-height:1.5;margin:8px 0 13px;}
+        #tab-tr_book .tr-qr-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+        #tab-tr_book .tr-book-qr{min-height:112px;display:flex;align-items:center;justify-content:center;margin:8px 0;}
+        #tab-tr_book .tr-book-qr img,#tab-tr_book .tr-book-qr canvas{width:112px!important;height:112px!important;}
+        #tab-tr_book .tr-qr-card small{color:var(--text-muted);font-size:10px;line-height:1.4;max-width:260px;}
+        #tab-tr_book .tr-change-item{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:11px 14px;margin-bottom:8px;}
+        #tab-tr_book .tr-change-item strong{display:block;color:var(--text-muted);font-size:11px;margin-bottom:5px;}
+        #tab-tr_book .tr-change-item span{color:var(--text);font-size:13px;line-height:1.5;}
+        #tab-tr_book .tr-empty{color:var(--text-muted);padding:15px;font-size:13px;}
+        #tab-tr_book .tr-history-table-wrap{width:100%;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);}
+        #tab-tr_book .tr-history-table{width:100%;min-width:580px;border-collapse:collapse;}
+        #tab-tr_book .tr-history-table th{background:var(--bg-muted);color:var(--text-muted);text-align:left;padding:12px;font-size:11px;white-space:nowrap;}
+        #tab-tr_book .tr-history-table td{padding:12px;border-top:1px solid var(--border);color:var(--text);font-size:12px;line-height:1.5;vertical-align:top;}
+        #tab-tr_book .tr-history-table td:last-child{min-width:260px;}
+        @media(max-width:650px){#tab-tr_book .tr-citizen-tools{grid-template-columns:1fr;}}
         /* === ТРУДОВАЯ КНИЖКА: компактная карточка и читабельная история === */
         #tab-tr_book .tr-book-heading { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
         #tab-tr_book .tr-book-heading .section-title { margin:0; }
@@ -743,9 +761,30 @@
                         </div>
                     </div>
 
-                    <div class="tr-section-caption">История записей</div>
-                    <div class="tr-timeline" id="tr-timeline">
-                        <p style="color:var(--text-muted);">Загрузка записей...</p>
+                    <div class="tr-citizen-tools">
+                        <div class="tr-tool-card">
+                            <div class="tr-summary-label">СПРАВКА С МЕСТА РАБОТЫ</div>
+                            <p>PDF-справка о текущей организации, должности и дате трудоустройства.</p>
+                            <button class="btn-dl" onclick="downloadEmploymentCertificatePDF()" style="padding:9px 14px;">⬇ Скачать справку PDF</button>
+                        </div>
+                        <div class="tr-tool-card tr-qr-card">
+                            <div class="tr-summary-label">QR-КОД ДЛЯ СВЕРКИ</div>
+                            <div id="tr-book-qr" class="tr-book-qr"></div>
+                            <small id="tr-book-qr-note">Формирование QR-реквизитов...</small>
+                        </div>
+                    </div>
+                    <div class="tr-notice-panel">
+                        <div class="tr-section-caption">Последние кадровые изменения</div>
+                        <div id="tr-change-notifications"><div class="tr-empty">Загрузка...</div></div>
+                    </div>
+                    <div class="tr-section-caption">История карьеры</div>
+                    <div class="tr-timeline" id="tr-timeline"><p style="color:var(--text-muted);">Загрузка записей...</p></div>
+                    <div class="tr-section-caption" style="margin-top:24px;">Таблица трудовой истории</div>
+                    <div class="tr-history-table-wrap">
+                        <table class="tr-history-table">
+                            <thead><tr><th>№</th><th>Реальная дата</th><th>Игровой день</th><th>Кадровое событие</th></tr></thead>
+                            <tbody id="tr-history-table-body"><tr><td colspan="4">Загрузка...</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -984,32 +1023,65 @@
     }
 
     function renderTrBook() {
-        const container = document.getElementById('tr-timeline');
-        if (!container) return;
-
-        if (state.trRecords.length === 0) {
-            container.innerHTML = '<div class="empty-state">Записей в трудовой книжке пока нет.</div>';
-            return;
+        const container=document.getElementById('tr-timeline');
+        if(!container) return;
+        const sorted=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+        const tbody=document.getElementById('tr-history-table-body');
+        const notices=document.getElementById('tr-change-notifications');
+        if(!sorted.length){
+            container.innerHTML='<div class="empty-state">Записей в трудовой книжке пока нет.</div>';
+            if(tbody) tbody.innerHTML='<tr><td colspan="4" style="text-align:center;">Нет кадровых записей</td></tr>';
+            if(notices) notices.innerHTML='<div class="tr-empty">Кадровых изменений пока нет.</div>';
+        }else{
+            container.innerHTML=sorted.map(r=>`<div class="tr-event"><div class="tr-dot"></div><div class="tr-body"><div class="tr-meta"><span>📅 ${new Date(r.real_date).toLocaleDateString('ru-RU')}</span><span>🎮 Игровой день: ${r.game_day??'—'}</span></div><div class="tr-text">${escapeHtml(String(r.record_text||''))}</div></div></div>`).join('');
+            if(tbody) tbody.innerHTML=sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${new Date(r.real_date).toLocaleDateString('ru-RU')}</td><td>${r.game_day??'—'}</td><td>${escapeHtml(String(r.record_text||''))}</td></tr>`).join('');
+            if(notices) notices.innerHTML=[...sorted].reverse().slice(0,4).map(r=>`<div class="tr-change-item"><strong>${new Date(r.real_date).toLocaleDateString('ru-RU')} · Игровой день ${r.game_day??'—'}</strong><span>${escapeHtml(String(r.record_text||''))}</span></div>`).join('');
         }
+        renderTrBookQR();
+    }
 
-        container.innerHTML = '';
-        const sorted = [...state.trRecords].sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
+    function renderTrBookQR(){
+        const target=document.getElementById('tr-book-qr');
+        if(!target||!window.QRCode) return;
+        target.innerHTML='';
+        const p=state.userProfile||{};
+        const payload=['VVK-TR-BOOK','ФИО: '+[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' '),'Организация: '+(p.current_org||'Нет текущего места работы'),'Должность: '+(p.current_position||'—'),'Записей: '+state.trRecords.length,'Последняя запись: '+(state.trRecords[0]?.real_date||'—')].join('\n');
+        new QRCode(target,{text:payload,width:112,height:112,correctLevel:QRCode.CorrectLevel.M});
+        const note=document.getElementById('tr-book-qr-note');
+        if(note) note.textContent='QR содержит реквизиты для ручной сверки. Автоматической онлайн-проверки подлинности пока нет.';
+    }
 
-        sorted.forEach(r => {
-            const d = new Date(r.real_date).toLocaleDateString('ru-RU');
-            container.innerHTML += `
-                <div class="tr-event">
-                    <div class="tr-dot"></div>
-                    <div class="tr-body">
-                        <div class="tr-meta">
-                            <span>📅 ${d}</span>
-                            <span>🎮 Игровой день: ${r.game_day}</span>
-                        </div>
-                        <div class="tr-text">${r.record_text}</div>
-                    </div>
-                </div>
-            `;
-        });
+    function getTrBookStartDate(){
+        const rows=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+        const row=rows.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||rows[0];
+        return row?.real_date||null;
+    }
+
+    async function downloadEmploymentCertificatePDF(){
+        const p=state.userProfile;
+        if(!p) return showToast('Профиль не загружен');
+        if(!p.current_org) return showToast('Нет действующего места работы для справки');
+        try{
+            const pdf=await PDFLib.PDFDocument.create(); pdf.registerFontkit(fontkit);
+            const bytes=await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf').then(r=>r.arrayBuffer());
+            const font=await pdf.embedFont(bytes); const page=pdf.addPage([595,842]);
+            const fullName=[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ');
+            const draw=(txt,y,size=12)=>page.drawText(String(txt),{x:55,y,size,font});
+            draw('СПРАВКА С МЕСТА РАБОТЫ',755,18);
+            page.drawLine({start:{x:55,y:738},end:{x:540,y:738},thickness:1});
+            draw('Подтверждаются следующие сведения о трудоустройстве:',705,11);
+            draw('ФИО: '+fullName,670,12);
+            draw('Организация: '+p.current_org,642,12);
+            draw('Должность: '+(p.current_position||'Не указана'),614,12);
+            const start=getTrBookStartDate();
+            draw('Дата начала работы: '+(start?new Date(start).toLocaleDateString('ru-RU'):'нет данных'),586,11);
+            draw('Активные выговоры: '+Number(p.reprimands_count||0),558,11);
+            draw('Дата формирования: '+new Date().toLocaleDateString('ru-RU'),510,11);
+            draw('Сформировано электронным кадровым кабинетом VVK.',465,10);
+            const out=await pdf.save(); const url=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));
+            const link=document.createElement('a'); link.href=url; link.download='Spravka_s_mesta_raboty.pdf'; link.click();
+            setTimeout(()=>URL.revokeObjectURL(url),1500);
+        }catch(err){console.error(err);showToast('Не удалось сформировать PDF-справку');}
     }
 
     // ============================================================
