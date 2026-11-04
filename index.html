@@ -1225,7 +1225,7 @@
                             <tr>
                                 <th>№</th>
                                 <th>Дата (Реал.)</th>
-                                <th>Игровой день</th>
+                                <th>Номер дня</th>
                                 <th>Сведение</th>
                                 <th>Действия</th>
                             </tr>
@@ -1237,7 +1237,7 @@
 
             const career=document.getElementById('hr-career-timeline');
             const careerRows=[...currentHRRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
-            if(career) career.innerHTML=careerRows.length?careerRows.map(r=>`<div class="hr-career-item"><span class="hr-career-dot"></span><div><b>${hrEscape(new Date(r.real_date).toLocaleDateString('ru-RU'))} · Игровой день ${hrEscape(r.game_day??'—')}</b><p>${hrEscape(r.record_text||'Кадровое событие')}</p></div></div>`).join(''):'<div class="hr-empty-note">Кадровая история пока пуста</div>';
+            if(career) career.innerHTML=careerRows.length?careerRows.map(r=>`<div class="hr-career-item"><span class="hr-career-dot"></span><div><b>${hrEscape(new Date(r.real_date).toLocaleDateString('ru-RU'))} · Номер дня ${hrEscape(r.game_day??'—')}</b><p>${hrEscape(r.record_text||'Кадровое событие')}</p></div></div>`).join(''):'<div class="hr-empty-note">Кадровая история пока пуста</div>';
             const tbody = document.getElementById('hr-records-body');
             if (currentHRRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет записей</td></tr>';
@@ -1555,7 +1555,7 @@
             openHRModal('✏️ Редактирование записи', `
                 <label>Текст записи</label>
                 <textarea id="hr-edit-text" style="width:100%; height:80px; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:5px;">${rec.record_text}</textarea>
-                <label>Игровой день</label>
+                <label>Номер дня</label>
                 <input type="number" id="hr-edit-game" value="${rec.game_day}">
             `, async (m) => {
                 const newText = m.querySelector('#hr-edit-text').value;
