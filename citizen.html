@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
     <title>Личный кабинет | Единый Портал Государственных Услуг</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- PDF.js для просмотра -->
@@ -387,6 +388,7 @@
         #tab-tr_book .tr-tool-card p{color:var(--text-muted);font-size:13px;line-height:1.5;margin:8px 0 13px;}
         #tab-tr_book .tr-qr-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
         #tab-tr_book .tr-book-qr{min-height:160px;display:flex;align-items:center;justify-content:center;margin:8px 0;}
+        #tab-tr_book .tr-book-number{font-size:20px;font-weight:800;letter-spacing:1px;color:var(--primary-dark);margin:8px 0 2px;padding:9px 14px;border:1px solid var(--border);border-radius:9px;background:var(--bg-muted);}
         #tab-tr_book .tr-book-qr img,#tab-tr_book .tr-book-qr canvas{width:160px!important;height:160px!important;}
         #tab-tr_book .tr-qr-card small{color:var(--text-muted);font-size:10px;line-height:1.4;max-width:260px;}
         #tab-tr_book .tr-change-item{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:11px 14px;margin-bottom:8px;}
@@ -777,9 +779,10 @@
                             <button class="btn-dl" onclick="downloadEmploymentCertificatePDF()" style="padding:9px 14px;">⬇ Скачать справку PDF</button>
                         </div>
                         <div class="tr-tool-card tr-qr-card">
-                            <div class="tr-summary-label">QR-КОД ДЛЯ СВЕРКИ</div>
+                            <div class="tr-summary-label">НОМЕР ТРУДОВОЙ КНИЖКИ</div>
+                            <div id="tr-book-number" class="tr-book-number">Формирование номера...</div>
                             <div id="tr-book-qr" class="tr-book-qr"></div>
-                            <small id="tr-book-qr-note">Формирование QR-реквизитов...</small>
+                            <small id="tr-book-qr-note">QR-код содержит только номер трудовой книжки.</small>
                         </div>
                     </div>
                     <div class="tr-notice-panel">
@@ -1058,41 +1061,40 @@
         renderTrBookQR();
     }
 
+    function getTrBookNumber(){
+        const p=state.userProfile||{};
+        const source=String(p.id||p.user_id||state.currentUser?.id||'');
+        // Стабильный короткий номер: одинаков для этого гражданина при каждом входе.
+        let hash=2166136261;
+        for(let i=0;i<source.length;i++){
+            hash^=source.charCodeAt(i);
+            hash=Math.imul(hash,16777619);
+        }
+        const code=(hash>>>0).toString(36).toUpperCase().padStart(7,'0');
+        return 'ТРКН-'+code;
+    }
+
     function renderTrBookQR(){
         const target=document.getElementById('tr-book-qr');
         if(!target) return;
         target.innerHTML='';
         const note=document.getElementById('tr-book-qr-note');
+        const number=getTrBookNumber();
+        const numberEl=document.getElementById('tr-book-number');
+        if(numberEl) numberEl.textContent=number;
         if(!window.QRCode){
-            if(note) note.textContent='Библиотека QR-кодов не загрузилась. Обновите страницу.';
+            if(note) note.textContent='Библиотека QR-кодов не загрузилась. Номер трудовой книжки указан выше.';
             return;
         }
-        const p=state.userProfile||{};
-        const fullName=([p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ')||'Не указано').slice(0,60);
-        const last=[...state.trRecords].sort((a,b)=>new Date(b.real_date)-new Date(a.real_date))[0];
-        const lastDate=last?.real_date?new Date(last.real_date).toLocaleDateString('ru-RU'):'Нет записей';
-        // В QR оставляем только короткие, понятные человеку сведения.
-        // Полная история и длинные названия остаются в таблице трудовой книжки.
-        const payload=[
-            'ТРУДОВАЯ КНИЖКА',
-            'ФИО: '+fullName,
-            'Количество записей: '+state.trRecords.length,
-            'Последняя дата: '+lastDate
-        ].join('\n');
         try{
-            new QRCode(target,{text:payload,width:160,height:160,correctLevel:QRCode.CorrectLevel.M});
-            if(note) note.textContent='QR содержит краткую справочную информацию на русском языке. Это не онлайн-подтверждение подлинности.';
+            // В QR-код помещается исключительно номер ТрКн — никаких ФИО,
+            // дат, истории или технических идентификаторов.
+            new QRCode(target,{text:number,width:160,height:160,correctLevel:QRCode.CorrectLevel.M});
+            if(note) note.textContent='При сканировании QR отобразится только номер трудовой книжки.';
         }catch(err){
-            console.warn('Не удалось создать основной QR трудовой книжки, пробуем сокращённый вариант:',err);
-            try{
-                target.innerHTML='';
-                new QRCode(target,{text:'ТРУДОВАЯ КНИЖКА\nЗаписей: '+state.trRecords.length,width:160,height:160,correctLevel:QRCode.CorrectLevel.L});
-                if(note) note.textContent='Создан сокращённый QR-код. Полная история доступна в таблице трудовой книжки.';
-            }catch(fallbackError){
-                console.error('Не удалось создать QR трудовой книжки:',fallbackError);
-                target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
-                if(note) note.textContent='Не удалось сформировать QR-код. Остальные данные трудовой книжки доступны.';
-            }
+            console.error('Не удалось создать QR трудовой книжки:',err);
+            target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
+            if(note) note.textContent='Номер трудовой книжки указан выше. QR временно недоступен.';
         }
     }
 
