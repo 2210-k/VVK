@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:,">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2310b981'/%3E%3Cpath d='M32 10v44M10 32h44' stroke='white' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
     <title>Личный кабинет | Единый Портал Государственных Услуг</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- PDF.js для просмотра -->
@@ -1064,14 +1064,13 @@
     function getTrBookNumber(){
         const p=state.userProfile||{};
         const source=String(p.id||p.user_id||state.currentUser?.id||'');
-        // Стабильный короткий номер: одинаков для этого гражданина при каждом входе.
+        // Короткий стабильный цифровой номер, одинаковый при каждом входе.
         let hash=2166136261;
         for(let i=0;i<source.length;i++){
             hash^=source.charCodeAt(i);
             hash=Math.imul(hash,16777619);
         }
-        const code=(hash>>>0).toString(36).toUpperCase().padStart(7,'0');
-        return 'ТРКН-'+code;
+        return 'ТРКН-'+String(hash>>>0).padStart(10,'0');
     }
 
     function renderTrBookQR(){
@@ -1086,13 +1085,22 @@
             if(note) note.textContent='Библиотека QR-кодов не загрузилась. Номер трудовой книжки указан выше.';
             return;
         }
+        // В QR передаются только 10 цифр номера ТрКн. Никаких других данных.
+        const qrNumber=number.replace(/\D/g,'');
+        if(!/^\d{10}$/.test(qrNumber)){
+            if(note) note.textContent='Не удалось подготовить номер для QR. Номер ТрКн указан выше.';
+            return;
+        }
         try{
-            // В QR-код помещается исключительно номер ТрКн — никаких ФИО,
-            // дат, истории или технических идентификаторов.
-            new QRCode(target,{text:number,width:160,height:160,correctLevel:QRCode.CorrectLevel.M});
-            if(note) note.textContent='При сканировании QR отобразится только номер трудовой книжки.';
+            new QRCode(target,{
+                text:qrNumber,
+                width:160,
+                height:160,
+                correctLevel:QRCode.CorrectLevel.L
+            });
+            if(note) note.textContent='QR содержит только цифровой номер трудовой книжки.';
         }catch(err){
-            console.error('Не удалось создать QR трудовой книжки:',err);
+            // Не выводим техническую ошибку пользователю и не ломаем загрузку трудовой.
             target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
             if(note) note.textContent='Номер трудовой книжки указан выше. QR временно недоступен.';
         }
