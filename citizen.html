@@ -591,6 +591,7 @@
             .mobile-nav .menu-item { font-size: 9px; }
         }
     </style>
+    <link rel="icon" href="data:,">
 </head>
 <body>
 
@@ -1067,26 +1068,31 @@
             return;
         }
         const p=state.userProfile||{};
-        const fullName=[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ')||'Не указано';
+        const fullName=([p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ')||'Не указано').slice(0,60);
         const last=[...state.trRecords].sort((a,b)=>new Date(b.real_date)-new Date(a.real_date))[0];
-        // При сканировании QR открывается обычный читаемый текст на русском языке,
-        // а не внутренний технический код.
+        const lastDate=last?.real_date?new Date(last.real_date).toLocaleDateString('ru-RU'):'Нет записей';
+        // В QR оставляем только короткие, понятные человеку сведения.
+        // Полная история и длинные названия остаются в таблице трудовой книжки.
         const payload=[
             'ТРУДОВАЯ КНИЖКА',
-            'Портал: Единый Портал Государственных Услуг',
-            'Гражданин: '+fullName,
-            'Место работы: '+(p.current_org||'Нет действующего места работы'),
-            'Должность: '+(p.current_position||'Не указана'),
-            'Количество кадровых записей: '+state.trRecords.length,
-            'Последняя запись: '+(last?.real_date?new Date(last.real_date).toLocaleDateString('ru-RU'):'Нет записей')
+            'ФИО: '+fullName,
+            'Количество записей: '+state.trRecords.length,
+            'Последняя дата: '+lastDate
         ].join('\n');
         try{
-            new QRCode(target,{text:payload,width:144,height:144,correctLevel:QRCode.CorrectLevel.M});
-            if(note) note.textContent='При сканировании отобразятся сведения трудовой книжки на русском языке. QR содержит справочную информацию, а не онлайн-подтверждение подлинности.';
+            new QRCode(target,{text:payload,width:160,height:160,correctLevel:QRCode.CorrectLevel.M});
+            if(note) note.textContent='QR содержит краткую справочную информацию на русском языке. Это не онлайн-подтверждение подлинности.';
         }catch(err){
-            console.error('Не удалось создать QR трудовой книжки:',err);
-            target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
-            if(note) note.textContent='Не удалось сформировать QR-код. Остальные данные трудовой книжки доступны.';
+            console.warn('Не удалось создать основной QR трудовой книжки, пробуем сокращённый вариант:',err);
+            try{
+                target.innerHTML='';
+                new QRCode(target,{text:'ТРУДОВАЯ КНИЖКА\nЗаписей: '+state.trRecords.length,width:160,height:160,correctLevel:QRCode.CorrectLevel.L});
+                if(note) note.textContent='Создан сокращённый QR-код. Полная история доступна в таблице трудовой книжки.';
+            }catch(fallbackError){
+                console.error('Не удалось создать QR трудовой книжки:',fallbackError);
+                target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
+                if(note) note.textContent='Не удалось сформировать QR-код. Остальные данные трудовой книжки доступны.';
+            }
         }
     }
 
