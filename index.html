@@ -482,7 +482,12 @@
         let currentHREmployee = null;
         let currentHRRecords = [];
         const hrFilters = { search:'', org:'all', status:'all', sort:'name' };
-        function updateHRFilters(key,value) { hrFilters[key]=value; renderHRList(); }
+        function updateHRFilters(key,value) {
+            const keepFocus=key==='search';
+            const cursor=keepFocus?document.getElementById('hr-employee-list')?.querySelector('input[type="search"]')?.selectionStart:null;
+            hrFilters[key]=value; renderHRList();
+            if(keepFocus){const input=document.getElementById('hr-employee-list')?.querySelector('input[type="search"]');if(input){input.focus();if(cursor!==null)input.setSelectionRange(cursor,cursor);}}
+        }
         function hrEscape(value) { return String(value ?? '').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
         function hrFirstDate(rows) {
             const sorted=[...(rows||[])].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
