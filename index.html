@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2310b981'/%3E%3Cpath d='M32 10v44M10 32h44' stroke='white' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Служебный портал</title>
@@ -519,7 +519,7 @@
         }
         function hrEscape(value) { return String(value ?? '').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
         function hrFirstDate(rows) {
-            const sorted=[...(rows||[])].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+            const sorted=[...(rows||[])].sort((a,b)=>(parseInt(a.game_day)||0)-(parseInt(b.game_day)||0));
             const first=sorted.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||sorted[0];
             return first?.real_date||null;
         }
@@ -1203,7 +1203,7 @@
             box.innerHTML = `<div style="text-align:center; padding:50px;">Загрузка...</div>`;
             
             const { data: records } = await supabaseClient.from('employment_records')
-                .select('*').eq('patient_id', c.id).order('real_date', { ascending: false });
+                .select('*').eq('patient_id', c.id).order('game_day', { ascending: true });
             currentHRRecords = records || [];
 
             const jobText = c.current_org ? `${c.current_org} — ${c.current_position}` : 'Не трудоустроен';
@@ -1250,13 +1250,16 @@
             `;
 
             const career=document.getElementById('hr-career-timeline');
-            const careerRows=[...currentHRRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+            // ИЗМЕНЕНО: Сортируем по игровому дню для истории
+            const careerRows=[...currentHRRecords].sort((a,b)=>(parseInt(a.game_day)||0)-(parseInt(b.game_day)||0));
             if(career) career.innerHTML=careerRows.length?careerRows.map(r=>`<div class="hr-career-item"><span class="hr-career-dot"></span><div><b>${hrEscape(new Date(r.real_date).toLocaleDateString('ru-RU'))} · Номер дня ${hrEscape(r.game_day??'—')}</b><p>${hrEscape(r.record_text||'Кадровое событие')}</p></div></div>`).join(''):'<div class="hr-empty-note">Кадровая история пока пуста</div>';
+            
             const tbody = document.getElementById('hr-records-body');
             if (currentHRRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет записей</td></tr>';
             } else {
-                const sorted = [...currentHRRecords].sort((a,b) => new Date(a.real_date) - new Date(b.real_date));
+                // ИЗМЕНЕНО: Сортируем таблицу строго по игровому дню (от 1 до 999)
+                const sorted = [...currentHRRecords].sort((a,b) => (parseInt(a.game_day) || 0) - (parseInt(b.game_day) || 0));
                 sorted.forEach((r, idx) => {
                     tbody.innerHTML += `
                         <tr>
@@ -1609,12 +1612,12 @@
         }
 
         async function recalcHRProfile(patientId) {
-            // Загружаем все оставшиеся записи, сортируя по реальной дате и id
+            // Загружаем все оставшиеся записи, сортируя по игровому дню и id
             const { data: records } = await supabaseClient
                 .from('employment_records')
                 .select('*')
                 .eq('patient_id', patientId)
-                .order('real_date', { ascending: true })
+                .order('game_day', { ascending: true })
                 .order('id', { ascending: true });
 
             if (!records || records.length === 0) {
