@@ -380,6 +380,25 @@
         .tr-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; gap: 15px; flex-wrap: wrap; }
         .tr-text { font-weight: 500; font-size: 15px; line-height: 1.4; }
 
+
+        /* === ТРУДОВАЯ КНИЖКА: компактная карточка и читабельная история === */
+        #tab-tr_book .tr-book-heading { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+        #tab-tr_book .tr-book-heading .section-title { margin:0; }
+        #tab-tr_book .tr-summary { display:grid; grid-template-columns:minmax(0,2fr) minmax(180px,1fr); gap:12px; margin-bottom:22px; max-width:none; }
+        #tab-tr_book .tr-summary-item { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:17px 19px; box-shadow:var(--shadow); min-width:0; }
+        #tab-tr_book .tr-summary-label { color:var(--text-muted); font-size:12px; font-weight:650; margin-bottom:8px; }
+        #tab-tr_book .tr-summary-value { color:var(--text); font-size:17px; font-weight:700; line-height:1.35; overflow-wrap:anywhere; }
+        #tab-tr_book .tr-section-caption { color:var(--text-muted); font-size:13px; font-weight:650; margin:0 0 13px 2px; }
+        #tab-tr_book .tr-timeline { margin-left:3px; }
+        #tab-tr_book .tr-body { padding:16px 18px; }
+        #tab-tr_book .tr-event { gap:12px; }
+        #tab-tr_book .tr-text { line-height:1.55; }
+        @media(max-width:650px) {
+            #tab-tr_book .tr-summary { grid-template-columns:1fr; gap:9px; }
+            #tab-tr_book .tr-summary-item { padding:14px 15px; }
+            #tab-tr_book .tr-book-heading { align-items:flex-start; }
+        }
+
         /* === ПУСТОЕ СОСТОЯНИЕ === */
         .empty-state {
             text-align: center; padding: 50px 20px;
@@ -705,16 +724,26 @@
 
                 <!-- ВКЛАДКА: ТРУДОВАЯ КНИЖКА -->
                 <div id="tab-tr_book" style="display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-                        <h2 class="section-title" style="margin:0;">📘 Моя трудовая книжка</h2>
-                        <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding: 10px 20px;">⬇️ Скачать PDF</button>
+                    <div class="tr-book-heading">
+                        <div>
+                            <h2 class="section-title">📘 Моя трудовая книжка</h2>
+                            <div style="color:var(--text-muted);font-size:13px;margin-top:5px;">Сведения о текущем месте работы и кадровой истории</div>
+                        </div>
+                        <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding:10px 18px;">⬇️ Скачать PDF</button>
                     </div>
 
-                    <div class="profile-card" style="margin-bottom: 20px; max-width: 100%;">
-                        <div class="profile-row"><div class="profile-label">Текущее место работы</div><div class="profile-value" id="tr-current-job">—</div></div>
-                        <div class="profile-row"><div class="profile-label">Активные выговоры</div><div class="profile-value" id="tr-reprimands">0</div></div>
+                    <div class="tr-summary">
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">ТЕКУЩЕЕ МЕСТО РАБОТЫ</div>
+                            <div class="tr-summary-value" id="tr-current-job">—</div>
+                        </div>
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">АКТИВНЫЕ ВЫГОВОРЫ</div>
+                            <div class="tr-summary-value" id="tr-reprimands">0</div>
+                        </div>
                     </div>
 
+                    <div class="tr-section-caption">История записей</div>
                     <div class="tr-timeline" id="tr-timeline">
                         <p style="color:var(--text-muted);">Загрузка записей...</p>
                     </div>
