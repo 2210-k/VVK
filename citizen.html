@@ -790,7 +790,7 @@
                     <div class="tr-section-caption" style="margin-top:24px;">Таблица трудовой истории</div>
                     <div class="tr-history-table-wrap">
                         <table class="tr-history-table">
-                            <thead><tr><th>№</th><th>Реальная дата</th><th>Игровой день</th><th>Кадровое событие</th></tr></thead>
+                            <thead><tr><th>№</th><th>Реальная дата</th><th>Номер дня</th><th>Кадровое событие</th></tr></thead>
                             <tbody id="tr-history-table-body"><tr><td colspan="4">Загрузка...</td></tr></tbody>
                         </table>
                     </div>
@@ -1045,9 +1045,9 @@
             if(tbody) tbody.innerHTML='<tr><td colspan="4" style="text-align:center;">Нет кадровых записей</td></tr>';
             if(notices) notices.innerHTML='<div class="tr-empty">Кадровых изменений пока нет.</div>';
         }else{
-            container.innerHTML=sorted.map(r=>`<div class="tr-event"><div class="tr-dot"></div><div class="tr-body"><div class="tr-meta"><span>📅 ${new Date(r.real_date).toLocaleDateString('ru-RU')}</span><span>🎮 Игровой день: ${r.game_day??'—'}</span></div><div class="tr-text">${trEscapeHtml(String(r.record_text||''))}</div></div></div>`).join('');
+            container.innerHTML=sorted.map(r=>`<div class="tr-event"><div class="tr-dot"></div><div class="tr-body"><div class="tr-meta"><span>📅 ${new Date(r.real_date).toLocaleDateString('ru-RU')}</span><span>№ дня: ${r.game_day??'—'}</span></div><div class="tr-text">${trEscapeHtml(String(r.record_text||''))}</div></div></div>`).join('');
             if(tbody) tbody.innerHTML=sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${new Date(r.real_date).toLocaleDateString('ru-RU')}</td><td>${r.game_day??'—'}</td><td>${trEscapeHtml(String(r.record_text||''))}</td></tr>`).join('');
-            if(notices) notices.innerHTML=[...sorted].reverse().slice(0,4).map(r=>`<div class="tr-change-item"><strong>${new Date(r.real_date).toLocaleDateString('ru-RU')} · Игровой день ${r.game_day??'—'}</strong><span>${trEscapeHtml(String(r.record_text||''))}</span></div>`).join('');
+            if(notices) notices.innerHTML=[...sorted].reverse().slice(0,4).map(r=>`<div class="tr-change-item"><strong>${new Date(r.real_date).toLocaleDateString('ru-RU')} · № дня ${r.game_day??'—'}</strong><span>${trEscapeHtml(String(r.record_text||''))}</span></div>`).join('');
         }
         const hireDate=getTrBookStartDate();
         const hireEl=document.getElementById('tr-hire-date');
@@ -1067,14 +1067,22 @@
             return;
         }
         const p=state.userProfile||{};
-        // QR должен хранить только короткий идентификатор, а не всю трудовую книжку.
-        // Полная информация уже отображается в таблице и PDF.
-        const profileId=String(p.id||p.user_id||'').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40);
+        const fullName=[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ')||'Не указано';
         const last=[...state.trRecords].sort((a,b)=>new Date(b.real_date)-new Date(a.real_date))[0];
-        const payload=['VVKTB',profileId||'NO-ID',String(state.trRecords.length),String(last?.real_date||'')].join('|');
+        // При сканировании QR открывается обычный читаемый текст на русском языке,
+        // а не внутренний технический код.
+        const payload=[
+            'ТРУДОВАЯ КНИЖКА',
+            'Портал: Единый Портал Государственных Услуг',
+            'Гражданин: '+fullName,
+            'Место работы: '+(p.current_org||'Нет действующего места работы'),
+            'Должность: '+(p.current_position||'Не указана'),
+            'Количество кадровых записей: '+state.trRecords.length,
+            'Последняя запись: '+(last?.real_date?new Date(last.real_date).toLocaleDateString('ru-RU'):'Нет записей')
+        ].join('\n');
         try{
-            new QRCode(target,{text:payload,width:112,height:112,correctLevel:QRCode.CorrectLevel.M});
-            if(note) note.textContent='Код трудовой книжки: '+(profileId||'идентификатор не указан')+'. Для сверки используйте реестр VVK.';
+            new QRCode(target,{text:payload,width:144,height:144,correctLevel:QRCode.CorrectLevel.M});
+            if(note) note.textContent='При сканировании отобразятся сведения трудовой книжки на русском языке. QR содержит справочную информацию, а не онлайн-подтверждение подлинности.';
         }catch(err){
             console.error('Не удалось создать QR трудовой книжки:',err);
             target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
@@ -1161,7 +1169,7 @@
             const drawTableHeader = (pg, yPos) => {
                 pg.drawText('№', { x: 50, y: yPos, size: 10, font: customFont });
                 pg.drawText('Дата', { x: 80, y: yPos, size: 10, font: customFont });
-                pg.drawText('Игровой день', { x: 160, y: yPos, size: 10, font: customFont });
+                pg.drawText('Номер дня', { x: 160, y: yPos, size: 10, font: customFont });
                 pg.drawText('Сведение', { x: 250, y: yPos, size: 10, font: customFont });
                 pg.drawLine({ start: { x: 50, y: yPos - 5 }, end: { x: 545, y: yPos - 5 }, thickness: 1 });
                 return yPos - 20;
