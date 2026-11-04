@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет | ЕСС</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- ПОДКЛЮЧАЕМ PDF.JS -->
+    <!-- PDF.js для просмотра -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- PDF-lib для генерации PDF трудовой -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <style>
         :root {
             --primary: #10b981;
@@ -80,7 +83,7 @@
         /* === КАБИНЕТ === */
         #dashboard-screen { display: none; min-height: 100vh; }
 
-        /* === SIDEBAR (Desktop) === */
+        /* === SIDEBAR === */
         .sidebar {
             width: 260px; background: var(--bg-card);
             border-right: 1px solid var(--border);
@@ -93,7 +96,7 @@
         }
         .logo-area h2 { margin: 0; color: var(--primary-dark); font-size: 20px; }
         .logo-area p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 12px; }
-        .menu { flex: 1; padding: 20px 0; }
+        .menu { flex: 1; padding: 20px 0; overflow-y: auto; }
         .menu-item {
             padding: 15px 25px; cursor: pointer;
             display: flex; align-items: center; gap: 12px;
@@ -367,6 +370,16 @@
             flex: 1; color: var(--text); font-weight: 500;
         }
 
+        /* === ТРУДОВАЯ КНИЖКА (ТАЙМЛАЙН) === */
+        .tr-timeline { position: relative; margin-left: 10px; }
+        .tr-event { display: grid; grid-template-columns: 24px 1fr; gap: 15px; position: relative; padding-bottom: 20px; }
+        .tr-event:before { content: ""; position: absolute; left: 7px; top: 18px; bottom: 0; width: 2px; background: var(--border); }
+        .tr-event:last-child:before { display: none; }
+        .tr-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--primary); border: 4px solid var(--primary-soft); z-index: 1; }
+        .tr-body { border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--bg-card); }
+        .tr-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; gap: 15px; flex-wrap: wrap; }
+        .tr-text { font-weight: 500; font-size: 15px; line-height: 1.4; }
+
         /* === ПУСТОЕ СОСТОЯНИЕ === */
         .empty-state {
             text-align: center; padding: 50px 20px;
@@ -454,9 +467,6 @@
         /* === МОБИЛЬНОЕ МЕНЮ === */
         .mobile-nav { display: none; }
 
-        /* =============================================================
-           📱 МОБИЛЬНАЯ АДАПТАЦИЯ
-           ============================================================= */
         @media (max-width: 768px) {
             body { padding-bottom: 75px; }
             .sidebar { display: none; }
@@ -514,7 +524,6 @@
             .notif-header { padding: 15px; }
             .notif-header h3 { font-size: 16px; }
 
-            /* Мобильное меню */
             .mobile-nav {
                 display: flex; position: fixed; bottom: 0; left: 0;
                 width: 100%; background: var(--bg-card);
@@ -523,6 +532,7 @@
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
                 padding: 5px 0;
                 padding-bottom: max(5px, env(safe-area-inset-bottom));
+                overflow-x: auto;
             }
             .mobile-nav .menu-item {
                 flex: 1; flex-direction: column;
@@ -530,6 +540,7 @@
                 border-left: none; border-top: 3px solid transparent;
                 text-align: center; gap: 2px;
                 color: var(--text-muted);
+                min-width: 55px;
             }
             .mobile-nav .menu-item.active {
                 border-top-color: var(--primary);
@@ -573,6 +584,7 @@
                 <div class="menu-item active" onclick="switchTab('home', this)">🏠 Главная</div>
                 <div class="menu-item" onclick="switchTab('docs', this)">📄 Мои документы</div>
                 <div class="menu-item" onclick="switchTab('all_docs', this)">🗂️ Все документы</div>
+                <div class="menu-item" onclick="switchTab('tr_book', this)">📘 Моя трудовая</div>
                 <div class="menu-item" onclick="switchTab('profile', this)">👤 Мой профиль</div>
             </div>
             <div class="logout-area">
@@ -585,6 +597,7 @@
             <div class="menu-item active" onclick="switchTab('home', this)"><span>🏠</span>Главная</div>
             <div class="menu-item" onclick="switchTab('docs', this)"><span>📄</span>Мои</div>
             <div class="menu-item" onclick="switchTab('all_docs', this)"><span>🗂️</span>Все</div>
+            <div class="menu-item" onclick="switchTab('tr_book', this)"><span>📘</span>Трудовая</div>
             <div class="menu-item" onclick="switchTab('profile', this)"><span>👤</span>Профиль</div>
         </div>
 
@@ -690,6 +703,23 @@
                     </div>
                 </div>
 
+                <!-- ВКЛАДКА: ТРУДОВАЯ КНИЖКА -->
+                <div id="tab-tr_book" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
+                        <h2 class="section-title" style="margin:0;">📘 Моя трудовая книжка</h2>
+                        <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding: 10px 20px;">⬇️ Скачать PDF</button>
+                    </div>
+
+                    <div class="profile-card" style="margin-bottom: 20px; max-width: 100%;">
+                        <div class="profile-row"><div class="profile-label">Текущее место работы</div><div class="profile-value" id="tr-current-job">—</div></div>
+                        <div class="profile-row"><div class="profile-label">Активные выговоры</div><div class="profile-value" id="tr-reprimands">0</div></div>
+                    </div>
+
+                    <div class="tr-timeline" id="tr-timeline">
+                        <p style="color:var(--text-muted);">Загрузка записей...</p>
+                    </div>
+                </div>
+
                 <!-- ВКЛАДКА: ПРОФИЛЬ -->
                 <div id="tab-profile" style="display:none;">
                     <h2 class="section-title">Мой профиль</h2>
@@ -716,9 +746,7 @@
                     <button class="btn-close-prev" onclick="closePreview()">Закрыть</button>
                 </div>
             </div>
-            <!-- Контейнер для PDF.js (мобилка) -->
             <div id="preview-canvas-container" style="display:none; flex:1; width:100%; overflow-y:auto; background:#555; align-items:center; flex-direction:column; padding:10px 0;"></div>
-            <!-- Iframe для ПК -->
             <iframe id="preview-frame" class="preview-iframe"></iframe>
         </div>
     </div>
@@ -746,7 +774,6 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Настройка PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
     // ============================================================
@@ -756,10 +783,10 @@
         theme: localStorage.getItem('theme') || 'light',
         currentTab: 'home',
         currentUser: null,
+        userProfile: null,
         allDocs: [],
         orgMap: {},
         docNavState: { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' },
-        // Все документы
         allSearch: '',
         allStatusFilter: 'all',
         allOrgFilter: 'all',
@@ -768,6 +795,7 @@
         allPage: 1,
         allPerPage: 10,
         unreadCount: 0,
+        trRecords: []
     };
 
     // ============================================================
@@ -826,6 +854,7 @@
             }
 
             state.currentUser = session.user;
+            state.userProfile = profile;
             const firstName = (profile && profile.first_name) || 'Гражданин';
             document.getElementById('welcome-text').textContent = `Здравствуйте, ${firstName}!`;
 
@@ -839,11 +868,17 @@
                 document.getElementById('prof-passport').textContent =
                     `${profile.pass_series || ''} ${profile.pass_number || ''}`.trim() || '—';
                 document.getElementById('prof-driver-license').textContent = profile.driver_license || '—';
+
+                document.getElementById('tr-current-job').textContent = profile.current_org
+                    ? `${profile.current_org} (${profile.current_position})`
+                    : 'Не трудоустроен';
+                document.getElementById('tr-reprimands').textContent = profile.reprimands_count || 0;
             }
 
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('dashboard-screen').style.display = 'block';
             await loadMyDocs(session.user.id);
+            await loadTrRecords(session.user.id);
         } else {
             document.getElementById('auth-screen').style.display = 'flex';
             document.getElementById('dashboard-screen').style.display = 'none';
@@ -862,12 +897,12 @@
             document.querySelectorAll(`.menu-item[onclick*="${tabId}"]`).forEach(el => el.classList.add('active'));
         }
 
-        ['home', 'docs', 'all_docs', 'profile'].forEach(t => {
+        ['home', 'docs', 'all_docs', 'tr_book', 'profile'].forEach(t => {
             document.getElementById(`tab-${t}`).style.display = 'none';
         });
         document.getElementById(`tab-${tabId}`).style.display = 'block';
 
-        const titles = { home: 'Главная', docs: 'Мои документы', all_docs: 'Все документы', profile: 'Профиль' };
+        const titles = { home: 'Главная', docs: 'Мои документы', all_docs: 'Все документы', tr_book: 'Трудовая книжка', profile: 'Профиль' };
         document.getElementById('topbar-title').textContent = titles[tabId] || '';
 
         if (tabId === 'docs') resetDocsNav();
@@ -896,15 +931,159 @@
         state.orgMap = {};
         (orgs || []).forEach(o => state.orgMap[o.id] = o.name);
 
-        // Непрочитанные
         state.unreadCount = state.allDocs.filter(d => d.is_read === false).length;
         updateBellBadge();
 
-        // Рендеры
         renderHomeStats();
         renderHomeRecent();
         renderOrgChips();
         renderAllDocs();
+    }
+
+    // ============================================================
+    // ЗАГРУЗКА ТРУДОВОЙ КНИЖКИ
+    // ============================================================
+    async function loadTrRecords(userId) {
+        const { data: records } = await supabaseClient
+            .from('employment_records')
+            .select('*')
+            .eq('patient_id', userId)
+            .order('real_date', { ascending: false });
+
+        state.trRecords = records || [];
+        renderTrBook();
+    }
+
+    function renderTrBook() {
+        const container = document.getElementById('tr-timeline');
+        if (!container) return;
+
+        if (state.trRecords.length === 0) {
+            container.innerHTML = '<div class="empty-state">Записей в трудовой книжке пока нет.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        const sorted = [...state.trRecords].sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
+
+        sorted.forEach(r => {
+            const d = new Date(r.real_date).toLocaleDateString('ru-RU');
+            container.innerHTML += `
+                <div class="tr-event">
+                    <div class="tr-dot"></div>
+                    <div class="tr-body">
+                        <div class="tr-meta">
+                            <span>📅 ${d}</span>
+                            <span>🎮 Игровой день: ${r.game_day}</span>
+                        </div>
+                        <div class="tr-text">${r.record_text}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // ============================================================
+    // ГЕНЕРАЦИЯ PDF ТРУДОВОЙ КНИЖКИ
+    // ============================================================
+    async function downloadTrBookPDF() {
+        if (state.trRecords.length === 0) return showToast('Нет записей для генерации PDF');
+        if (!state.userProfile) return showToast('Профиль не загружен');
+
+        try {
+            const pdfDoc = await PDFLib.PDFDocument.create();
+            pdfDoc.registerFontkit(fontkit);
+
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytes);
+
+            let page = pdfDoc.addPage([595, 842]);
+            const { width, height } = page.getSize();
+            let y = height - 60;
+
+            const drawHeader = (pg, yPos) => {
+                pg.drawText('ТРУДОВАЯ КНИЖКА', { x: 50, y: yPos, size: 18, font: customFont });
+                return yPos - 30;
+            };
+
+            y = drawHeader(page, y);
+
+            const p = state.userProfile;
+            page.drawText(`ФИО: ${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`, { x: 50, y, size: 11, font: customFont });
+            y -= 18;
+            page.drawText(`Дата рождения: ${p.dob ? new Date(p.dob).toLocaleDateString('ru-RU') : '—'}`, { x: 50, y, size: 11, font: customFont });
+            y -= 18;
+            page.drawText(`Паспорт: ${p.pass_series || '—'} ${p.pass_number || '—'}`, { x: 50, y, size: 11, font: customFont });
+            y -= 30;
+
+            const drawTableHeader = (pg, yPos) => {
+                pg.drawText('№', { x: 50, y: yPos, size: 10, font: customFont });
+                pg.drawText('Дата', { x: 80, y: yPos, size: 10, font: customFont });
+                pg.drawText('Игровой день', { x: 160, y: yPos, size: 10, font: customFont });
+                pg.drawText('Сведение', { x: 250, y: yPos, size: 10, font: customFont });
+                pg.drawLine({ start: { x: 50, y: yPos - 5 }, end: { x: 545, y: yPos - 5 }, thickness: 1 });
+                return yPos - 20;
+            };
+
+            y = drawTableHeader(page, y);
+
+            const sorted = [...state.trRecords].sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
+            let idx = 1;
+
+            for (const r of sorted) {
+                const d = new Date(r.real_date).toLocaleDateString('ru-RU');
+                const textLines = wrapText(r.record_text, 280, customFont, 10);
+                const blockHeight = Math.max(20, textLines.length * 14);
+
+                if (y - blockHeight < 80) {
+                    page = pdfDoc.addPage([595, 842]);
+                    y = height - 60;
+                    y = drawHeader(page, y);
+                    y = drawTableHeader(page, y);
+                }
+
+                page.drawText(String(idx), { x: 50, y, size: 10, font: customFont });
+                page.drawText(d, { x: 80, y, size: 10, font: customFont });
+                page.drawText(String(r.game_day), { x: 160, y, size: 10, font: customFont });
+
+                let ty = y;
+                textLines.forEach(line => {
+                    page.drawText(line, { x: 250, y: ty, size: 10, font: customFont });
+                    ty -= 14;
+                });
+
+                y -= blockHeight + 10;
+                idx++;
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Trudovaya_${p.last_name || 'citizen'}.pdf`;
+            link.click();
+            showToast('PDF скачан');
+        } catch (err) {
+            console.error(err);
+            showToast('Ошибка генерации PDF: ' + err.message);
+        }
+    }
+
+    function wrapText(text, maxWidth, font, fontSize) {
+        const words = text.split(' ');
+        let lines = [], currentLine = '';
+        for (let word of words) {
+            const testLine = currentLine === '' ? word : currentLine + ' ' + word;
+            if (font.widthOfTextAtSize(testLine, fontSize) <= maxWidth) {
+                currentLine = testLine;
+            } else {
+                if (currentLine !== '') lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        if (currentLine !== '') lines.push(currentLine);
+        return lines.length > 0 ? lines : [text];
     }
 
     // ============================================================
@@ -981,7 +1160,6 @@
         document.getElementById('stat-active').textContent = active;
         document.getElementById('stat-revoked').textContent = revoked;
 
-        // По организациям
         const byOrg = {};
         state.allDocs.forEach(d => {
             byOrg[d.organization_id] = (byOrg[d.organization_id] || 0) + 1;
@@ -1068,7 +1246,7 @@
     }
 
     // ============================================================
-    // ВСЕ ДОКУМЕНТЫ — ТАБЛИЦА С СОРТИРОВКОЙ И ПАГИНАЦИЕЙ
+    // ВСЕ ДОКУМЕНТЫ
     // ============================================================
     function onAllDocsSearch() {
         state.allSearch = document.getElementById('search-all').value.toLowerCase();
@@ -1099,7 +1277,6 @@
             state.allSortCol = col;
             state.allSortAsc = true;
         }
-        // Иконки
         document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '');
         document.querySelectorAll('th').forEach(el => el.classList.remove('sorted'));
         const arrowEl = document.getElementById(`sort-${col}`);
@@ -1113,19 +1290,16 @@
     function getFilteredDocs() {
         let filtered = [...state.allDocs];
 
-        // Статус
         if (state.allStatusFilter === 'active') {
             filtered = filtered.filter(d => d.status === 'active' || !d.status);
         } else if (state.allStatusFilter === 'revoked') {
             filtered = filtered.filter(d => d.status === 'revoked');
         }
 
-        // Организация
         if (state.allOrgFilter !== 'all') {
             filtered = filtered.filter(d => d.organization_id == state.allOrgFilter);
         }
 
-        // Поиск
         if (state.allSearch) {
             const q = state.allSearch;
             filtered = filtered.filter(d => {
@@ -1136,7 +1310,6 @@
             });
         }
 
-        // Сортировка
         filtered.sort((a, b) => {
             let va = a[state.allSortCol];
             let vb = b[state.allSortCol];
@@ -1220,7 +1393,6 @@
         let html = '';
         html += `<button class="page-btn" onclick="changePage(-1)" ${state.allPage === 1 ? 'disabled' : ''}>←</button>`;
 
-        // Логика отображения номеров
         const pages = [];
         if (totalPages <= 7) {
             for (let i = 1; i <= totalPages; i++) pages.push(i);
@@ -1482,7 +1654,7 @@
         const isMobile = window.innerWidth <= 768;
         const iframe = document.getElementById('preview-frame');
         const container = document.getElementById('preview-canvas-container');
-        
+
         document.getElementById('preview-modal').style.display = 'flex';
         document.getElementById('preview-download-btn').href = url;
 
@@ -1494,39 +1666,36 @@
             iframe.style.display = 'none';
             container.style.display = 'flex';
             container.innerHTML = '<p style="color:white; padding:20px;">Загрузка документа...</p>';
-            
+
             try {
                 const loadingTask = pdfjsLib.getDocument(url);
                 const pdf = await loadingTask.promise;
                 container.innerHTML = '';
-                
+
                 const containerWidth = container.clientWidth;
-                const pixelRatio = window.devicePixelRatio || 1; 
-                
+                const pixelRatio = window.devicePixelRatio || 1;
+
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const viewport = page.getViewport({ scale: 1 });
-                    
-                    // Считаем масштаб для HD-качества
                     const scale = (containerWidth / viewport.width) * pixelRatio * 1.2;
                     const scaledViewport = page.getViewport({ scale: scale });
-                    
+
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
                     canvas.height = scaledViewport.height;
                     canvas.width = scaledViewport.width;
-                    
                     canvas.style.width = '100%';
                     canvas.style.height = 'auto';
                     canvas.style.marginBottom = '10px';
                     canvas.style.borderRadius = '4px';
                     canvas.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
-                    
+
                     container.appendChild(canvas);
-                    
-                    await page.render({ 
-                        canvasContext: context, 
-                        viewport: scaledViewport 
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: scaledViewport
                     }).promise;
                 }
             } catch (err) {
@@ -1534,14 +1703,13 @@
             }
         }
     }
-    
+
     function closePreview() {
         document.getElementById('preview-modal').style.display = 'none';
         document.getElementById('preview-frame').src = '';
         document.getElementById('preview-canvas-container').innerHTML = '';
     }
 
-    // Закрытие модалок по клику вне
     document.getElementById('preview-modal').addEventListener('click', e => {
         if (e.target.id === 'preview-modal') closePreview();
     });
