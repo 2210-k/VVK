@@ -1022,6 +1022,10 @@
         renderTrBook();
     }
 
+    function trEscapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
     function renderTrBook() {
         const container=document.getElementById('tr-timeline');
         if(!container) return;
@@ -1033,9 +1037,9 @@
             if(tbody) tbody.innerHTML='<tr><td colspan="4" style="text-align:center;">Нет кадровых записей</td></tr>';
             if(notices) notices.innerHTML='<div class="tr-empty">Кадровых изменений пока нет.</div>';
         }else{
-            container.innerHTML=sorted.map(r=>`<div class="tr-event"><div class="tr-dot"></div><div class="tr-body"><div class="tr-meta"><span>📅 ${new Date(r.real_date).toLocaleDateString('ru-RU')}</span><span>🎮 Игровой день: ${r.game_day??'—'}</span></div><div class="tr-text">${escapeHtml(String(r.record_text||''))}</div></div></div>`).join('');
-            if(tbody) tbody.innerHTML=sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${new Date(r.real_date).toLocaleDateString('ru-RU')}</td><td>${r.game_day??'—'}</td><td>${escapeHtml(String(r.record_text||''))}</td></tr>`).join('');
-            if(notices) notices.innerHTML=[...sorted].reverse().slice(0,4).map(r=>`<div class="tr-change-item"><strong>${new Date(r.real_date).toLocaleDateString('ru-RU')} · Игровой день ${r.game_day??'—'}</strong><span>${escapeHtml(String(r.record_text||''))}</span></div>`).join('');
+            container.innerHTML=sorted.map(r=>`<div class="tr-event"><div class="tr-dot"></div><div class="tr-body"><div class="tr-meta"><span>📅 ${new Date(r.real_date).toLocaleDateString('ru-RU')}</span><span>🎮 Игровой день: ${r.game_day??'—'}</span></div><div class="tr-text">${trEscapeHtml(String(r.record_text||''))}</div></div></div>`).join('');
+            if(tbody) tbody.innerHTML=sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${new Date(r.real_date).toLocaleDateString('ru-RU')}</td><td>${r.game_day??'—'}</td><td>${trEscapeHtml(String(r.record_text||''))}</td></tr>`).join('');
+            if(notices) notices.innerHTML=[...sorted].reverse().slice(0,4).map(r=>`<div class="tr-change-item"><strong>${new Date(r.real_date).toLocaleDateString('ru-RU')} · Игровой день ${r.game_day??'—'}</strong><span>${trEscapeHtml(String(r.record_text||''))}</span></div>`).join('');
         }
         renderTrBookQR();
     }
