@@ -402,7 +402,7 @@
         /* === ТРУДОВАЯ КНИЖКА: компактная карточка и читабельная история === */
         #tab-tr_book .tr-book-heading { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
         #tab-tr_book .tr-book-heading .section-title { margin:0; }
-        #tab-tr_book .tr-summary { display:grid; grid-template-columns:minmax(0,2fr) minmax(180px,1fr); gap:12px; margin-bottom:22px; max-width:none; }
+        #tab-tr_book .tr-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:22px; max-width:none; }
         #tab-tr_book .tr-summary-item { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:17px 19px; box-shadow:var(--shadow); min-width:0; }
         #tab-tr_book .tr-summary-label { color:var(--text-muted); font-size:12px; font-weight:650; margin-bottom:8px; }
         #tab-tr_book .tr-summary-value { color:var(--text); font-size:17px; font-weight:700; line-height:1.35; overflow-wrap:anywhere; }
@@ -412,7 +412,7 @@
         #tab-tr_book .tr-event { gap:12px; }
         #tab-tr_book .tr-text { line-height:1.55; }
         @media(max-width:650px) {
-            #tab-tr_book .tr-summary { grid-template-columns:1fr; gap:9px; }
+            #tab-tr_book .tr-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
             #tab-tr_book .tr-summary-item { padding:14px 15px; }
             #tab-tr_book .tr-book-heading { align-items:flex-start; }
         }
@@ -759,6 +759,14 @@
                             <div class="tr-summary-label">АКТИВНЫЕ ВЫГОВОРЫ</div>
                             <div class="tr-summary-value" id="tr-reprimands">0</div>
                         </div>
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">ДАТА НАЧАЛА РАБОТЫ</div>
+                            <div class="tr-summary-value" id="tr-hire-date">—</div>
+                        </div>
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">СТАЖ РАБОТЫ</div>
+                            <div class="tr-summary-value" id="tr-tenure">—</div>
+                        </div>
                     </div>
 
                     <div class="tr-citizen-tools">
@@ -1041,6 +1049,11 @@
             if(tbody) tbody.innerHTML=sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${new Date(r.real_date).toLocaleDateString('ru-RU')}</td><td>${r.game_day??'—'}</td><td>${trEscapeHtml(String(r.record_text||''))}</td></tr>`).join('');
             if(notices) notices.innerHTML=[...sorted].reverse().slice(0,4).map(r=>`<div class="tr-change-item"><strong>${new Date(r.real_date).toLocaleDateString('ru-RU')} · Игровой день ${r.game_day??'—'}</strong><span>${trEscapeHtml(String(r.record_text||''))}</span></div>`).join('');
         }
+        const hireDate=getTrBookStartDate();
+        const hireEl=document.getElementById('tr-hire-date');
+        const tenureEl=document.getElementById('tr-tenure');
+        if(hireEl) hireEl.textContent=hireDate?new Date(hireDate).toLocaleDateString('ru-RU'):'Нет данных';
+        if(tenureEl) tenureEl.textContent=formatCitizenTenure(hireDate);
         renderTrBookQR();
     }
 
@@ -1053,6 +1066,15 @@
         new QRCode(target,{text:payload,width:112,height:112,correctLevel:QRCode.CorrectLevel.M});
         const note=document.getElementById('tr-book-qr-note');
         if(note) note.textContent='QR содержит реквизиты для ручной сверки. Автоматической онлайн-проверки подлинности пока нет.';
+    }
+
+    function formatCitizenTenure(value){
+        if(!value) return 'Нет данных';
+        const d=new Date(value); if(Number.isNaN(d.getTime())) return 'Нет данных';
+        let months=(new Date().getFullYear()-d.getFullYear())*12+new Date().getMonth()-d.getMonth();
+        if(new Date().getDate()<d.getDate()) months--; months=Math.max(0,months);
+        const years=Math.floor(months/12),rest=months%12;
+        return [years?years+(years===1?' год':years<5?' года':' лет'):'',rest?rest+' мес.':''].filter(Boolean).join(' ')||'Менее месяца';
     }
 
     function getTrBookStartDate(){
