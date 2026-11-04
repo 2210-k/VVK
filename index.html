@@ -106,6 +106,46 @@
         .hr-actions .btn-action { padding: 10px 15px; font-size: 14px; }
         .hr-reprimand { background: #fee2e2; color: #991b1b; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; margin-left: 10px; }
 
+
+        /* КАДРОВЫЙ ОТДЕЛ — компактная компоновка */
+        .hr-dashboard { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+        .hr-stat { background:#fff; border:1px solid #e5eaf1; border-radius:10px; padding:14px 16px; box-shadow:0 2px 7px rgba(15,23,42,.035); min-width:0; }
+        .hr-stat-label { color:#64748b; font-size:12px; font-weight:600; margin-bottom:7px; }
+        .hr-stat-value { color:#172033; font-size:25px; line-height:1.1; font-weight:750; }
+        .hr-stat-note { color:#94a3b8; font-size:11px; margin-top:5px; }
+        .hr-layout { grid-template-columns:280px minmax(0,1fr); height:calc(100vh - 260px); min-height:430px; gap:14px; }
+        .hr-sidebar { border:1px solid #e5eaf1; }
+        .hr-list-heading { position:sticky; top:0; z-index:2; background:#fff; padding:15px 16px 12px; border-bottom:1px solid #e9eef5; }
+        .hr-list-heading strong { display:block; font-size:14px; color:#1e293b; }
+        .hr-list-heading span { display:block; margin-top:3px; font-size:11px; color:#94a3b8; }
+        .hr-employee { padding:12px 14px; border-bottom:1px solid #f0f2f5; border-left:3px solid transparent; }
+        .hr-employee:hover,.hr-employee.active { background:#f3f7ff; border-left-color:var(--primary); }
+        .hr-employee h4 { font-size:13px; line-height:1.35; }
+        .hr-employee p { font-size:11px; line-height:1.4; margin-top:4px; }
+        .hr-main { border:1px solid #e5eaf1; padding:22px; }
+        .hr-header-card { gap:16px; align-items:flex-start; }
+        .hr-header-card h2 { font-size:21px; line-height:1.25; margin:0; color:#172033; }
+        .hr-actions { gap:7px; margin:0; max-width:560px; justify-content:flex-end; }
+        .hr-actions .btn-action { padding:8px 10px; font-size:12px; border-radius:6px; }
+        #hr-employee-details > h3 { margin:20px 0 12px; font-size:15px; color:#334155; }
+        #hr-employee-details .table-responsive { border:1px solid #e8edf3; border-radius:8px; overflow:auto; }
+        #hr-employee-details table { margin:0; }
+        @media (max-width: 900px) {
+            .hr-dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .hr-layout { grid-template-columns:230px minmax(0,1fr); }
+            .hr-header-card { flex-direction:column; }
+            .hr-actions { justify-content:flex-start; }
+        }
+        @media (max-width: 768px) {
+            .hr-dashboard { gap:8px; margin-bottom:10px; }
+            .hr-stat { padding:11px 12px; }
+            .hr-stat-value { font-size:21px; }
+            .hr-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
+            .hr-sidebar { max-height:260px; min-height:120px; }
+            .hr-main { min-height:300px; padding:15px; }
+            .hr-header-card h2 { font-size:18px; }
+        }
+
         /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         .mobile-nav { display: none; }
         
@@ -301,6 +341,12 @@
 
             <!-- КОНТЕНТ: КАДРОВЫЙ ОТДЕЛ -->
             <div id="content-hr_department" style="display: none;">
+                <div class="hr-dashboard" aria-label="Статистика кадрового отдела">
+                    <div class="hr-stat"><div class="hr-stat-label">Всего граждан</div><div class="hr-stat-value" id="hr-stat-total">—</div><div class="hr-stat-note">В кадровой базе</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">Трудоустроены</div><div class="hr-stat-value" id="hr-stat-employed">—</div><div class="hr-stat-note">Есть текущее место работы</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">Не трудоустроены</div><div class="hr-stat-value" id="hr-stat-unemployed">—</div><div class="hr-stat-note">Нет текущего места работы</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">С выговорами</div><div class="hr-stat-value" id="hr-stat-reprimands">—</div><div class="hr-stat-note">Есть активные взыскания</div></div>
+                </div>
                 <div class="hr-layout">
                     <!-- Список сотрудников -->
                     <div class="hr-sidebar" id="hr-employee-list">
@@ -1022,6 +1068,7 @@
         async function loadHRData() {
             const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
             allCitizens = citizens || [];
+            renderHRStats();
             renderHRList();
             if(currentHREmployee) {
                 // Обновляем данные текущего сотрудника
@@ -1030,11 +1077,26 @@
             }
         }
 
+        function renderHRStats() {
+            const employed = allCitizens.filter(c => !!c.current_org).length;
+            const withReprimands = allCitizens.filter(c => Number(c.reprimands_count || 0) > 0).length;
+            const values = {
+                'hr-stat-total': allCitizens.length,
+                'hr-stat-employed': employed,
+                'hr-stat-unemployed': allCitizens.length - employed,
+                'hr-stat-reprimands': withReprimands
+            };
+            Object.entries(values).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            });
+        }
+
         function renderHRList() {
             const box = document.getElementById('hr-employee-list');
-            box.innerHTML = '';
+            box.innerHTML = '<div class="hr-list-heading"><strong>Список граждан</strong><span>Выберите человека для просмотра трудовой истории</span></div>';
             if (allCitizens.length === 0) {
-                box.innerHTML = '<div style="padding: 20px; text-align:center; color:#888;">Нет граждан</div>';
+                box.innerHTML += '<div style="padding:24px 16px; text-align:center; color:#888;">Нет граждан</div>';
                 return;
             }
             allCitizens.forEach(c => {
