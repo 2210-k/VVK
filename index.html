@@ -1256,7 +1256,6 @@
             if (currentHRRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет записей</td></tr>';
             } else {
-                // Сортируем по игровому дню или реальной дате
                 const sorted = [...currentHRRecords].sort((a,b) => new Date(a.real_date) - new Date(b.real_date));
                 sorted.forEach((r, idx) => {
                     tbody.innerHTML += `
@@ -1582,30 +1581,84 @@
         }
 
         async function saveHRRecord(patientId, actionType, text, gameDay, realDate, profileUpdates) {
-            // 1. Сохраняем запись
+            // Полное новое состояние = текущее + переопределения из profileUpdates
+            const fullState = {
+                current_org: profileUpdates.current_org !== undefined ? profileUpdates.current_org : (currentHREmployee?.current_org ?? null),
+                current_position: profileUpdates.current_position !== undefined ? profileUpdates.current_position : (currentHREmployee?.current_position ?? null),
+                reprimands_count: profileUpdates.reprimands_count !== undefined ? profileUpdates.reprimands_count : (currentHREmployee?.reprimands_count ?? 0)
+            };
+
+            // 1. Сохраняем запись с полным состоянием в metadata
             const { error: recError } = await supabaseClient.from('employment_records').insert({
                 patient_id: patientId,
                 action_type: actionType,
                 record_text: text,
                 game_day: parseInt(gameDay),
-                real_date: realDate ? new Date(realDate).toISOString() : new Date().toISOString()
+                real_date: realDate ? new Date(realDate).toISOString() : new Date().toISOString(),
+                metadata: fullState
             });
 
             if (recError) return alert('Ошибка записи: ' + recError.message);
 
-            // 2. Обновляем профиль
-            const { error: profError } = await supabaseClient.from('profiles').update(profileUpdates).eq('id', patientId);
+            // 2. Обновляем профиль полным состоянием
+            const { error: profError } = await supabaseClient.from('profiles').update(fullState).eq('id', patientId);
             if (profError) return alert('Ошибка обновления профиля: ' + profError.message);
 
             alert('Успешно сохранено!');
             loadHRData();
         }
 
+        async function recalcHRProfile(patientId) {
+            // Загружаем все оставшиеся записи, сортируя по реальной дате и id
+            const { data: records } = await supabaseClient
+                .from('employment_records')
+                .select('*')
+                .eq('patient_id', patientId)
+                .order('real_date', { ascending: true })
+                .order('id', { ascending: true });
+
+            if (!records || records.length === 0) {
+                // Все записи удалены — обнуляем профиль
+                await supabaseClient.from('profiles').update({
+                    current_org: null,
+                    current_position: null,
+                    reprimands_count: 0
+                }).eq('id', patientId);
+                return;
+            }
+
+            // Ищем последнюю запись с metadata (с конца)
+            let lastState = null;
+            for (let i = records.length - 1; i >= 0; i--) {
+                if (records[i].metadata) {
+                    lastState = records[i].metadata;
+                    break;
+                }
+            }
+
+            if (!lastState) return; // Нет metadata — профиль не трогаем
+
+            await supabaseClient.from('profiles').update({
+                current_org: lastState.current_org ?? null,
+                current_position: lastState.current_position ?? null,
+                reprimands_count: lastState.reprimands_count ?? 0
+            }).eq('id', patientId);
+        }
+
         async function deleteHRRecord(id) {
             if (!confirm('Удалить эту запись из трудовой книжки?')) return;
+            const rec = currentHRRecords.find(r => r.id == id);
+            if (!rec) return;
+            const patientId = rec.patient_id;
+
             const { error } = await supabaseClient.from('employment_records').delete().eq('id', id);
             if (error) return alert(error.message);
-            renderHRDetails(currentHREmployee);
+
+            // Пересчитываем профиль по оставшимся записям
+            await recalcHRProfile(patientId);
+
+            // Обновляем данные в интерфейсе
+            loadHRData();
         }
 
         async function editHRRecord(id) {
