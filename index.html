@@ -107,6 +107,19 @@
         .hr-reprimand { background: #fee2e2; color: #991b1b; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; margin-left: 10px; }
 
 
+        .hr-filter-control { width:100%; box-sizing:border-box; margin-top:8px; padding:9px 10px; border:1px solid #dbe2ea; border-radius:7px; background:#fff; color:#334155; font-size:12px; }
+        .hr-filter-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+        .hr-profile-facts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin:18px 0 20px; }
+        .hr-profile-facts>div { min-width:0; background:#f8fafc; border:1px solid #e8edf3; border-radius:8px; padding:11px 12px; }
+        .hr-profile-facts span { display:block; color:#64748b; font-size:11px; margin-bottom:6px; }
+        .hr-profile-facts b { display:block; color:#1e293b; font-size:13px; overflow-wrap:anywhere; }
+        .hr-career-timeline { border-left:2px solid #dbe5f3; margin:4px 0 22px 7px; padding-left:18px; }
+        .hr-career-item { position:relative; padding:0 0 15px; }
+        .hr-career-dot { position:absolute; width:9px; height:9px; border-radius:50%; background:var(--primary); left:-23.5px; top:4px; box-shadow:0 0 0 3px #fff; }
+        .hr-career-item b { color:#64748b; font-size:11px; }
+        .hr-career-item p { color:#1e293b; font-size:13px; line-height:1.5; margin:4px 0 0; }
+        .hr-empty-note { color:#94a3b8; padding:12px 0; font-size:13px; }
+        @media(max-width:900px){.hr-profile-facts{grid-template-columns:repeat(2,minmax(0,1fr));}}
         /* КАДРОВЫЙ ОТДЕЛ — компактная компоновка */
         .hr-dashboard { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
         .hr-stat { background:#fff; border:1px solid #e5eaf1; border-radius:10px; padding:14px 16px; box-shadow:0 2px 7px rgba(15,23,42,.035); min-width:0; }
@@ -468,6 +481,22 @@
         };
         let currentHREmployee = null;
         let currentHRRecords = [];
+        const hrFilters = { search:'', org:'all', status:'all', sort:'name' };
+        function updateHRFilters(key,value) { hrFilters[key]=value; renderHRList(); }
+        function hrEscape(value) { return String(value ?? '').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+        function hrFirstDate(rows) {
+            const sorted=[...(rows||[])].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+            const first=sorted.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||sorted[0];
+            return first?.real_date||null;
+        }
+        function hrTenure(value) {
+            if(!value) return 'Нет записей';
+            const d=new Date(value); if(Number.isNaN(d.getTime())) return 'Нет данных';
+            let m=(new Date().getFullYear()-d.getFullYear())*12+new Date().getMonth()-d.getMonth();
+            if(new Date().getDate()<d.getDate()) m--; m=Math.max(0,m);
+            const y=Math.floor(m/12), rest=m%12;
+            return [y?(y+(y===1?' год':y<5?' года':' лет')):'',rest?rest+' мес.':''].filter(Boolean).join(' ')||'Менее месяца';
+        }
 
         // --- АВТОРИЗАЦИЯ ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -1093,26 +1122,44 @@
         }
 
         function renderHRList() {
-            const box = document.getElementById('hr-employee-list');
-            box.innerHTML = '<div class="hr-list-heading"><strong>Список граждан</strong><span>Выберите человека для просмотра трудовой истории</span></div>';
-            if (allCitizens.length === 0) {
-                box.innerHTML += '<div style="padding:24px 16px; text-align:center; color:#888;">Нет граждан</div>';
-                return;
-            }
-            allCitizens.forEach(c => {
-                const div = document.createElement('div');
-                div.className = `hr-employee ${currentHREmployee && currentHREmployee.id === c.id ? 'active' : ''}`;
-                const job = c.current_org ? `<b>${c.current_org}</b> (${c.current_position})` : 'Безработный';
-                const rep = c.reprimands_count > 0 ? `<span class="hr-reprimand">Выговоров: ${c.reprimands_count}/3</span>` : '';
-                div.innerHTML = `
-                    <h4>${c.last_name} ${c.first_name} ${c.patronymic || ''} ${rep}</h4>
-                    <p>${job}</p>
-                `;
-                div.onclick = () => {
-                    currentHREmployee = c;
-                    renderHRList();
-                    renderHRDetails(c);
-                };
+            const box=document.getElementById('hr-employee-list');
+            const orgs=[...new Set(allCitizens.map(c=>c.current_org).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+            box.innerHTML=`<div class="hr-list-heading">
+                <strong>Реестр граждан</strong><span id="hr-list-count">${allCitizens.length} записей</span>
+                <input class="hr-filter-control" type="search" placeholder="Поиск по ФИО..." value="${hrEscape(hrFilters.search)}" oninput="updateHRFilters('search',this.value)">
+                <select class="hr-filter-control" onchange="updateHRFilters('org',this.value)"><option value="all">Все ведомства</option>${orgs.map(o=>`<option value="${hrEscape(o)}" ${hrFilters.org===o?'selected':''}>${hrEscape(o)}</option>`).join('')}</select>
+                <div class="hr-filter-row">
+                    <select class="hr-filter-control" onchange="updateHRFilters('status',this.value)">
+                        <option value="all" ${hrFilters.status==='all'?'selected':''}>Все статусы</option>
+                        <option value="employed" ${hrFilters.status==='employed'?'selected':''}>Трудоустроены</option>
+                        <option value="unemployed" ${hrFilters.status==='unemployed'?'selected':''}>Не трудоустроены</option>
+                    </select>
+                    <select class="hr-filter-control" onchange="updateHRFilters('sort',this.value)">
+                        <option value="name" ${hrFilters.sort==='name'?'selected':''}>По ФИО</option>
+                        <option value="reprimands" ${hrFilters.sort==='reprimands'?'selected':''}>По выговорам</option>
+                        <option value="employed" ${hrFilters.sort==='employed'?'selected':''}>Сначала работающие</option>
+                    </select>
+                </div></div>`;
+            if(!allCitizens.length){box.insertAdjacentHTML('beforeend','<div style="padding:24px;text-align:center;color:#888;">Нет граждан</div>');return;}
+            const q=hrFilters.search.trim().toLocaleLowerCase('ru');
+            const visible=allCitizens.filter(c=>{
+                const fio=[c.last_name,c.first_name,c.patronymic].filter(Boolean).join(' ').toLocaleLowerCase('ru');
+                return (!q||fio.includes(q))&&(hrFilters.org==='all'||c.current_org===hrFilters.org)&&(hrFilters.status==='all'||(hrFilters.status==='employed'?!!c.current_org:!c.current_org));
+            });
+            visible.sort((a,b)=>{
+                if(hrFilters.sort==='reprimands') return Number(b.reprimands_count||0)-Number(a.reprimands_count||0);
+                if(hrFilters.sort==='employed') return Number(!!b.current_org)-Number(!!a.current_org)||(a.last_name||'').localeCompare(b.last_name||'','ru');
+                return (a.last_name||'').localeCompare(b.last_name||'','ru')||(a.first_name||'').localeCompare(b.first_name||'','ru');
+            });
+            const count=document.getElementById('hr-list-count'); if(count) count.textContent=`${visible.length} из ${allCitizens.length} граждан`;
+            if(!visible.length){box.insertAdjacentHTML('beforeend','<div style="padding:24px;text-align:center;color:#888;">Ничего не найдено</div>');return;}
+            visible.forEach(c=>{
+                const div=document.createElement('div'); div.className=`hr-employee ${currentHREmployee?.id===c.id?'active':''}`;
+                const name=[c.last_name,c.first_name,c.patronymic].filter(Boolean).join(' ');
+                const job=c.current_org?`<b>${hrEscape(c.current_org)}</b> · ${hrEscape(c.current_position||'Должность не указана')}`:'Не трудоустроен';
+                const rep=Number(c.reprimands_count||0)>0?`<span class="hr-reprimand">Выговоров: ${Number(c.reprimands_count)}/3</span>`:'';
+                div.innerHTML=`<h4>${hrEscape(name)} ${rep}</h4><p>${job}</p>`;
+                div.onclick=()=>{currentHREmployee=c;renderHRList();renderHRDetails(c);};
                 box.appendChild(div);
             });
         }
@@ -1143,6 +1190,14 @@
                         <button class="btn-action btn-view" onclick="hrAction('remove_reprimand')" ${!c.current_org || c.reprimands_count === 0 ? 'disabled' : ''}>✅ Снять выговор</button>
                     </div>
                 </div>
+                <div class="hr-profile-facts">
+                    <div><span>Первое кадровое событие</span><b>${hrFirstDate(currentHRRecords)?new Date(hrFirstDate(currentHRRecords)).toLocaleDateString('ru-RU'):'—'}</b></div>
+                    <div><span>Стаж по записям</span><b>${hrTenure(hrFirstDate(currentHRRecords))}</b></div>
+                    <div><span>Активные выговоры</span><b>${Number(c.reprimands_count||0)} / 3</b></div>
+                    <div><span>Всего кадровых записей</span><b>${currentHRRecords.length}</b></div>
+                </div>
+                <h3>История карьеры</h3>
+                <div class="hr-career-timeline" id="hr-career-timeline"></div>
                 <h3>📋 Записи в трудовой книжке</h3>
                 <div class="table-responsive">
                     <table>
@@ -1160,6 +1215,9 @@
                 </div>
             `;
 
+            const career=document.getElementById('hr-career-timeline');
+            const careerRows=[...currentHRRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+            if(career) career.innerHTML=careerRows.length?careerRows.map(r=>`<div class="hr-career-item"><span class="hr-career-dot"></span><div><b>${hrEscape(new Date(r.real_date).toLocaleDateString('ru-RU'))} · Игровой день ${hrEscape(r.game_day??'—')}</b><p>${hrEscape(r.record_text||'Кадровое событие')}</p></div></div>`).join(''):'<div class="hr-empty-note">Кадровая история пока пуста</div>';
             const tbody = document.getElementById('hr-records-body');
             if (currentHRRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет записей</td></tr>';
