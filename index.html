@@ -97,7 +97,7 @@
         /* Аккуратные формы кадрового отдела */
         .hr-modal .modal-content { max-width:560px; padding:26px; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 18px 55px rgba(15,23,42,.22); }
         .hr-modal .modal-content h3 { padding-bottom:14px; margin-bottom:16px; border-bottom:1px solid #edf1f5; font-size:20px; }
-        .hr-modal .hr-form-field { margin:0 0 13px; }
+        .hr-modal .hr-form-field { margin:0 0 13px; position: relative; }
         .hr-modal .hr-form-field label { margin:0 0 6px; color:#334155; font-size:12px; }
         .hr-modal .hr-form-field input, .hr-modal .hr-form-field select, .hr-modal .hr-form-field textarea { display:block; width:100%; padding:11px 12px; margin:0; border:1px solid #d7dee8; border-radius:8px; background:#fbfdff; color:#1e293b; font-family:inherit; font-size:14px; line-height:1.45; outline:none; transition:border-color .15s,box-shadow .15s; }
         .hr-modal .hr-form-field textarea { min-height:78px; resize:vertical; }
@@ -107,6 +107,21 @@
         .hr-modal .modal-actions { margin-top:18px; }
         .hr-modal .modal-actions button { border-radius:8px; min-height:42px; transition:filter .15s,transform .15s; }
         .hr-modal .modal-actions button:hover { filter:brightness(.97); transform:translateY(-1px); }
+
+        /* Автокомплит для кадрового отдела */
+        .autocomplete-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: #fff; border: 1px solid #d7dee8; border-top: none;
+            border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto;
+            z-index: 300; display: none; box-shadow: 0 8px 20px rgba(15,23,42,.12);
+        }
+        .autocomplete-item {
+            padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f2f5;
+            font-size: 13px; color: #1e293b; line-height: 1.4;
+        }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item:hover { background-color: #eef5ff; }
+        .autocomplete-item b { color: #0056b3; }
 
         /* КАДРОВЫЙ ОТДЕЛ (Внутренние стили) */
         .hr-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: calc(100vh - 200px); }
@@ -120,7 +135,6 @@
         .hr-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
         .hr-actions .btn-action { padding: 10px 15px; font-size: 14px; }
         .hr-reprimand { background: #fee2e2; color: #991b1b; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; margin-left: 10px; }
-
 
         .hr-filter-control { width:100%; box-sizing:border-box; margin-top:8px; padding:9px 10px; border:1px solid #dbe2ea; border-radius:7px; background:#fff; color:#334155; font-size:12px; }
         .hr-filter-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
@@ -1311,13 +1325,12 @@
                 ...HR_DB.orgs.map(x => ({ type: 'org', name: x.name })),
                 ...HR_DB.works.map(x => ({ type: 'work', name: x.name }))
             ];
-            const options = places.map(x => `<option value="${hrEscape(x.name)}"></option>`).join('');
             return `
                 <div class="hr-form-field">
                     <label for="${id}">${label}</label>
-                    <input type="search" id="${id}" list="${id}-options" autocomplete="off" placeholder="Начните вводить название..." value="${hrEscape(places[0]?.name || '')}">
-                    <datalist id="${id}-options">${options}</datalist>
-                    <small class="hr-field-hint">Начните вводить название — появятся подходящие варианты. Можно выбрать вариант или ввести точное название.</small>
+                    <input type="text" id="${id}" autocomplete="off" placeholder="Начните вводить название..." value="${hrEscape(places[0]?.name || '')}">
+                    <div class="autocomplete-dropdown" id="${id}-dropdown"></div>
+                    <small class="hr-field-hint">Начните вводить название — под полем появятся подходящие варианты.</small>
                 </div>
             `;
         }
@@ -1332,17 +1345,64 @@
 
         function hrBindPlacePicker(modal, inputId, positionId) {
             const input = modal.querySelector('#' + inputId);
+            const dropdown = modal.querySelector('#' + inputId + '-dropdown');
             const positions = modal.querySelector('#' + positionId);
             if (!input || !positions) return;
-            const update = () => {
+
+            const allPlaces = [
+                ...HR_DB.orgs.map(x => ({ type: 'org', name: x.name })),
+                ...HR_DB.works.map(x => ({ type: 'work', name: x.name }))
+            ];
+
+            const updatePositions = () => {
                 const place = hrResolvePlace(input.value);
                 positions.innerHTML = place
                     ? place.positions.map(p => `<option value="${hrEscape(p)}">${hrEscape(p)}</option>`).join('')
                     : '<option value="">Сначала выберите место работы</option>';
             };
-            input.addEventListener('input', update);
-            input.addEventListener('change', update);
-            update();
+
+            const closeDropdown = () => { if (dropdown) dropdown.style.display = 'none'; };
+
+            const renderDropdown = () => {
+                if (!dropdown) return;
+                const q = input.value.toLowerCase().trim();
+                dropdown.innerHTML = '';
+                if (!q) { dropdown.style.display = 'none'; return; }
+
+                const matches = allPlaces.filter(p => p.name.toLowerCase().includes(q));
+                if (!matches.length) { dropdown.style.display = 'none'; return; }
+
+                matches.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    const icon = p.type === 'org' ? '🏢' : '💼';
+                    div.innerHTML = `${icon} <b>${hrEscape(p.name)}</b>`;
+                    div.onclick = () => {
+                        input.value = p.name;
+                        closeDropdown();
+                        updatePositions();
+                    };
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = 'block';
+            };
+
+            input.addEventListener('input', () => {
+                renderDropdown();
+                updatePositions();
+            });
+
+            input.addEventListener('focus', () => {
+                if (input.value) renderDropdown();
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target !== input && dropdown && !dropdown.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+
+            updatePositions();
         }
 
         function hrDateFields() {
@@ -1385,7 +1445,7 @@
                         : `Принят на работу в "${place.name}" на должность "${pos}"`;
                     saveHRRecord(c.id, 'hire', text, gameDay, date, { current_org: place.name, current_position: pos });
                 });
-                const hireModal = document.querySelector('.modal:last-of-type');
+                const hireModal = document.querySelector('.hr-modal');
                 if (hireModal) hrBindPlacePicker(hireModal, 'hr-hire-type', 'hr-hire-pos');
             }
 
@@ -1465,7 +1525,7 @@
                     const text = `Переведен ${fromStr} с должности "${c.current_position}" ${toStr} на должность "${pos}". Основание: ${reason}`;
                     saveHRRecord(c.id, 'transfer', text, gameDay, date, { current_org: place.name, current_position: pos, reprimands_count: 0 });
                 });
-                const transferModal = document.querySelector('.modal:last-of-type');
+                const transferModal = document.querySelector('.hr-modal');
                 if (transferModal) hrBindPlacePicker(transferModal, 'hr-trans-type', 'hr-trans-pos');
             }
 
