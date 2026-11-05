@@ -118,14 +118,25 @@ async function downloadEmploymentCertificatePDF() {
         const hireRecord = state.trRecords.find(r => /принят|трудоустроен|зачислен/i.test(r.record_text));
         const hireDateStr = hireRecord ? `${formatDatePDF(new Date(hireRecord.real_date))} (${hireRecord.game_day} день)` : '—';
         
-        // Формируем блок выговоров (УБРАЛИ "По состоянию на")
+        // Формируем блок выговоров
         let reprimandsText = `${formatDatePDF(now)} `;
         if (Number(p.reprimands_count || 0) === 0) {
             reprimandsText += `активных выговоров не имеет.`;
         } else {
             reprimandsText += `имеет ${p.reprimands_count} выговор(ов): `;
             const reps = state.trRecords.filter(r => r.action_type === 'reprimand').slice(-p.reprimands_count);
-            const repStrings = reps.map((r, i) => `№${i+1} от ${formatDatePDF(new Date(r.real_date))} (${r.game_day} день)`);
+            
+            // Сортируем по дате, чтобы выговоры шли по порядку
+            reps.sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
+            
+            const repStrings = reps.map((r) => {
+                // Достаем реальный номер выговора из текста (например, "№245")
+                let repNum = '?';
+                const match = r.record_text.match(/№(\d+)/);
+                if (match) repNum = match[1];
+                
+                return `№${repNum} от ${formatDatePDF(new Date(r.real_date))} (${r.game_day} день)`;
+            });
             reprimandsText += repStrings.join('; ') + '.';
         }
 
