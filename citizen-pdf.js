@@ -56,10 +56,10 @@ const COORDS_VYPISKA = {
     dob: { x: 124, y: 645 },
     passport: { x: 167, y: 632.3 },
     education: { x: 109, y: 617 }, // Прочерк
-    profession: { x: 174.7, y: 604 }, // Прочерк
+    profession: { x: 174.7, y: 605 }, // Прочерк
     responsible: { x: 204, y: 591 }, // Правительство
     regNumber: { x: 461, y: 672 },
-    qrCode: { x: 375, y: 590, width: 60, height: 60 },
+    qrCode: { x: 375, y: 565, width: 60, height: 60 },
     
     // БЛОК АВТОМАТИЧЕСКОЙ ТАБЛИЦЫ (ширина колонок подберется сама)
     table: {
