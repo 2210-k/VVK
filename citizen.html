@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- PDF.js для просмотра -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <!-- PDF-lib для генерации PDF трудовой -->
+    <!-- PDF-lib для генерации PDF -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -750,7 +750,8 @@
                             <h2 class="section-title">📘 Моя трудовая книжка</h2>
                             <div style="color:var(--text-muted);font-size:13px;margin-top:5px;">Сведения о текущем месте работы и кадровой истории</div>
                         </div>
-                        <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding:10px 18px;">⬇️ Скачать PDF</button>
+                        <!-- ТЕПЕРЬ ЭТА КНОПКА ВЫЗЫВАЕТ НОВУЮ ВЫПИСКУ ИЗ citizen-pdf.js -->
+                        <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding:10px 18px;">⬇️ Скачать выписку ТК</button>
                     </div>
 
                     <div class="tr-summary">
@@ -776,7 +777,7 @@
                         <div class="tr-tool-card">
                             <div class="tr-summary-label">СПРАВКА С МЕСТА РАБОТЫ</div>
                             <p>PDF-справка о текущей организации, должности и дате трудоустройства.</p>
-                            <!-- ТУТ ВЫЗЫВАЕТСЯ НОВАЯ ФУНКЦИЯ ИЗ citizen-pdf.js -->
+                            <!-- ВЫЗЫВАЕТСЯ НОВАЯ ФУНКЦИЯ ИЗ citizen-pdf.js -->
                             <button class="btn-dl" onclick="downloadEmploymentCertificatePDF()" style="padding:9px 14px;">⬇ Скачать справку PDF</button>
                         </div>
                         <div class="tr-tool-card tr-qr-card">
@@ -1120,109 +1121,6 @@
         const rows=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
         const row=rows.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||rows[0];
         return row?.real_date||null;
-    }
-
-    // ============================================================
-    // ГЕНЕРАЦИЯ PDF ТРУДОВОЙ КНИЖКИ
-    // ============================================================
-    async function downloadTrBookPDF() {
-        if (state.trRecords.length === 0) return showToast('Нет записей для генерации PDF');
-        if (!state.userProfile) return showToast('Профиль не загружен');
-
-        try {
-            const pdfDoc = await PDFLib.PDFDocument.create();
-            pdfDoc.registerFontkit(fontkit);
-
-            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
-            const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
-            const customFont = await pdfDoc.embedFont(fontBytes);
-
-            let page = pdfDoc.addPage([595, 842]);
-            const { width, height } = page.getSize();
-            let y = height - 60;
-
-            const drawHeader = (pg, yPos) => {
-                pg.drawText('ТРУДОВАЯ КНИЖКА', { x: 50, y: yPos, size: 18, font: customFont });
-                return yPos - 30;
-            };
-
-            y = drawHeader(page, y);
-
-            const p = state.userProfile;
-            page.drawText(`ФИО: ${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`, { x: 50, y, size: 11, font: customFont });
-            y -= 18;
-            page.drawText(`Дата рождения: ${p.dob ? new Date(p.dob).toLocaleDateString('ru-RU') : '—'}`, { x: 50, y, size: 11, font: customFont });
-            y -= 18;
-            page.drawText(`Паспорт: ${p.pass_series || '—'} ${p.pass_number || '—'}`, { x: 50, y, size: 11, font: customFont });
-            y -= 30;
-
-            const drawTableHeader = (pg, yPos) => {
-                pg.drawText('№', { x: 50, y: yPos, size: 10, font: customFont });
-                pg.drawText('Дата', { x: 80, y: yPos, size: 10, font: customFont });
-                pg.drawText('Номер дня', { x: 160, y: yPos, size: 10, font: customFont });
-                pg.drawText('Сведение', { x: 250, y: yPos, size: 10, font: customFont });
-                pg.drawLine({ start: { x: 50, y: yPos - 5 }, end: { x: 545, y: yPos - 5 }, thickness: 1 });
-                return yPos - 20;
-            };
-
-            y = drawTableHeader(page, y);
-
-            const sorted = [...state.trRecords].sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
-            let idx = 1;
-
-            for (const r of sorted) {
-                const d = new Date(r.real_date).toLocaleDateString('ru-RU');
-                const textLines = wrapText(r.record_text, 280, customFont, 10);
-                const blockHeight = Math.max(20, textLines.length * 14);
-
-                if (y - blockHeight < 80) {
-                    page = pdfDoc.addPage([595, 842]);
-                    y = height - 60;
-                    y = drawHeader(page, y);
-                    y = drawTableHeader(page, y);
-                }
-
-                page.drawText(String(idx), { x: 50, y, size: 10, font: customFont });
-                page.drawText(d, { x: 80, y, size: 10, font: customFont });
-                page.drawText(String(r.game_day), { x: 160, y, size: 10, font: customFont });
-
-                let ty = y;
-                textLines.forEach(line => {
-                    page.drawText(line, { x: 250, y: ty, size: 10, font: customFont });
-                    ty -= 14;
-                });
-
-                y -= blockHeight + 10;
-                idx++;
-            }
-
-            const pdfBytes = await pdfDoc.save();
-            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `Trudovaya_${p.last_name || 'citizen'}.pdf`;
-            link.click();
-            showToast('PDF скачан');
-        } catch (err) {
-            console.error(err);
-            showToast('Ошибка генерации PDF: ' + err.message);
-        }
-    }
-
-    function wrapText(text, maxWidth, font, fontSize) {
-        const words = text.split(' ');
-        let lines = [], currentLine = '';
-        for (let word of words) {
-            const testLine = currentLine === '' ? word : currentLine + ' ' + word;
-            if (font.widthOfTextAtSize(testLine, fontSize) <= maxWidth) {
-                currentLine = testLine;
-            } else {
-                if (currentLine !== '') lines.push(currentLine);
-                currentLine = word;
-            }
-        }
-        if (currentLine !== '') lines.push(currentLine);
-        return lines.length > 0 ? lines : [text];
     }
 
     // ============================================================
@@ -1857,7 +1755,7 @@
     });
 </script>
 
-<!-- ПОДКЛЮЧАЕМ ВНЕШНИЙ ФАЙЛ С ГЕНЕРАЦИЕЙ СПРАВКИ -->
+<!-- ПОДКЛЮЧАЕМ ВНЕШНИЙ ФАЙЛ С ГЕНЕРАЦИЕЙ PDF -->
 <script src="citizen-pdf.js"></script>
 
 </body>
