@@ -4,7 +4,14 @@
 
 const MONTHS_GENITIVE_PDF = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
-// Справочник руководителей по названиям организаций
+// Расшифровка аббревиатур организаций
+const ORG_MAP = {
+    "ЕСС": "Единая служба спасения",
+    "МВД": "Министерство внутренних дел по Соль-Илецкому г.о",
+    "ВЧ": "Воинская часть №205"
+};
+
+// Справочник руководителей по полным названиям организаций
 const ORG_BOSSES = {
     "Горнодобывающая организация": "Начальник",
     "Курьерская служба": "Начальник",
@@ -20,22 +27,22 @@ const ORG_BOSSES = {
 };
 
 // ============================================================================
-// ⚠️ КООРДИНАТЫ (ЖДУ ТВОИ ЗНАЧЕНИЯ)
+// ⚠️ ТВОИ КООРДИНАТЫ
 // ============================================================================
 const COORDS_SPRAVKA = {
-    dateTop: { xStart: 308, xEnd: 536, y: 769 }, // Центрируется по xStart и xEnd
-    fio: { x: 123, y: 666 },
+    dateTop: { xStart: 308, xEnd: 536, y: 769 },
+    fio: { x: 123, y: 666.3 },
     dob: { x: 126, y: 653 },
-    passport: { x: 169, y: 639 },
-    org: { x: 116, y: 596 },
-    position: { x: 113, y: 583 },
-    hireDate: { x: 168, y: 561 },
-    status: { x: 128, y: 548 },
-    reprimands: { x: 43, y: 508, maxWidth: 508, lineHeight: 13, indent: 80 }, // Отступ для многострочного текста
-    formDate: { x: 150, y: 467 },
-    boss: { x: 183, y: 454 },
+    passport: { x: 169, y: 640 },
+    org: { x: 116, y: 596.5 },
+    position: { x: 113, y: 583.3 },
+    hireDate: { x: 168, y: 561.5 },
+    status: { x: 128, y: 548.5 },
+    reprimands: { x: 43, y: 508.3, maxWidth: 508, lineHeight: 13, indent: 80 },
+    formDate: { x: 150, y: 467.3 },
+    boss: { x: 183, y: 454.4 },
     regNumber: { x: 127, y: 294 },
-    qrCode: { x: 481, y: 241, width: 70, height: 70 }
+    qrCode: { x: 481, y: 251, width: 70, height: 70 }
 };
 
 // Вспомогательные функции
@@ -90,7 +97,7 @@ async function downloadEmploymentCertificatePDF() {
     if (!p.current_org) return showToast('Нет действующего места работы для справки');
 
     try {
-        // Загружаем твой шаблон (положи его в корень рядом с index.html)
+        // Загружаем шаблон
         const pdfBytes = await fetch('./spravka_template.pdf').then(r => r.arrayBuffer());
         const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
         pdfDoc.registerFontkit(fontkit);
@@ -111,8 +118,8 @@ async function downloadEmploymentCertificatePDF() {
         const hireRecord = state.trRecords.find(r => /принят|трудоустроен|зачислен/i.test(r.record_text));
         const hireDateStr = hireRecord ? `${formatDatePDF(new Date(hireRecord.real_date))} (${hireRecord.game_day} день)` : '—';
         
-        // Формируем блок выговоров
-        let reprimandsText = `По состоянию на ${formatDatePDF(now)} `;
+        // Формируем блок выговоров (УБРАЛИ "По состоянию на")
+        let reprimandsText = `${formatDatePDF(now)} `;
         if (Number(p.reprimands_count || 0) === 0) {
             reprimandsText += `активных выговоров не имеет.`;
         } else {
@@ -122,9 +129,13 @@ async function downloadEmploymentCertificatePDF() {
             reprimandsText += repStrings.join('; ') + '.';
         }
 
-        // Должность руководителя
-        const bossTitle = ORG_BOSSES[p.current_org] || 'Руководитель';
-        const bossStr = `${bossTitle} организации "${p.current_org}"`;
+        // Расшифровываем организацию
+        const rawOrg = p.current_org;
+        const fullOrgName = ORG_MAP[rawOrg] || rawOrg;
+
+        // Подбираем должность руководителя
+        const bossTitle = ORG_BOSSES[fullOrgName] || 'Руководитель';
+        const bossStr = `${bossTitle} организации "${fullOrgName}"`;
         
         const regNumberStr = `СПР-${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`;
 
@@ -142,7 +153,7 @@ async function downloadEmploymentCertificatePDF() {
         page.drawText(dobStr, { x: COORDS_SPRAVKA.dob.x, y: COORDS_SPRAVKA.dob.y, ...opt11 });
         page.drawText(passportStr, { x: COORDS_SPRAVKA.passport.x, y: COORDS_SPRAVKA.passport.y, ...opt11 });
         
-        page.drawText(p.current_org, { x: COORDS_SPRAVKA.org.x, y: COORDS_SPRAVKA.org.y, ...opt11 });
+        page.drawText(fullOrgName, { x: COORDS_SPRAVKA.org.x, y: COORDS_SPRAVKA.org.y, ...opt11 });
         page.drawText(p.current_position || '—', { x: COORDS_SPRAVKA.position.x, y: COORDS_SPRAVKA.position.y, ...opt11 });
         page.drawText(hireDateStr, { x: COORDS_SPRAVKA.hireDate.x, y: COORDS_SPRAVKA.hireDate.y, ...opt11 });
         
@@ -157,7 +168,7 @@ async function downloadEmploymentCertificatePDF() {
         page.drawText(regNumberStr, { x: COORDS_SPRAVKA.regNumber.x, y: COORDS_SPRAVKA.regNumber.y, ...opt11 });
 
         // QR-код
-        const qrText = `СПРАВКА\nРеестр: ${regNumberStr}\nФИО: ${fioStr}\nОрг: ${p.current_org}\nДействительна на ${formatDatePDF(now)}`;
+        const qrText = `СПРАВКА\nРеестр: ${regNumberStr}\nФИО: ${fioStr}\nОрг: ${fullOrgName}\nДействительна на ${formatDatePDF(now)}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`;
         const qrBytes = await fetch(qrUrl).then(r => r.arrayBuffer());
         const qrImage = await pdfDoc.embedPng(qrBytes);
