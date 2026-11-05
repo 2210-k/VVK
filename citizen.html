@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon.png">
     <title>Личный кабинет | Единый Портал Государственных Услуг</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- PDF.js для просмотра -->
@@ -10,6 +11,7 @@
     <!-- PDF-lib для генерации PDF трудовой -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #10b981;
@@ -380,6 +382,43 @@
         .tr-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; gap: 15px; flex-wrap: wrap; }
         .tr-text { font-weight: 500; font-size: 15px; line-height: 1.4; }
 
+
+        #tab-tr_book .tr-citizen-tools{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(180px,1fr);gap:12px;margin:0 0 20px;}
+        #tab-tr_book .tr-tool-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0;}
+        #tab-tr_book .tr-tool-card p{color:var(--text-muted);font-size:13px;line-height:1.5;margin:8px 0 13px;}
+        #tab-tr_book .tr-qr-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+        #tab-tr_book .tr-book-qr{min-height:160px;display:flex;align-items:center;justify-content:center;margin:8px 0;}
+        #tab-tr_book .tr-book-number{font-size:20px;font-weight:800;letter-spacing:1px;color:var(--primary-dark);margin:8px 0 2px;padding:9px 14px;border:1px solid var(--border);border-radius:9px;background:var(--bg-muted);}
+        #tab-tr_book .tr-book-qr img,#tab-tr_book .tr-book-qr canvas{width:160px!important;height:160px!important;}
+        #tab-tr_book .tr-qr-card small{color:var(--text-muted);font-size:10px;line-height:1.4;max-width:260px;}
+        #tab-tr_book .tr-change-item{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:11px 14px;margin-bottom:8px;}
+        #tab-tr_book .tr-change-item strong{display:block;color:var(--text-muted);font-size:11px;margin-bottom:5px;}
+        #tab-tr_book .tr-change-item span{color:var(--text);font-size:13px;line-height:1.5;}
+        #tab-tr_book .tr-empty{color:var(--text-muted);padding:15px;font-size:13px;}
+        #tab-tr_book .tr-history-table-wrap{width:100%;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);}
+        #tab-tr_book .tr-history-table{width:100%;min-width:580px;border-collapse:collapse;}
+        #tab-tr_book .tr-history-table th{background:var(--bg-muted);color:var(--text-muted);text-align:left;padding:12px;font-size:11px;white-space:nowrap;}
+        #tab-tr_book .tr-history-table td{padding:12px;border-top:1px solid var(--border);color:var(--text);font-size:12px;line-height:1.5;vertical-align:top;}
+        #tab-tr_book .tr-history-table td:last-child{min-width:260px;}
+        @media(max-width:650px){#tab-tr_book .tr-citizen-tools{grid-template-columns:1fr;}}
+        /* === ТРУДОВАЯ КНИЖКА: компактная карточка и читабельная история === */
+        #tab-tr_book .tr-book-heading { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+        #tab-tr_book .tr-book-heading .section-title { margin:0; }
+        #tab-tr_book .tr-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:22px; max-width:none; }
+        #tab-tr_book .tr-summary-item { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:17px 19px; box-shadow:var(--shadow); min-width:0; }
+        #tab-tr_book .tr-summary-label { color:var(--text-muted); font-size:12px; font-weight:650; margin-bottom:8px; }
+        #tab-tr_book .tr-summary-value { color:var(--text); font-size:17px; font-weight:700; line-height:1.35; overflow-wrap:anywhere; }
+        #tab-tr_book .tr-section-caption { color:var(--text-muted); font-size:13px; font-weight:650; margin:0 0 13px 2px; }
+        #tab-tr_book .tr-timeline { margin-left:3px; }
+        #tab-tr_book .tr-body { padding:16px 18px; }
+        #tab-tr_book .tr-event { gap:12px; }
+        #tab-tr_book .tr-text { line-height:1.55; }
+        @media(max-width:650px) {
+            #tab-tr_book .tr-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+            #tab-tr_book .tr-summary-item { padding:14px 15px; }
+            #tab-tr_book .tr-book-heading { align-items:flex-start; }
+        }
+
         /* === ПУСТОЕ СОСТОЯНИЕ === */
         .empty-state {
             text-align: center; padding: 50px 20px;
@@ -554,6 +593,7 @@
             .mobile-nav .menu-item { font-size: 9px; }
         }
     </style>
+    <link rel="icon" href="data:,">
 </head>
 <body>
 
@@ -705,18 +745,58 @@
 
                 <!-- ВКЛАДКА: ТРУДОВАЯ КНИЖКА -->
                 <div id="tab-tr_book" style="display:none;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-                        <h2 class="section-title" style="margin:0;">📘 Моя трудовая книжка</h2>
-                        <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding: 10px 20px;">⬇️ Скачать PDF</button>
+                    <div class="tr-book-heading">
+                        <div>
+                            <h2 class="section-title">📘 Моя трудовая книжка</h2>
+                            <div style="color:var(--text-muted);font-size:13px;margin-top:5px;">Сведения о текущем месте работы и кадровой истории</div>
+                        </div>
+                        <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding:10px 18px;">⬇️ Скачать PDF</button>
                     </div>
 
-                    <div class="profile-card" style="margin-bottom: 20px; max-width: 100%;">
-                        <div class="profile-row"><div class="profile-label">Текущее место работы</div><div class="profile-value" id="tr-current-job">—</div></div>
-                        <div class="profile-row"><div class="profile-label">Активные выговоры</div><div class="profile-value" id="tr-reprimands">0</div></div>
+                    <div class="tr-summary">
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">ТЕКУЩЕЕ МЕСТО РАБОТЫ</div>
+                            <div class="tr-summary-value" id="tr-current-job">—</div>
+                        </div>
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">АКТИВНЫЕ ВЫГОВОРЫ</div>
+                            <div class="tr-summary-value" id="tr-reprimands">0</div>
+                        </div>
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">ДАТА НАЧАЛА РАБОТЫ</div>
+                            <div class="tr-summary-value" id="tr-hire-date">—</div>
+                        </div>
+                        <div class="tr-summary-item">
+                            <div class="tr-summary-label">СТАЖ РАБОТЫ</div>
+                            <div class="tr-summary-value" id="tr-tenure">—</div>
+                        </div>
                     </div>
 
-                    <div class="tr-timeline" id="tr-timeline">
-                        <p style="color:var(--text-muted);">Загрузка записей...</p>
+                    <div class="tr-citizen-tools">
+                        <div class="tr-tool-card">
+                            <div class="tr-summary-label">СПРАВКА С МЕСТА РАБОТЫ</div>
+                            <p>PDF-справка о текущей организации, должности и дате трудоустройства.</p>
+                            <button class="btn-dl" onclick="downloadEmploymentCertificatePDF()" style="padding:9px 14px;">⬇ Скачать справку PDF</button>
+                        </div>
+                        <div class="tr-tool-card tr-qr-card">
+                            <div class="tr-summary-label">НОМЕР ТРУДОВОЙ КНИЖКИ</div>
+                            <div id="tr-book-number" class="tr-book-number">Формирование номера...</div>
+                            <div id="tr-book-qr" class="tr-book-qr"></div>
+                            <small id="tr-book-qr-note">QR-код содержит только номер трудовой книжки.</small>
+                        </div>
+                    </div>
+                    <div class="tr-notice-panel">
+                        <div class="tr-section-caption">Последние кадровые изменения</div>
+                        <div id="tr-change-notifications"><div class="tr-empty">Загрузка...</div></div>
+                    </div>
+                    <div class="tr-section-caption">История карьеры</div>
+                    <div class="tr-timeline" id="tr-timeline"><p style="color:var(--text-muted);">Загрузка записей...</p></div>
+                    <div class="tr-section-caption" style="margin-top:24px;">Таблица трудовой истории</div>
+                    <div class="tr-history-table-wrap">
+                        <table class="tr-history-table">
+                            <thead><tr><th>№</th><th>Реальная дата</th><th>Номер дня</th><th>Кадровое событие</th></tr></thead>
+                            <tbody id="tr-history-table-body"><tr><td colspan="4">Загрузка...</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -954,33 +1034,118 @@
         renderTrBook();
     }
 
-    function renderTrBook() {
-        const container = document.getElementById('tr-timeline');
-        if (!container) return;
+    function trEscapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
 
-        if (state.trRecords.length === 0) {
-            container.innerHTML = '<div class="empty-state">Записей в трудовой книжке пока нет.</div>';
+    function renderTrBook() {
+        const container=document.getElementById('tr-timeline');
+        if(!container) return;
+        const sorted=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+        const tbody=document.getElementById('tr-history-table-body');
+        const notices=document.getElementById('tr-change-notifications');
+        if(!sorted.length){
+            container.innerHTML='<div class="empty-state">Записей в трудовой книжке пока нет.</div>';
+            if(tbody) tbody.innerHTML='<tr><td colspan="4" style="text-align:center;">Нет кадровых записей</td></tr>';
+            if(notices) notices.innerHTML='<div class="tr-empty">Кадровых изменений пока нет.</div>';
+        }else{
+            container.innerHTML=sorted.map(r=>`<div class="tr-event"><div class="tr-dot"></div><div class="tr-body"><div class="tr-meta"><span>📅 ${new Date(r.real_date).toLocaleDateString('ru-RU')}</span><span>№ дня: ${r.game_day??'—'}</span></div><div class="tr-text">${trEscapeHtml(String(r.record_text||''))}</div></div></div>`).join('');
+            if(tbody) tbody.innerHTML=sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${new Date(r.real_date).toLocaleDateString('ru-RU')}</td><td>${r.game_day??'—'}</td><td>${trEscapeHtml(String(r.record_text||''))}</td></tr>`).join('');
+            if(notices) notices.innerHTML=[...sorted].reverse().slice(0,4).map(r=>`<div class="tr-change-item"><strong>${new Date(r.real_date).toLocaleDateString('ru-RU')} · № дня ${r.game_day??'—'}</strong><span>${trEscapeHtml(String(r.record_text||''))}</span></div>`).join('');
+        }
+        const hireDate=getTrBookStartDate();
+        const hireEl=document.getElementById('tr-hire-date');
+        const tenureEl=document.getElementById('tr-tenure');
+        if(hireEl) hireEl.textContent=hireDate?new Date(hireDate).toLocaleDateString('ru-RU'):'Нет данных';
+        if(tenureEl) tenureEl.textContent=formatCitizenTenure(hireDate);
+        renderTrBookQR();
+    }
+
+    function getTrBookNumber(){
+        const p=state.userProfile||{};
+        const source=String(p.id||p.user_id||state.currentUser?.id||'');
+        // Короткий стабильный цифровой номер, одинаковый при каждом входе.
+        let hash=2166136261;
+        for(let i=0;i<source.length;i++){
+            hash^=source.charCodeAt(i);
+            hash=Math.imul(hash,16777619);
+        }
+        return 'ТРКН-'+String(hash>>>0).padStart(10,'0');
+    }
+
+    function renderTrBookQR(){
+        const target=document.getElementById('tr-book-qr');
+        if(!target) return;
+        target.innerHTML='';
+        const note=document.getElementById('tr-book-qr-note');
+        const number=getTrBookNumber();
+        const numberEl=document.getElementById('tr-book-number');
+        if(numberEl) numberEl.textContent=number;
+        if(!window.QRCode){
+            if(note) note.textContent='Библиотека QR-кодов не загрузилась. Номер трудовой книжки указан выше.';
             return;
         }
+        // В QR передаются только 10 цифр номера ТрКн. Никаких других данных.
+        const qrNumber=number.replace(/\D/g,'');
+        if(!/^\d{10}$/.test(qrNumber)){
+            if(note) note.textContent='Не удалось подготовить номер для QR. Номер ТрКн указан выше.';
+            return;
+        }
+        try{
+            new QRCode(target,{
+                text:qrNumber,
+                width:160,
+                height:160,
+                correctLevel:QRCode.CorrectLevel.L
+            });
+            if(note) note.textContent='QR содержит только цифровой номер трудовой книжки.';
+        }catch(err){
+            // Не выводим техническую ошибку пользователю и не ломаем загрузку трудовой.
+            target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
+            if(note) note.textContent='Номер трудовой книжки указан выше. QR временно недоступен.';
+        }
+    }
 
-        container.innerHTML = '';
-        const sorted = [...state.trRecords].sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
+    function formatCitizenTenure(value){
+        if(!value) return 'Нет данных';
+        const d=new Date(value); if(Number.isNaN(d.getTime())) return 'Нет данных';
+        let months=(new Date().getFullYear()-d.getFullYear())*12+new Date().getMonth()-d.getMonth();
+        if(new Date().getDate()<d.getDate()) months--; months=Math.max(0,months);
+        const years=Math.floor(months/12),rest=months%12;
+        return [years?years+(years===1?' год':years<5?' года':' лет'):'',rest?rest+' мес.':''].filter(Boolean).join(' ')||'Менее месяца';
+    }
 
-        sorted.forEach(r => {
-            const d = new Date(r.real_date).toLocaleDateString('ru-RU');
-            container.innerHTML += `
-                <div class="tr-event">
-                    <div class="tr-dot"></div>
-                    <div class="tr-body">
-                        <div class="tr-meta">
-                            <span>📅 ${d}</span>
-                            <span>🎮 Игровой день: ${r.game_day}</span>
-                        </div>
-                        <div class="tr-text">${r.record_text}</div>
-                    </div>
-                </div>
-            `;
-        });
+    function getTrBookStartDate(){
+        const rows=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+        const row=rows.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||rows[0];
+        return row?.real_date||null;
+    }
+
+    async function downloadEmploymentCertificatePDF(){
+        const p=state.userProfile;
+        if(!p) return showToast('Профиль не загружен');
+        if(!p.current_org) return showToast('Нет действующего места работы для справки');
+        try{
+            const pdf=await PDFLib.PDFDocument.create(); pdf.registerFontkit(fontkit);
+            const bytes=await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf').then(r=>r.arrayBuffer());
+            const font=await pdf.embedFont(bytes); const page=pdf.addPage([595,842]);
+            const fullName=[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ');
+            const draw=(txt,y,size=12)=>page.drawText(String(txt),{x:55,y,size,font});
+            draw('СПРАВКА С МЕСТА РАБОТЫ',755,18);
+            page.drawLine({start:{x:55,y:738},end:{x:540,y:738},thickness:1});
+            draw('Подтверждаются следующие сведения о трудоустройстве:',705,11);
+            draw('ФИО: '+fullName,670,12);
+            draw('Организация: '+p.current_org,642,12);
+            draw('Должность: '+(p.current_position||'Не указана'),614,12);
+            const start=getTrBookStartDate();
+            draw('Дата начала работы: '+(start?new Date(start).toLocaleDateString('ru-RU'):'нет данных'),586,11);
+            draw('Активные выговоры: '+Number(p.reprimands_count||0),558,11);
+            draw('Дата формирования: '+new Date().toLocaleDateString('ru-RU'),510,11);
+            draw('Сформировано электронным кадровым кабинетом VVK.',465,10);
+            const out=await pdf.save(); const url=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));
+            const link=document.createElement('a'); link.href=url; link.download='Spravka_s_mesta_raboty.pdf'; link.click();
+            setTimeout(()=>URL.revokeObjectURL(url),1500);
+        }catch(err){console.error(err);showToast('Не удалось сформировать PDF-справку');}
     }
 
     // ============================================================
@@ -1020,7 +1185,7 @@
             const drawTableHeader = (pg, yPos) => {
                 pg.drawText('№', { x: 50, y: yPos, size: 10, font: customFont });
                 pg.drawText('Дата', { x: 80, y: yPos, size: 10, font: customFont });
-                pg.drawText('Игровой день', { x: 160, y: yPos, size: 10, font: customFont });
+                pg.drawText('Номер дня', { x: 160, y: yPos, size: 10, font: customFont });
                 pg.drawText('Сведение', { x: 250, y: yPos, size: 10, font: customFont });
                 pg.drawLine({ start: { x: 50, y: yPos - 5 }, end: { x: 545, y: yPos - 5 }, thickness: 1 });
                 return yPos - 20;

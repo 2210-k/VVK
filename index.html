@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Служебный портал</title>
@@ -93,6 +94,35 @@
         .preview-header h3 { margin: 0; color: #333; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
 
+        /* Аккуратные формы кадрового отдела */
+        .hr-modal .modal-content { max-width:560px; padding:26px; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 18px 55px rgba(15,23,42,.22); }
+        .hr-modal .modal-content h3 { padding-bottom:14px; margin-bottom:16px; border-bottom:1px solid #edf1f5; font-size:20px; }
+        .hr-modal .hr-form-field { margin:0 0 13px; position: relative; }
+        .hr-modal .hr-form-field label { margin:0 0 6px; color:#334155; font-size:12px; }
+        .hr-modal .hr-form-field input, .hr-modal .hr-form-field select, .hr-modal .hr-form-field textarea { display:block; width:100%; padding:11px 12px; margin:0; border:1px solid #d7dee8; border-radius:8px; background:#fbfdff; color:#1e293b; font-family:inherit; font-size:14px; line-height:1.45; outline:none; transition:border-color .15s,box-shadow .15s; }
+        .hr-modal .hr-form-field textarea { min-height:78px; resize:vertical; }
+        .hr-modal .hr-form-field input:focus, .hr-modal .hr-form-field select:focus, .hr-modal .hr-form-field textarea:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); background:#fff; }
+        .hr-modal .hr-field-hint { display:block; margin-top:5px; color:#64748b; font-size:11px; }
+        .hr-modal .hr-change-summary { margin:0 0 14px; padding:12px 14px; border-radius:8px; background:#f1f5f9; color:#475569; font-size:13px; }
+        .hr-modal .modal-actions { margin-top:18px; }
+        .hr-modal .modal-actions button { border-radius:8px; min-height:42px; transition:filter .15s,transform .15s; }
+        .hr-modal .modal-actions button:hover { filter:brightness(.97); transform:translateY(-1px); }
+
+        /* Автокомплит для кадрового отдела */
+        .autocomplete-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: #fff; border: 1px solid #d7dee8; border-top: none;
+            border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto;
+            z-index: 300; display: none; box-shadow: 0 8px 20px rgba(15,23,42,.12);
+        }
+        .autocomplete-item {
+            padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f2f5;
+            font-size: 13px; color: #1e293b; line-height: 1.4;
+        }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item:hover { background-color: #eef5ff; }
+        .autocomplete-item b { color: #0056b3; }
+
         /* КАДРОВЫЙ ОТДЕЛ (Внутренние стили) */
         .hr-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: calc(100vh - 200px); }
         .hr-sidebar { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-y: auto; display: flex; flex-direction: column; }
@@ -105,6 +135,58 @@
         .hr-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
         .hr-actions .btn-action { padding: 10px 15px; font-size: 14px; }
         .hr-reprimand { background: #fee2e2; color: #991b1b; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; margin-left: 10px; }
+
+        .hr-filter-control { width:100%; box-sizing:border-box; margin-top:8px; padding:9px 10px; border:1px solid #dbe2ea; border-radius:7px; background:#fff; color:#334155; font-size:12px; }
+        .hr-filter-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+        .hr-profile-facts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin:18px 0 20px; }
+        .hr-profile-facts>div { min-width:0; background:#f8fafc; border:1px solid #e8edf3; border-radius:8px; padding:11px 12px; }
+        .hr-profile-facts span { display:block; color:#64748b; font-size:11px; margin-bottom:6px; }
+        .hr-profile-facts b { display:block; color:#1e293b; font-size:13px; overflow-wrap:anywhere; }
+        .hr-career-timeline { border-left:2px solid #dbe5f3; margin:4px 0 22px 7px; padding-left:18px; }
+        .hr-career-item { position:relative; padding:0 0 15px; }
+        .hr-career-dot { position:absolute; width:9px; height:9px; border-radius:50%; background:var(--primary); left:-23.5px; top:4px; box-shadow:0 0 0 3px #fff; }
+        .hr-career-item b { color:#64748b; font-size:11px; }
+        .hr-career-item p { color:#1e293b; font-size:13px; line-height:1.5; margin:4px 0 0; }
+        .hr-empty-note { color:#94a3b8; padding:12px 0; font-size:13px; }
+        @media(max-width:900px){.hr-profile-facts{grid-template-columns:repeat(2,minmax(0,1fr));}}
+        /* КАДРОВЫЙ ОТДЕЛ — компактная компоновка */
+        .hr-dashboard { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+        .hr-stat { background:#fff; border:1px solid #e5eaf1; border-radius:10px; padding:14px 16px; box-shadow:0 2px 7px rgba(15,23,42,.035); min-width:0; }
+        .hr-stat-label { color:#64748b; font-size:12px; font-weight:600; margin-bottom:7px; }
+        .hr-stat-value { color:#172033; font-size:25px; line-height:1.1; font-weight:750; }
+        .hr-stat-note { color:#94a3b8; font-size:11px; margin-top:5px; }
+        .hr-layout { grid-template-columns:280px minmax(0,1fr); height:calc(100vh - 260px); min-height:430px; gap:14px; }
+        .hr-sidebar { border:1px solid #e5eaf1; }
+        .hr-list-heading { position:sticky; top:0; z-index:2; background:#fff; padding:15px 16px 12px; border-bottom:1px solid #e9eef5; }
+        .hr-list-heading strong { display:block; font-size:14px; color:#1e293b; }
+        .hr-list-heading span { display:block; margin-top:3px; font-size:11px; color:#94a3b8; }
+        .hr-employee { padding:12px 14px; border-bottom:1px solid #f0f2f5; border-left:3px solid transparent; }
+        .hr-employee:hover,.hr-employee.active { background:#f3f7ff; border-left-color:var(--primary); }
+        .hr-employee h4 { font-size:13px; line-height:1.35; }
+        .hr-employee p { font-size:11px; line-height:1.4; margin-top:4px; }
+        .hr-main { border:1px solid #e5eaf1; padding:22px; }
+        .hr-header-card { gap:16px; align-items:flex-start; }
+        .hr-header-card h2 { font-size:21px; line-height:1.25; margin:0; color:#172033; }
+        .hr-actions { gap:7px; margin:0; max-width:560px; justify-content:flex-end; }
+        .hr-actions .btn-action { padding:8px 10px; font-size:12px; border-radius:6px; }
+        #hr-employee-details > h3 { margin:20px 0 12px; font-size:15px; color:#334155; }
+        #hr-employee-details .table-responsive { border:1px solid #e8edf3; border-radius:8px; overflow:auto; }
+        #hr-employee-details table { margin:0; }
+        @media (max-width: 900px) {
+            .hr-dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .hr-layout { grid-template-columns:230px minmax(0,1fr); }
+            .hr-header-card { flex-direction:column; }
+            .hr-actions { justify-content:flex-start; }
+        }
+        @media (max-width: 768px) {
+            .hr-dashboard { gap:8px; margin-bottom:10px; }
+            .hr-stat { padding:11px 12px; }
+            .hr-stat-value { font-size:21px; }
+            .hr-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
+            .hr-sidebar { max-height:260px; min-height:120px; }
+            .hr-main { min-height:300px; padding:15px; }
+            .hr-header-card h2 { font-size:18px; }
+        }
 
         /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         .mobile-nav { display: none; }
@@ -301,6 +383,12 @@
 
             <!-- КОНТЕНТ: КАДРОВЫЙ ОТДЕЛ -->
             <div id="content-hr_department" style="display: none;">
+                <div class="hr-dashboard" aria-label="Статистика кадрового отдела">
+                    <div class="hr-stat"><div class="hr-stat-label">Всего граждан</div><div class="hr-stat-value" id="hr-stat-total">—</div><div class="hr-stat-note">В кадровой базе</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">Трудоустроены</div><div class="hr-stat-value" id="hr-stat-employed">—</div><div class="hr-stat-note">Есть текущее место работы</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">Не трудоустроены</div><div class="hr-stat-value" id="hr-stat-unemployed">—</div><div class="hr-stat-note">Нет текущего места работы</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">С выговорами</div><div class="hr-stat-value" id="hr-stat-reprimands">—</div><div class="hr-stat-note">Есть активные взыскания</div></div>
+                </div>
                 <div class="hr-layout">
                     <!-- Список сотрудников -->
                     <div class="hr-sidebar" id="hr-employee-list">
@@ -422,6 +510,27 @@
         };
         let currentHREmployee = null;
         let currentHRRecords = [];
+        const hrFilters = { search:'', org:'all', status:'all', sort:'name' };
+        function updateHRFilters(key,value) {
+            const keepFocus=key==='search';
+            const cursor=keepFocus?document.getElementById('hr-employee-list')?.querySelector('input[type="search"]')?.selectionStart:null;
+            hrFilters[key]=value; renderHRList();
+            if(keepFocus){const input=document.getElementById('hr-employee-list')?.querySelector('input[type="search"]');if(input){input.focus();if(cursor!==null)input.setSelectionRange(cursor,cursor);}}
+        }
+        function hrEscape(value) { return String(value ?? '').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+        function hrFirstDate(rows) {
+            const sorted=[...(rows||[])].sort((a,b)=>(parseInt(a.game_day)||0)-(parseInt(b.game_day)||0));
+            const first=sorted.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||sorted[0];
+            return first?.real_date||null;
+        }
+        function hrTenure(value) {
+            if(!value) return 'Нет записей';
+            const d=new Date(value); if(Number.isNaN(d.getTime())) return 'Нет данных';
+            let m=(new Date().getFullYear()-d.getFullYear())*12+new Date().getMonth()-d.getMonth();
+            if(new Date().getDate()<d.getDate()) m--; m=Math.max(0,m);
+            const y=Math.floor(m/12), rest=m%12;
+            return [y?(y+(y===1?' год':y<5?' года':' лет')):'',rest?rest+' мес.':''].filter(Boolean).join(' ')||'Менее месяца';
+        }
 
         // --- АВТОРИЗАЦИЯ ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -1022,6 +1131,7 @@
         async function loadHRData() {
             const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
             allCitizens = citizens || [];
+            renderHRStats();
             renderHRList();
             if(currentHREmployee) {
                 // Обновляем данные текущего сотрудника
@@ -1030,27 +1140,60 @@
             }
         }
 
+        function renderHRStats() {
+            const employed = allCitizens.filter(c => !!c.current_org).length;
+            const withReprimands = allCitizens.filter(c => Number(c.reprimands_count || 0) > 0).length;
+            const values = {
+                'hr-stat-total': allCitizens.length,
+                'hr-stat-employed': employed,
+                'hr-stat-unemployed': allCitizens.length - employed,
+                'hr-stat-reprimands': withReprimands
+            };
+            Object.entries(values).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            });
+        }
+
         function renderHRList() {
-            const box = document.getElementById('hr-employee-list');
-            box.innerHTML = '';
-            if (allCitizens.length === 0) {
-                box.innerHTML = '<div style="padding: 20px; text-align:center; color:#888;">Нет граждан</div>';
-                return;
-            }
-            allCitizens.forEach(c => {
-                const div = document.createElement('div');
-                div.className = `hr-employee ${currentHREmployee && currentHREmployee.id === c.id ? 'active' : ''}`;
-                const job = c.current_org ? `<b>${c.current_org}</b> (${c.current_position})` : 'Безработный';
-                const rep = c.reprimands_count > 0 ? `<span class="hr-reprimand">Выговоров: ${c.reprimands_count}/3</span>` : '';
-                div.innerHTML = `
-                    <h4>${c.last_name} ${c.first_name} ${c.patronymic || ''} ${rep}</h4>
-                    <p>${job}</p>
-                `;
-                div.onclick = () => {
-                    currentHREmployee = c;
-                    renderHRList();
-                    renderHRDetails(c);
-                };
+            const box=document.getElementById('hr-employee-list');
+            const orgs=[...new Set(allCitizens.map(c=>c.current_org).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+            box.innerHTML=`<div class="hr-list-heading">
+                <strong>Реестр граждан</strong><span id="hr-list-count">${allCitizens.length} записей</span>
+                <input class="hr-filter-control" type="search" placeholder="Поиск по ФИО..." value="${hrEscape(hrFilters.search)}" oninput="updateHRFilters('search',this.value)">
+                <select class="hr-filter-control" onchange="updateHRFilters('org',this.value)"><option value="all">Все ведомства</option>${orgs.map(o=>`<option value="${hrEscape(o)}" ${hrFilters.org===o?'selected':''}>${hrEscape(o)}</option>`).join('')}</select>
+                <div class="hr-filter-row">
+                    <select class="hr-filter-control" onchange="updateHRFilters('status',this.value)">
+                        <option value="all" ${hrFilters.status==='all'?'selected':''}>Все статусы</option>
+                        <option value="employed" ${hrFilters.status==='employed'?'selected':''}>Трудоустроены</option>
+                        <option value="unemployed" ${hrFilters.status==='unemployed'?'selected':''}>Не трудоустроены</option>
+                    </select>
+                    <select class="hr-filter-control" onchange="updateHRFilters('sort',this.value)">
+                        <option value="name" ${hrFilters.sort==='name'?'selected':''}>По ФИО</option>
+                        <option value="reprimands" ${hrFilters.sort==='reprimands'?'selected':''}>По выговорам</option>
+                        <option value="employed" ${hrFilters.sort==='employed'?'selected':''}>Сначала работающие</option>
+                    </select>
+                </div></div>`;
+            if(!allCitizens.length){box.insertAdjacentHTML('beforeend','<div style="padding:24px;text-align:center;color:#888;">Нет граждан</div>');return;}
+            const q=hrFilters.search.trim().toLocaleLowerCase('ru');
+            const visible=allCitizens.filter(c=>{
+                const fio=[c.last_name,c.first_name,c.patronymic].filter(Boolean).join(' ').toLocaleLowerCase('ru');
+                return (!q||fio.includes(q))&&(hrFilters.org==='all'||c.current_org===hrFilters.org)&&(hrFilters.status==='all'||(hrFilters.status==='employed'?!!c.current_org:!c.current_org));
+            });
+            visible.sort((a,b)=>{
+                if(hrFilters.sort==='reprimands') return Number(b.reprimands_count||0)-Number(a.reprimands_count||0);
+                if(hrFilters.sort==='employed') return Number(!!b.current_org)-Number(!!a.current_org)||(a.last_name||'').localeCompare(b.last_name||'','ru');
+                return (a.last_name||'').localeCompare(b.last_name||'','ru')||(a.first_name||'').localeCompare(b.first_name||'','ru');
+            });
+            const count=document.getElementById('hr-list-count'); if(count) count.textContent=`${visible.length} из ${allCitizens.length} граждан`;
+            if(!visible.length){box.insertAdjacentHTML('beforeend','<div style="padding:24px;text-align:center;color:#888;">Ничего не найдено</div>');return;}
+            visible.forEach(c=>{
+                const div=document.createElement('div'); div.className=`hr-employee ${currentHREmployee?.id===c.id?'active':''}`;
+                const name=[c.last_name,c.first_name,c.patronymic].filter(Boolean).join(' ');
+                const job=c.current_org?`<b>${hrEscape(c.current_org)}</b> · ${hrEscape(c.current_position||'Должность не указана')}`:'Не трудоустроен';
+                const rep=Number(c.reprimands_count||0)>0?`<span class="hr-reprimand">Выговоров: ${Number(c.reprimands_count)}/3</span>`:'';
+                div.innerHTML=`<h4>${hrEscape(name)} ${rep}</h4><p>${job}</p>`;
+                div.onclick=()=>{currentHREmployee=c;renderHRList();renderHRDetails(c);};
                 box.appendChild(div);
             });
         }
@@ -1060,7 +1203,7 @@
             box.innerHTML = `<div style="text-align:center; padding:50px;">Загрузка...</div>`;
             
             const { data: records } = await supabaseClient.from('employment_records')
-                .select('*').eq('patient_id', c.id).order('real_date', { ascending: false });
+                .select('*').eq('patient_id', c.id).order('game_day', { ascending: true });
             currentHRRecords = records || [];
 
             const jobText = c.current_org ? `${c.current_org} — ${c.current_position}` : 'Не трудоустроен';
@@ -1081,6 +1224,14 @@
                         <button class="btn-action btn-view" onclick="hrAction('remove_reprimand')" ${!c.current_org || c.reprimands_count === 0 ? 'disabled' : ''}>✅ Снять выговор</button>
                     </div>
                 </div>
+                <div class="hr-profile-facts">
+                    <div><span>Первое кадровое событие</span><b>${hrFirstDate(currentHRRecords)?new Date(hrFirstDate(currentHRRecords)).toLocaleDateString('ru-RU'):'—'}</b></div>
+                    <div><span>Стаж по записям</span><b>${hrTenure(hrFirstDate(currentHRRecords))}</b></div>
+                    <div><span>Активные выговоры</span><b>${Number(c.reprimands_count||0)} / 3</b></div>
+                    <div><span>Всего кадровых записей</span><b>${currentHRRecords.length}</b></div>
+                </div>
+                <h3>История карьеры</h3>
+                <div class="hr-career-timeline" id="hr-career-timeline"></div>
                 <h3>📋 Записи в трудовой книжке</h3>
                 <div class="table-responsive">
                     <table>
@@ -1088,7 +1239,7 @@
                             <tr>
                                 <th>№</th>
                                 <th>Дата (Реал.)</th>
-                                <th>Игровой день</th>
+                                <th>Номер дня</th>
                                 <th>Сведение</th>
                                 <th>Действия</th>
                             </tr>
@@ -1098,12 +1249,17 @@
                 </div>
             `;
 
+            const career=document.getElementById('hr-career-timeline');
+            // ИЗМЕНЕНО: Сортируем по игровому дню для истории
+            const careerRows=[...currentHRRecords].sort((a,b)=>(parseInt(a.game_day)||0)-(parseInt(b.game_day)||0));
+            if(career) career.innerHTML=careerRows.length?careerRows.map(r=>`<div class="hr-career-item"><span class="hr-career-dot"></span><div><b>${hrEscape(new Date(r.real_date).toLocaleDateString('ru-RU'))} · Номер дня ${hrEscape(r.game_day??'—')}</b><p>${hrEscape(r.record_text||'Кадровое событие')}</p></div></div>`).join(''):'<div class="hr-empty-note">Кадровая история пока пуста</div>';
+            
             const tbody = document.getElementById('hr-records-body');
             if (currentHRRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет записей</td></tr>';
             } else {
-                // Сортируем по игровому дню или реальной дате
-                const sorted = [...currentHRRecords].sort((a,b) => new Date(a.real_date) - new Date(b.real_date));
+                // ИЗМЕНЕНО: Сортируем таблицу строго по игровому дню (от 1 до 999)
+                const sorted = [...currentHRRecords].sort((a,b) => (parseInt(a.game_day) || 0) - (parseInt(b.game_day) || 0));
                 sorted.forEach((r, idx) => {
                     tbody.innerHTML += `
                         <tr>
@@ -1123,7 +1279,7 @@
 
         function openHRModal(title, bodyHtml, onConfirm) {
             const modal = document.createElement('div');
-            modal.className = 'modal';
+            modal.className = 'modal hr-modal';
             modal.style.display = 'flex';
             modal.innerHTML = `
                 <div class="modal-content">
@@ -1136,19 +1292,132 @@
                 </div>
             `;
             document.body.appendChild(modal);
+            modal.querySelectorAll('.hr-template-select').forEach(select => {
+                select.addEventListener('change', () => {
+                    const target = modal.querySelector('#' + select.dataset.target);
+                    if (target && select.value) {
+                        target.value = select.value;
+                        target.focus();
+                        target.setSelectionRange(target.value.length, target.value.length);
+                    }
+                });
+            });
             modal.querySelector('#hr-modal-cancel').onclick = () => modal.remove();
             modal.querySelector('#hr-modal-confirm').onclick = () => {
                 if (onConfirm(modal) !== false) modal.remove();
             };
         }
 
+        function hrTemplateField(id, label, templates, defaultValue = '') {
+            const options = templates.map(value => `<option value="${hrEscape(value)}">${hrEscape(value)}</option>`).join('');
+            return `
+                <div class="hr-form-field">
+                    <label for="${id}">${label}</label>
+                    <select class="hr-template-select" data-target="${id}">
+                        <option value="">Выбрать шаблон (можно изменить ниже)</option>
+                        ${options}
+                    </select>
+                    <textarea id="${id}" rows="3" placeholder="Введите причину или основание...">${hrEscape(defaultValue)}</textarea>
+                </div>
+            `;
+        }
+
+        function hrPlacePicker(id, label) {
+            const places = [
+                ...HR_DB.orgs.map(x => ({ type: 'org', name: x.name })),
+                ...HR_DB.works.map(x => ({ type: 'work', name: x.name }))
+            ];
+            return `
+                <div class="hr-form-field">
+                    <label for="${id}">${label}</label>
+                    <input type="text" id="${id}" autocomplete="off" placeholder="Начните вводить название..." value="${hrEscape(places[0]?.name || '')}">
+                    <div class="autocomplete-dropdown" id="${id}-dropdown"></div>
+                    <small class="hr-field-hint">Начните вводить название — под полем появятся подходящие варианты.</small>
+                </div>
+            `;
+        }
+
+        function hrResolvePlace(value) {
+            const org = HR_DB.orgs.find(x => x.name.toLowerCase() === String(value || '').trim().toLowerCase());
+            if (org) return { type: 'org', name: org.name, positions: org.pos };
+            const work = HR_DB.works.find(x => x.name.toLowerCase() === String(value || '').trim().toLowerCase());
+            if (work) return { type: 'work', name: work.name, positions: work.pos };
+            return null;
+        }
+
+        function hrBindPlacePicker(modal, inputId, positionId) {
+            const input = modal.querySelector('#' + inputId);
+            const dropdown = modal.querySelector('#' + inputId + '-dropdown');
+            const positions = modal.querySelector('#' + positionId);
+            if (!input || !positions) return;
+
+            const allPlaces = [
+                ...HR_DB.orgs.map(x => ({ type: 'org', name: x.name })),
+                ...HR_DB.works.map(x => ({ type: 'work', name: x.name }))
+            ];
+
+            const updatePositions = () => {
+                const place = hrResolvePlace(input.value);
+                positions.innerHTML = place
+                    ? place.positions.map(p => `<option value="${hrEscape(p)}">${hrEscape(p)}</option>`).join('')
+                    : '<option value="">Сначала выберите место работы</option>';
+            };
+
+            const closeDropdown = () => { if (dropdown) dropdown.style.display = 'none'; };
+
+            const renderDropdown = () => {
+                if (!dropdown) return;
+                const q = input.value.toLowerCase().trim();
+                dropdown.innerHTML = '';
+                if (!q) { dropdown.style.display = 'none'; return; }
+
+                const matches = allPlaces.filter(p => p.name.toLowerCase().includes(q));
+                if (!matches.length) { dropdown.style.display = 'none'; return; }
+
+                matches.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    const icon = p.type === 'org' ? '🏢' : '💼';
+                    div.innerHTML = `${icon} <b>${hrEscape(p.name)}</b>`;
+                    div.onclick = () => {
+                        input.value = p.name;
+                        closeDropdown();
+                        updatePositions();
+                    };
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = 'block';
+            };
+
+            input.addEventListener('input', () => {
+                renderDropdown();
+                updatePositions();
+            });
+
+            input.addEventListener('focus', () => {
+                if (input.value) renderDropdown();
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target !== input && dropdown && !dropdown.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+
+            updatePositions();
+        }
+
         function hrDateFields() {
             const today = new Date().toISOString().split('T')[0];
             return `
-                <label>Реальная дата (авто)</label>
-                <input type="date" id="hr-date" value="${today}" required>
-                <label>Игровой день (введите вручную)</label>
-                <input type="number" id="hr-game-day" required>
+                <div class="hr-form-field">
+                    <label for="hr-date">Реальная дата</label>
+                    <input type="date" id="hr-date" value="${today}" required>
+                </div>
+                <div class="hr-form-field">
+                    <label for="hr-game-day">Номер дня</label>
+                    <input type="number" id="hr-game-day" min="1" step="1" placeholder="Введите номер дня" required>
+                </div>
             `;
         }
 
@@ -1159,52 +1428,33 @@
             if (type === 'hire') {
                 if (c.current_org) return alert('Уже трудоустроен!');
                 
-                let orgOptions = HR_DB.orgs.map(o => `<option value="org|${o.name}">🏢 Организация: ${o.name}</option>`).join('');
-                let workOptions = HR_DB.works.map(w => `<option value="work|${w.name}">💼 Работа: ${w.name}</option>`).join('');
-                
                 openHRModal('📝 Приём на работу', `
-                    <label>Выберите место работы</label>
-                    <select id="hr-hire-type">${orgOptions}${workOptions}</select>
-                    <label>Должность</label>
-                    <select id="hr-hire-pos"></select>
+                    ${hrPlacePicker('hr-hire-type', 'Место работы или организация')}
+                    <div class="hr-form-field">
+                        <label for="hr-hire-pos">Должность</label>
+                        <select id="hr-hire-pos"></select>
+                    </div>
                     ${hrDateFields()}
                 `, (m) => {
-                    const val = m.querySelector('#hr-hire-type').value;
-                    const [type, name] = val.split('|');
+                    const place = hrResolvePlace(m.querySelector('#hr-hire-type').value);
+                    if (!place) { alert('Выберите организацию или место работы из предложенных вариантов.'); return false; }
                     const pos = m.querySelector('#hr-hire-pos').value;
+                    if (!pos) { alert('Выберите должность.'); return false; }
                     const gameDay = m.querySelector('#hr-game-day').value;
                     const date = m.querySelector('#hr-date').value;
-                    
-                    const text = type === 'org' 
-                        ? `Принят в организацию "${name}" на должность "${pos}"`
-                        : `Принят на работу в "${name}" на должность "${pos}"`;
-                    
-                    saveHRRecord(c.id, 'hire', text, gameDay, date, { current_org: name, current_position: pos });
+                    const text = place.type === 'org'
+                        ? `Принят в организацию "${place.name}" на должность "${pos}"`
+                        : `Принят на работу в "${place.name}" на должность "${pos}"`;
+                    saveHRRecord(c.id, 'hire', text, gameDay, date, { current_org: place.name, current_position: pos });
                 });
-
-                setTimeout(() => {
-                    const sel = document.querySelector('#hr-hire-type');
-                    const posSel = document.querySelector('#hr-hire-pos');
-                    const updatePos = () => {
-                        const val = sel.value;
-                        const [type, name] = val.split('|');
-                        const arr = type === 'org' ? HR_DB.orgs.find(x=>x.name===name).pos : HR_DB.works.find(x=>x.name===name).pos;
-                        posSel.innerHTML = arr.map(p => `<option value="${p}">${p}</option>`).join('');
-                    };
-                    sel.onchange = updatePos;
-                    updatePos();
-                }, 100);
+                const hireModal = document.querySelector('.hr-modal');
+                if (hireModal) hrBindPlacePicker(hireModal, 'hr-hire-type', 'hr-hire-pos');
             }
 
             if (type === 'fire') {
                 if (!c.current_org) return;
                 openHRModal('❌ Увольнение', `
-                    <label>Причина увольнения</label>
-                    <select id="hr-fire-reason">
-                        <option value="собственное желание">Собственное желание</option>
-                        <option value="нарушение устава">Нарушение устава</option>
-                        <option value="грубое нарушение устава">Грубое нарушение устава</option>
-                    </select>
+                    ${hrTemplateField('hr-fire-reason', 'Причина увольнения', ['Собственное желание', 'Нарушение устава', 'Грубое нарушение устава', 'По соглашению сторон', 'Иное основание'])}
                     ${hrDateFields()}
                 `, (m) => {
                     const reason = m.querySelector('#hr-fire-reason').value;
@@ -1235,14 +1485,17 @@
                 const newPos = orgData.pos[newIdx];
                 
                 openHRModal(type === 'promote' ? '⬆️ Повышение' : '⬇️ Понижение', `
-                    <p>Смена должности с <b>${c.current_position}</b> на <b>${newPos}</b></p>
+                    <div class="hr-change-summary">Смена должности: <b>${hrEscape(c.current_position)}</b> → <b>${hrEscape(newPos)}</b></div>
+                    ${hrTemplateField('hr-change-reason', 'Основание', ['Добросовестное исполнение должностных обязанностей', 'Решение руководства', 'По результатам служебной проверки', 'Иное основание'], 'Добросовестное исполнение должностных обязанностей')}
                     ${hrDateFields()}
                 `, (m) => {
                     const gameDay = m.querySelector('#hr-game-day').value;
                     const date = m.querySelector('#hr-date').value;
+                    const reason = m.querySelector('#hr-change-reason').value.trim();
+                    if (!reason) { alert('Укажите основание кадрового изменения.'); return false; }
                     const text = type === 'promote'
-                        ? `Повышен с должности "${c.current_position}" до "${newPos}". Основание: Добросовестное исполнение обязанностей`
-                        : `Понижен с должности "${c.current_position}" до "${newPos}". Основание: Добросовестное исполнение обязанностей`;
+                        ? `Повышен с должности "${c.current_position}" до "${newPos}". Основание: ${reason}`
+                        : `Понижен с должности "${c.current_position}" до "${newPos}". Основание: ${reason}`;
                     
                     saveHRRecord(c.id, type, text, gameDay, date, { current_position: newPos });
                 });
@@ -1252,46 +1505,30 @@
                 if (!c.current_org) return;
                 if (c.reprimands_count > 0) return alert('Нельзя перевести сотрудника с выговорами!');
                 
-                let orgOptions = HR_DB.orgs.map(o => `<option value="org|${o.name}">🏢 Организация: ${o.name}</option>`).join('');
-                let workOptions = HR_DB.works.map(w => `<option value="work|${w.name}">💼 Работа: ${w.name}</option>`).join('');
-                
                 openHRModal('🔄 Перевод', `
-                    <label>Куда перевести</label>
-                    <select id="hr-trans-type">${orgOptions}${workOptions}</select>
-                    <label>Новая должность</label>
-                    <select id="hr-trans-pos"></select>
-                    <label>Основание</label>
-                    <input type="text" id="hr-trans-reason" value="По собственному желанию">
+                    ${hrPlacePicker('hr-trans-type', 'Куда перевести')}
+                    <div class="hr-form-field">
+                        <label for="hr-trans-pos">Новая должность</label>
+                        <select id="hr-trans-pos"></select>
+                    </div>
+                    ${hrTemplateField('hr-trans-reason', 'Основание для перевода', ['По собственному желанию', 'Служебная необходимость', 'По решению руководства', 'По результатам служебной проверки', 'Иное основание'], 'По собственному желанию')}
                     ${hrDateFields()}
                 `, (m) => {
-                    const val = m.querySelector('#hr-trans-type').value;
-                    const [type, name] = val.split('|');
+                    const place = hrResolvePlace(m.querySelector('#hr-trans-type').value);
+                    if (!place) { alert('Выберите организацию или место работы из предложенных вариантов.'); return false; }
                     const pos = m.querySelector('#hr-trans-pos').value;
-                    const reason = m.querySelector('#hr-trans-reason').value;
+                    const reason = m.querySelector('#hr-trans-reason').value.trim();
+                    if (!pos || !reason) { alert('Заполните должность и основание перевода.'); return false; }
                     const gameDay = m.querySelector('#hr-game-day').value;
                     const date = m.querySelector('#hr-date').value;
-                    
                     const isOrgOld = HR_DB.orgs.some(o => o.name === c.current_org);
                     const fromStr = isOrgOld ? `из организации "${c.current_org}"` : `из работы "${c.current_org}"`;
-                    const toStr = type === 'org' ? `в организацию "${name}"` : `в работу "${name}"`;
-                    
+                    const toStr = place.type === 'org' ? `в организацию "${place.name}"` : `в работу "${place.name}"`;
                     const text = `Переведен ${fromStr} с должности "${c.current_position}" ${toStr} на должность "${pos}". Основание: ${reason}`;
-                    
-                    saveHRRecord(c.id, 'transfer', text, gameDay, date, { current_org: name, current_position: pos, reprimands_count: 0 });
+                    saveHRRecord(c.id, 'transfer', text, gameDay, date, { current_org: place.name, current_position: pos, reprimands_count: 0 });
                 });
-
-                setTimeout(() => {
-                    const sel = document.querySelector('#hr-trans-type');
-                    const posSel = document.querySelector('#hr-trans-pos');
-                    const updatePos = () => {
-                        const val = sel.value;
-                        const [type, name] = val.split('|');
-                        const arr = type === 'org' ? HR_DB.orgs.find(x=>x.name===name).pos : HR_DB.works.find(x=>x.name===name).pos;
-                        posSel.innerHTML = arr.map(p => `<option value="${p}">${p}</option>`).join('');
-                    };
-                    sel.onchange = updatePos;
-                    updatePos();
-                }, 100);
+                const transferModal = document.querySelector('.hr-modal');
+                if (transferModal) hrBindPlacePicker(transferModal, 'hr-trans-type', 'hr-trans-pos');
             }
 
             if (type === 'reprimand') {
@@ -1299,11 +1536,7 @@
                 if (c.reprimands_count >= 3) return alert('Уже 3 выговора!');
                 
                 openHRModal('⚠️ Выговор', `
-                    <label>Причина выговора</label>
-                    <select id="hr-rep-reason">
-                        <option value="нарушение устава">Нарушение устава</option>
-                        <option value="грубое нарушение устава">Грубое нарушение устава</option>
-                    </select>
+                    ${hrTemplateField('hr-rep-reason', 'Причина выговора', ['Нарушение устава', 'Грубое нарушение устава', 'Неисполнение должностных обязанностей', 'Нарушение служебной дисциплины', 'Иное нарушение'])}
                     ${hrDateFields()}
                 `, (m) => {
                     const reason = m.querySelector('#hr-rep-reason').value;
@@ -1333,8 +1566,7 @@
                 if (c.reprimands_count === 0) return;
                 
                 openHRModal('✅ Снятие выговора', `
-                    <label>Основание для снятия</label>
-                    <input type="text" id="hr-unrep-reason" value="Положительная характеристика">
+                    ${hrTemplateField('hr-unrep-reason', 'Основание для снятия', ['Положительная характеристика', 'Исправление допущенных нарушений', 'По решению руководства', 'Иное основание'], 'Положительная характеристика')}
                     ${hrDateFields()}
                 `, (m) => {
                     const reason = m.querySelector('#hr-unrep-reason').value;
@@ -1352,30 +1584,84 @@
         }
 
         async function saveHRRecord(patientId, actionType, text, gameDay, realDate, profileUpdates) {
-            // 1. Сохраняем запись
+            // Полное новое состояние = текущее + переопределения из profileUpdates
+            const fullState = {
+                current_org: profileUpdates.current_org !== undefined ? profileUpdates.current_org : (currentHREmployee?.current_org ?? null),
+                current_position: profileUpdates.current_position !== undefined ? profileUpdates.current_position : (currentHREmployee?.current_position ?? null),
+                reprimands_count: profileUpdates.reprimands_count !== undefined ? profileUpdates.reprimands_count : (currentHREmployee?.reprimands_count ?? 0)
+            };
+
+            // 1. Сохраняем запись с полным состоянием в metadata
             const { error: recError } = await supabaseClient.from('employment_records').insert({
                 patient_id: patientId,
                 action_type: actionType,
                 record_text: text,
                 game_day: parseInt(gameDay),
-                real_date: realDate ? new Date(realDate).toISOString() : new Date().toISOString()
+                real_date: realDate ? new Date(realDate).toISOString() : new Date().toISOString(),
+                metadata: fullState
             });
 
             if (recError) return alert('Ошибка записи: ' + recError.message);
 
-            // 2. Обновляем профиль
-            const { error: profError } = await supabaseClient.from('profiles').update(profileUpdates).eq('id', patientId);
+            // 2. Обновляем профиль полным состоянием
+            const { error: profError } = await supabaseClient.from('profiles').update(fullState).eq('id', patientId);
             if (profError) return alert('Ошибка обновления профиля: ' + profError.message);
 
             alert('Успешно сохранено!');
             loadHRData();
         }
 
+        async function recalcHRProfile(patientId) {
+            // Загружаем все оставшиеся записи, сортируя по игровому дню и id
+            const { data: records } = await supabaseClient
+                .from('employment_records')
+                .select('*')
+                .eq('patient_id', patientId)
+                .order('game_day', { ascending: true })
+                .order('id', { ascending: true });
+
+            if (!records || records.length === 0) {
+                // Все записи удалены — обнуляем профиль
+                await supabaseClient.from('profiles').update({
+                    current_org: null,
+                    current_position: null,
+                    reprimands_count: 0
+                }).eq('id', patientId);
+                return;
+            }
+
+            // Ищем последнюю запись с metadata (с конца)
+            let lastState = null;
+            for (let i = records.length - 1; i >= 0; i--) {
+                if (records[i].metadata) {
+                    lastState = records[i].metadata;
+                    break;
+                }
+            }
+
+            if (!lastState) return; // Нет metadata — профиль не трогаем
+
+            await supabaseClient.from('profiles').update({
+                current_org: lastState.current_org ?? null,
+                current_position: lastState.current_position ?? null,
+                reprimands_count: lastState.reprimands_count ?? 0
+            }).eq('id', patientId);
+        }
+
         async function deleteHRRecord(id) {
             if (!confirm('Удалить эту запись из трудовой книжки?')) return;
+            const rec = currentHRRecords.find(r => r.id == id);
+            if (!rec) return;
+            const patientId = rec.patient_id;
+
             const { error } = await supabaseClient.from('employment_records').delete().eq('id', id);
             if (error) return alert(error.message);
-            renderHRDetails(currentHREmployee);
+
+            // Пересчитываем профиль по оставшимся записям
+            await recalcHRProfile(patientId);
+
+            // Обновляем данные в интерфейсе
+            loadHRData();
         }
 
         async function editHRRecord(id) {
@@ -1385,7 +1671,7 @@
             openHRModal('✏️ Редактирование записи', `
                 <label>Текст записи</label>
                 <textarea id="hr-edit-text" style="width:100%; height:80px; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:5px;">${rec.record_text}</textarea>
-                <label>Игровой день</label>
+                <label>Номер дня</label>
                 <input type="number" id="hr-edit-game" value="${rec.game_day}">
             `, async (m) => {
                 const newText = m.querySelector('#hr-edit-text').value;
