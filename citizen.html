@@ -776,6 +776,7 @@
                         <div class="tr-tool-card">
                             <div class="tr-summary-label">СПРАВКА С МЕСТА РАБОТЫ</div>
                             <p>PDF-справка о текущей организации, должности и дате трудоустройства.</p>
+                            <!-- ТУТ ВЫЗЫВАЕТСЯ НОВАЯ ФУНКЦИЯ ИЗ citizen-pdf.js -->
                             <button class="btn-dl" onclick="downloadEmploymentCertificatePDF()" style="padding:9px 14px;">⬇ Скачать справку PDF</button>
                         </div>
                         <div class="tr-tool-card tr-qr-card">
@@ -1119,33 +1120,6 @@
         const rows=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
         const row=rows.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||rows[0];
         return row?.real_date||null;
-    }
-
-    async function downloadEmploymentCertificatePDF(){
-        const p=state.userProfile;
-        if(!p) return showToast('Профиль не загружен');
-        if(!p.current_org) return showToast('Нет действующего места работы для справки');
-        try{
-            const pdf=await PDFLib.PDFDocument.create(); pdf.registerFontkit(fontkit);
-            const bytes=await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf').then(r=>r.arrayBuffer());
-            const font=await pdf.embedFont(bytes); const page=pdf.addPage([595,842]);
-            const fullName=[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ');
-            const draw=(txt,y,size=12)=>page.drawText(String(txt),{x:55,y,size,font});
-            draw('СПРАВКА С МЕСТА РАБОТЫ',755,18);
-            page.drawLine({start:{x:55,y:738},end:{x:540,y:738},thickness:1});
-            draw('Подтверждаются следующие сведения о трудоустройстве:',705,11);
-            draw('ФИО: '+fullName,670,12);
-            draw('Организация: '+p.current_org,642,12);
-            draw('Должность: '+(p.current_position||'Не указана'),614,12);
-            const start=getTrBookStartDate();
-            draw('Дата начала работы: '+(start?new Date(start).toLocaleDateString('ru-RU'):'нет данных'),586,11);
-            draw('Активные выговоры: '+Number(p.reprimands_count||0),558,11);
-            draw('Дата формирования: '+new Date().toLocaleDateString('ru-RU'),510,11);
-            draw('Сформировано электронным кадровым кабинетом VVK.',465,10);
-            const out=await pdf.save(); const url=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));
-            const link=document.createElement('a'); link.href=url; link.download='Spravka_s_mesta_raboty.pdf'; link.click();
-            setTimeout(()=>URL.revokeObjectURL(url),1500);
-        }catch(err){console.error(err);showToast('Не удалось сформировать PDF-справку');}
     }
 
     // ============================================================
@@ -1882,5 +1856,9 @@
         if (e.target.id === 'notif-modal') closeNotifications();
     });
 </script>
+
+<!-- ПОДКЛЮЧАЕМ ВНЕШНИЙ ФАЙЛ С ГЕНЕРАЦИЕЙ СПРАВКИ -->
+<script src="citizen-pdf.js"></script>
+
 </body>
 </html>
