@@ -123,7 +123,7 @@ async function downloadEmploymentCertificatePDF() {
         if (Number(p.reprimands_count || 0) === 0) {
             reprimandsText += `активных выговоров не имеет.`;
         } else {
-            reprimandsText += `имеет ${p.reprimands_count} выговор(ов): `;
+            reprimandsText += `имеет ${p.reprimands_count} выговор(-а): `;
             const reps = state.trRecords.filter(r => r.action_type === 'reprimand').slice(-p.reprimands_count);
             
             // Сортируем по дате, чтобы выговоры шли по порядку
