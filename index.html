@@ -560,19 +560,33 @@
 
         // --- СЧЕТЧИК ДНЯ ---
         async function loadGlobalDay() {
-            const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).single();
-            if (data) {
-                globalCurrentDay = data.current_day;
-                document.getElementById('admin-current-day').value = globalCurrentDay;
-                if (currentState.view === 'org') loadOrgDocs();
-                if (currentState.view === 'all_docs') loadAllDocs();
+            try {
+                const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
+                if (data) {
+                    globalCurrentDay = data.current_day;
+                    document.getElementById('admin-current-day').value = globalCurrentDay;
+                    if (currentState.view === 'org') loadOrgDocs();
+                    if (currentState.view === 'all_docs') loadAllDocs();
+                } else {
+                    await supabaseClient.from('app_settings').insert({ id: 1, current_day: 1 });
+                    globalCurrentDay = 1;
+                    document.getElementById('admin-current-day').value = 1;
+                }
+            } catch (e) {
+                console.log(e);
             }
         }
 
         async function updateGlobalDay(newDay) {
             const day = parseInt(newDay);
             if (!day || day < 1) return alert("Введите корректный день");
-            await supabaseClient.from('app_settings').update({ current_day: day }).eq('id', 1);
+            
+            const { error } = await supabaseClient.from('app_settings').upsert({ id: 1, current_day: day });
+            
+            if (error) {
+                alert("Ошибка сохранения: " + error.message);
+                return;
+            }
             globalCurrentDay = day;
             alert('Текущий день обновлен на ' + day);
             if (currentState.view === 'org') loadOrgDocs();
