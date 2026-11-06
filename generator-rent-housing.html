@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Договор аренды жилья</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        .form-select { background-color: #eef5ff; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
+        button[type="submit"] { background: #0056b3; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        button[type="submit"]:disabled { background: #ccc; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 150px; }
+        .date-group { display: flex; gap: 5px; }
+        .date-group input, .date-group select { text-align: center; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0056b3; text-decoration: none; font-weight: bold; }
+        .patient-selector { background: #eef5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3ccee; }
+        
+        .autocomplete-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0; background: white;
+            border: 1px solid #ccc; border-radius: 0 0 4px 4px; max-height: 200px;
+            overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .autocomplete-item {
+            padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; font-size: 14px;
+        }
+        .autocomplete-item:hover { background-color: #eef5ff; }
+        .autocomplete-item .price { font-weight: bold; color: #0056b3; }
+
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+        .btn-preview { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-dl { background: #10b981; color: white; }
+        .btn-close { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Вернуться на портал</a>
+    
+    <div class="patient-selector">
+        <label>👤 Выберите гражданина (Арендатор)</label>
+        <select id="patientSelect" class="form-select">
+            <option value="none">-- Без гражданина (В архив) --</option>
+        </select>
+    </div>
+
+    <h2>Договор аренды жилого помещения</h2>
+    
+    <form id="housingForm">
+        <div class="form-group">
+            <label>Арендатор (Имя Отчество)</label>
+            <input type="text" id="renterName" required>
+        </div>
+
+        <div class="form-group">
+            <label>Паспорт (Серия и номер)</label>
+            <input type="text" id="passportData" placeholder="0000 000000" required>
+        </div>
+
+        <div class="form-group">
+            <label>Тип жилья (начните вводить для поиска)</label>
+            <input type="text" id="housingType" placeholder="Например: 1-комнатная квартира" required autocomplete="off">
+            <div id="housingDropdown" class="autocomplete-dropdown"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Адрес</label>
+            <select id="template-address" class="form-select">
+                <option value="">-- Шаблон --</option>
+                <option value="Г.Соль-Илецк, ул. Васильковая, д. ">Г.Соль-Илецк, ул. Васильковая, д. </option>
+            </select>
+            <input type="text" id="address" required>
+        </div>
+
+        <div class="row" style="background:#f0fdf4; padding:15px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:15px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="color:#166534;">Срок аренды (дней)</label>
+                <input type="text" id="rentDays" readonly style="background:#dcfce7; font-weight:bold; color:#166534;">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="color:#166534;">Стоимость (💵)</label>
+                <input type="text" id="totalCost" readonly style="background:#dcfce7; font-weight:bold; color:#166534;">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Дата выдачи (ДД.ММ.ГГ)</label>
+                <div class="date-group">
+                    <input type="text" id="dateDay" class="day" maxlength="2" required>
+                    <input type="text" id="dateMonth" class="month" maxlength="2" required>
+                    <input type="text" id="dateYear" class="year" maxlength="2" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер дня (000-999)</label>
+                <input type="text" id="dayNumber" class="center-input" required>
+            </div>
+            <div class="form-group">
+                <label>№ документа</label>
+                <input type="text" id="docNumber" class="center-input" required>
+            </div>
+        </div>
+
+        <div class="form-group" style="background:#fef3c7; padding:15px; border-radius:8px; border:1px solid #fde68a;">
+            <label style="color:#92400e;">Действителен до (день):</label>
+            <input type="text" id="validUntilDay" readonly style="font-size:18px; font-weight:bold; color:#92400e; text-align:center; background:transparent; border:none;">
+        </div>
+
+        <button type="submit" id="submitBtn">Сгенерировать и сохранить</button>
+    </form>
+</div>
+
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Договор сформирован!</h3>
+            <div>
+                <button class="btn-preview btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-preview btn-close" onclick="window.location.href='index.html'">Вернуться</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+    
+    // =====================================================================
+    // ⚠️ ТВОИ КООРДИНАТЫ (ОТКАЛИБРУЙ ПОД СВОЙ БЛАНК)
+    // =====================================================================
+    const COORDS = {
+        docNumber: { xStart: 410, xEnd: 540, y: 760 }, // Верхний правый угол
+        renterName: { x: 100, y: 690 },
+        passportData: { x: 160, y: 690 }, // Сразу после имени
+        housingType: { x: 80, y: 665 },
+        address: { x: 60, y: 640 },
+        
+        issueDate: { 
+            day: { xStart: 150, xEnd: 165, y: 100 }, 
+            month: { xStart: 175, xEnd: 190, y: 100 }, 
+            year: { xStart: 200, xEnd: 220, y: 100 } 
+        },
+        issueDayNumber: { xStart: 260, xEnd: 290, y: 100 },
+        
+        validUntil: { xStart: 180, xEnd: 240, y: 70 }, // Строка "Действителен до:"
+        
+        qrCode: { x: 400, y: 100, width: 80, height: 80 } // В правом нижнем углу
+    };
+
+    // База жилья
+    const HOUSING_DATABASE = [
+        { name: 'Комната в общежитии (20 дней)', days: 20, cost: '4 500' },
+        { name: 'Комната в общежитии (40 дней)', days: 40, cost: '8 000' },
+        { name: '1-комнатная квартира', days: 65, cost: '13 000' },
+        { name: '2-комнатная квартира', days: 120, cost: '20 000' }
+    ];
+
+    let currentPdfBlob = null;
+    let selectedHousing = null;
+
+    // --- АВТОЗАПОЛНЕНИЕ ДАТ И СЧЕТЧИКОВ ---
+    function initDates() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+        document.getElementById('docNumber').value = `0401${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        document.getElementById('dayNumber').value = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+        
+        updateValidity();
+    }
+
+    // --- ОБНОВЛЕНИЕ СРОКОВ ---
+    function updateValidity() {
+        const startDay = parseInt(document.getElementById('dayNumber').value) || 0;
+        if (selectedHousing && startDay > 0) {
+            document.getElementById('rentDays').value = selectedHousing.days;
+            document.getElementById('totalCost').value = selectedHousing.cost;
+            const endDay = startDay + selectedHousing.days;
+            document.getElementById('validUntilDay').value = endDay;
+        } else {
+            document.getElementById('rentDays').value = '';
+            document.getElementById('totalCost').value = '';
+            document.getElementById('validUntilDay').value = '';
+        }
+    }
+
+    document.getElementById('dayNumber').addEventListener('input', updateValidity);
+
+    // --- АВТОКОМПЛИТ ДЛЯ ЖИЛЬЯ ---
+    const housingInput = document.getElementById('housingType');
+    const dropdown = document.getElementById('housingDropdown');
+
+    housingInput.addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        dropdown.innerHTML = '';
+        
+        if (!val) { dropdown.style.display = 'none'; return; }
+
+        const matches = HOUSING_DATABASE.filter(h => h.name.toLowerCase().includes(val));
+        
+        if (matches.length > 0) {
+            matches.forEach(h => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.innerHTML = `
+                    <div><b>${h.name}</b></div>
+                    <div class="price">${h.cost} 💵</div>
+                `;
+                div.onclick = function() {
+                    housingInput.value = h.name;
+                    selectedHousing = h;
+                    updateValidity();
+                    dropdown.style.display = 'none';
+                };
+                dropdown.appendChild(div);
+            });
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target !== housingInput && e.target !== dropdown) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // --- ШАБЛОН АДРЕСА ---
+    document.getElementById('template-address').addEventListener('change', function() {
+        if (this.value) document.getElementById('address').value = this.value;
+    });
+
+    // --- ЗАГРУЗКА ГРАЖДАН ---
+    async function loadCitizens() {
+        const select = document.getElementById('patientSelect');
+        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        if (!citizens) return;
+        select.innerHTML = '<option value="none">-- Без гражданина --</option>';
+        citizens.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.dataset.citizen = JSON.stringify(p);
+            opt.textContent = `${p.last_name} ${p.first_name} ${p.patronymic || ''}`;
+            select.appendChild(opt);
+        });
+    }
+
+    document.getElementById('patientSelect').addEventListener('change', (e) => {
+        const opt = e.target.options[e.target.selectedIndex];
+        if (!opt.value || opt.value === 'none') return;
+        
+        const c = JSON.parse(opt.dataset.citizen);
+        document.getElementById('renterName').value = `${c.first_name || ''} ${c.patronymic || ''}`.trim();
+        document.getElementById('passportData').value = `${c.pass_series || ''} ${c.pass_number || ''}`.trim();
+    });
+
+    // --- QR ГЕНЕРАТОР ---
+    async function createQrImage(text) {
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+        const response = await fetch(url);
+        return await response.arrayBuffer();
+    }
+
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const textWidth = options.font.widthOfTextAtSize(text, options.size);
+        const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
+        page.drawText(text, { ...options, x: startX, y });
+    }
+
+    // --- ГЕНЕРАЦИЯ ---
+    document.getElementById('housingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!selectedHousing) { alert('Выберите тип жилья из списка!'); return; }
+
+        const btn = document.getElementById('submitBtn');
+        const citizenVal = document.getElementById('patientSelect').value;
+        const actualCitizenId = (citizenVal === 'none') ? null : citizenVal;
+
+        btn.disabled = true;
+        btn.textContent = 'Генерация...';
+
+        try {
+            const getVal = (id) => document.getElementById(id).value;
+            const docNumber = getVal('docNumber');
+            
+            const issueDay = getVal('dateDay');
+            const issueMonth = getVal('dateMonth');
+            const issueYear = getVal('dateYear');
+            const issueDayNum = getVal('dayNumber');
+            const endDay = issueDayNum ? parseInt(issueDayNum) + selectedHousing.days : '—';
+
+            const url = './housing_template.pdf'; 
+            const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            
+            const fontUrlReg = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytesReg = await fetch(fontUrlReg).then(res => res.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytesReg);
+            
+            const page = pdfDoc.getPages()[0];
+            const opt = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+
+            // Текст
+            drawCenteredInRange(page, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt);
+            page.drawText(getVal('renterName'), { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt });
+            page.drawText(`, № ${getVal('passportData')}`, { x: COORDS.renterName.x + 150, y: COORDS.renterName.y, ...opt }); // Паспорт в ту же строку
+            
+            page.drawText(selectedHousing.name, { x: COORDS.housingType.x, y: COORDS.housingType.y, ...opt });
+            page.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...opt });
+
+            // Дата выдачи
+            drawCenteredInRange(page, issueDay, COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt);
+            drawCenteredInRange(page, issueMonth, COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt);
+            drawCenteredInRange(page, issueYear, COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt);
+            drawCenteredInRange(page, issueDayNum, COORDS.issueDayNumber.xStart, COORDS.issueDayNumber.xEnd, COORDS.issueDayNumber.y, opt);
+
+            // Действителен до
+            drawCenteredInRange(page, String(endDay), COORDS.validUntil.xStart, COORDS.validUntil.xEnd, COORDS.validUntil.y, { ...opt, size: 12 });
+
+            // QR-код
+            const qrText = `ДОГОВОР АРЕНДЫ ЖИЛЬЯ\n№ ${docNumber}\nАрендатор: ${getVal('renterName')} (${getVal('passportData')})\nЖилье: ${selectedHousing.name}\nАдрес: ${getVal('address')}\nСрок: ${selectedHousing.days} дней\nСтоимость: ${selectedHousing.cost} 💵\nДата выдачи: ${issueDay}.${issueMonth}.${issueYear} (${issueDayNum} день)\nДействителен до: ${endDay} дня`;
+            const qrBytes = await createQrImage(qrText);
+            const qrImage = await pdfDoc.embedPng(qrBytes);
+            page.drawImage(qrImage, {
+                x: COORDS.qrCode.x, y: COORDS.qrCode.y,
+                width: COORDS.qrCode.width, height: COORDS.qrCode.height
+            });
+
+            const pdfBytes = await pdfDoc.save();
+            currentPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            const fileName = `${Date.now()}_HOUSE_RENT_${docNumber}.pdf`;
+
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            await supabaseClient.from('documents').insert({
+                patient_id: actualCitizenId,
+                organization_id: 3, // Правительство
+                doc_number: docNumber,
+                document_type: 'Договор аренды жилья',
+                file_path: fileName,
+                status: 'active',
+                metadata: {
+                    housing_type: selectedHousing.name,
+                    days: selectedHousing.days,
+                    cost: selectedHousing.cost,
+                    address: getVal('address'),
+                    end_day: endDay // ВАЖНО: для авто-статуса "Срок истек"
+                }
+            });
+
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl;
+            document.getElementById('preview-modal').style.display = 'flex';
+            
+            document.getElementById('download-btn').onclick = () => {
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = `Договор_аренды_жилья_${docNumber}.pdf`;
+                link.click();
+            };
+
+        } catch (error) {
+            console.error(error);
+            alert("Ошибка: " + error.message + "\nУбедитесь, что файл housing_template.pdf лежит в корне!");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать и сохранить';
+        }
+    });
+
+    // ЗАПУСК
+    initDates();
+    loadCitizens();
+
+    // ==========================================
+    // АВТОПОДСТАНОВКА ТЕКУЩЕГО ДНЯ ИЗ БАЗЫ
+    // ==========================================
+    async function autoFillGlobalDay() {
+        const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).single();
+        if (data) {
+            const dayInput = document.getElementById('dayNumber');
+            if (dayInput) {
+                dayInput.value = data.current_day;
+                updateValidity(); // Пересчитываем дату окончания
+            }
+        }
+    }
+    setTimeout(autoFillGlobalDay, 500);
+
+</script>
+</body>
+</html>
