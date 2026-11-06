@@ -428,7 +428,10 @@
                 doc_number: docNumber,
                 document_type: 'Разрешение на работу',
                 file_path: fileName,
-                status: 'active'
+                status: 'active',
+                metadata: {
+                    end_day: parseInt(getVal('validTo'))
+                }
             });
 
             const fileUrl = URL.createObjectURL(currentPdfBlob);
