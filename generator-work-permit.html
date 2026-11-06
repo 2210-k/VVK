@@ -452,6 +452,22 @@
     });
 
     init();
+        // АВТОМАТИЧЕСКАЯ ПОДСТАНОВКА ТЕКУЩЕГО ДНЯ
+    async function autoFillGlobalDay() {
+        const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).single();
+        if (data) {
+            const dayInput = document.getElementById('dayNumber');
+            if (dayInput) {
+                dayInput.value = data.current_day;
+                // Если есть пересчет дат (в аренде или разрешении) — вызываем обновление
+                if (typeof updateValidity === 'function') updateValidity();
+                if (typeof calcTotal === 'function') calcTotal();
+            }
+        }
+    }
+    
+    // Вызываем после инициализации страницы
+    setTimeout(autoFillGlobalDay, 500);
 </script>
 </body>
 </html>
