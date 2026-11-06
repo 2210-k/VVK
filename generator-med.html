@@ -638,7 +638,11 @@
                 organization_id: currentOrgId,
                 doc_number: getVal('docNumber'),
                 document_type: 'Медицинская справка',
-                file_path: fileName
+                file_path: fileName,
+                status: 'active',
+                metadata: {
+                    end_day: parseInt(getVal('dayNumber')) + 50
+                }
             });
 
             const fileUrl = URL.createObjectURL(currentPdfBlob);
