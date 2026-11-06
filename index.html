@@ -33,10 +33,23 @@
         .workspace-title h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); }
         .workspace-title p { margin: 0; color: #64748b; font-size: 14px; }
         
-        .actions-area { display: flex; gap: 15px; align-items: center; }
+        .actions-area { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .btn-create { background: var(--success); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .btn-create:hover { background: #059669; transform: translateY(-2px); }
         
+        /* СЧЕТЧИК ДНЯ */
+        .global-day-badge {
+            display: flex; align-items: center; gap: 8px;
+            background: #fff; border: 2px solid var(--primary);
+            padding: 6px 12px; border-radius: 20px; font-weight: bold;
+            color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .global-day-badge input {
+            width: 60px; border: none; background: #eef5ff; text-align: center;
+            font-weight: bold; color: var(--primary); border-radius: 4px; padding: 4px;
+            font-size: 16px; outline: none;
+        }
+
         .tabs { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; overflow-x: auto; }
         .tab { padding: 12px 20px; cursor: pointer; font-weight: bold; color: #64748b; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; }
         .tab:hover { color: var(--primary); }
@@ -71,6 +84,7 @@
         /* Статусы */
         .status-active { color: #166534; font-weight: bold; background: #dcfce7; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
         .status-revoked { color: #991b1b; font-weight: bold; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-expired { color: #92400e; font-weight: bold; background: #fef3c7; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
 
         /* Модалки */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
@@ -149,7 +163,6 @@
         .hr-career-item p { color:#1e293b; font-size:13px; line-height:1.5; margin:4px 0 0; }
         .hr-empty-note { color:#94a3b8; padding:12px 0; font-size:13px; }
         @media(max-width:900px){.hr-profile-facts{grid-template-columns:repeat(2,minmax(0,1fr));}}
-        /* КАДРОВЫЙ ОТДЕЛ — компактная компоновка */
         .hr-dashboard { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
         .hr-stat { background:#fff; border:1px solid #e5eaf1; border-radius:10px; padding:14px 16px; box-shadow:0 2px 7px rgba(15,23,42,.035); min-width:0; }
         .hr-stat-label { color:#64748b; font-size:12px; font-weight:600; margin-bottom:7px; }
@@ -172,6 +185,10 @@
         #hr-employee-details > h3 { margin:20px 0 12px; font-size:15px; color:#334155; }
         #hr-employee-details .table-responsive { border:1px solid #e8edf3; border-radius:8px; overflow:auto; }
         #hr-employee-details table { margin:0; }
+
+        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
+        .mobile-nav { display: none; }
+        
         @media (max-width: 900px) {
             .hr-dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); }
             .hr-layout { grid-template-columns:230px minmax(0,1fr); }
@@ -179,23 +196,13 @@
             .hr-actions { justify-content:flex-start; }
         }
         @media (max-width: 768px) {
-            .hr-dashboard { gap:8px; margin-bottom:10px; }
-            .hr-stat { padding:11px 12px; }
-            .hr-stat-value { font-size:21px; }
-            .hr-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
-            .hr-sidebar { max-height:260px; min-height:120px; }
-            .hr-main { min-height:300px; padding:15px; }
-            .hr-header-card h2 { font-size:18px; }
-        }
-
-        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
-        .mobile-nav { display: none; }
-        
-        @media (max-width: 768px) {
             body { padding-bottom: 70px; }
             .sidebar { display: none; }
             .main-content { margin-left: 0; padding: 15px; }
             
+            .global-day-badge { padding: 4px 8px; font-size: 12px; margin: 0 auto; }
+            .global-day-badge input { width: 40px; font-size: 14px; }
+
             .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
             .mobile-nav .menu-item { flex: 1; flex-direction: column; padding: 8px 2px; font-size: 10px; border-left: none; border-top: 3px solid transparent; text-align: center; gap: 2px; color: #64748b; white-space: nowrap; min-width: 55px; }
             .mobile-nav .menu-item.active { border-top-color: var(--primary); color: var(--primary); background: transparent; }
@@ -206,8 +213,13 @@
             .btn-create { justify-content: center; }
             .modal-content { width: 95%; padding: 20px; }
             .tabs { overflow-x: auto; }
-            .hr-layout { grid-template-columns: 1fr; height: auto; }
-            .hr-sidebar { max-height: 40vh; }
+            .hr-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
+            .hr-sidebar { max-height:260px; min-height:120px; }
+            .hr-main { min-height:300px; padding:15px; }
+            .hr-header-card h2 { font-size:18px; }
+            .hr-dashboard { gap:8px; margin-bottom:10px; }
+            .hr-stat { padding:11px 12px; }
+            .hr-stat-value { font-size:21px; }
         }
     </style>
 </head>
@@ -266,6 +278,12 @@
                     <p id="page-subtitle">Управление документами и гражданами</p>
                 </div>
                 <div class="actions-area" id="header-actions">
+                    
+                    <div class="global-day-badge" title="Текущий игровой день">
+                        <span>📅 День:</span>
+                        <input type="number" id="admin-current-day" value="1" onchange="updateGlobalDay(this.value)">
+                    </div>
+
                     <button class="btn-create" onclick="openCreateDocModal()" id="btn-create-doc">➕ Создать документ</button>
                     <button class="btn-login" id="logout-btn" style="padding:12px 20px; width:auto; cursor:pointer; background:#ef4444; color:white; border:none; border-radius:6px; font-weight:bold;">Выйти</button>
                 </div>
@@ -480,6 +498,8 @@
 
         const orgNames = { 1: 'Единая Служба Спасения', 2: 'Министерство Внутренних Дел', 3: 'Правительство', 4: 'Воинская часть' };
 
+        let globalCurrentDay = 1;
+
         let currentState = {
             view: 'org', orgId: 1, orgName: 'Единая Служба Спасения', orgTab: 'docs', allTab: 'docs',
             originView: 'org', originOrgId: 1, selectedCitizenId: null
@@ -518,11 +538,17 @@
             if(keepFocus){const input=document.getElementById('hr-employee-list')?.querySelector('input[type="search"]');if(input){input.focus();if(cursor!==null)input.setSelectionRange(cursor,cursor);}}
         }
         function hrEscape(value) { return String(value ?? '').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+        
+        // ИСПРАВЛЕНО: Сортировка для даты первого события
         function hrFirstDate(rows) {
-            const sorted=[...(rows||[])].sort((a,b)=>(parseInt(a.game_day)||0)-(parseInt(b.game_day)||0));
+            const sorted=[...(rows||[])].sort((a,b)=>{
+                const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
+                return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
+            });
             const first=sorted.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||sorted[0];
             return first?.real_date||null;
         }
+        
         function hrTenure(value) {
             if(!value) return 'Нет записей';
             const d=new Date(value); if(Number.isNaN(d.getTime())) return 'Нет данных';
@@ -530,6 +556,27 @@
             if(new Date().getDate()<d.getDate()) m--; m=Math.max(0,m);
             const y=Math.floor(m/12), rest=m%12;
             return [y?(y+(y===1?' год':y<5?' года':' лет')):'',rest?rest+' мес.':''].filter(Boolean).join(' ')||'Менее месяца';
+        }
+
+        // --- СЧЕТЧИК ДНЯ ---
+        async function loadGlobalDay() {
+            const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).single();
+            if (data) {
+                globalCurrentDay = data.current_day;
+                document.getElementById('admin-current-day').value = globalCurrentDay;
+                if (currentState.view === 'org') loadOrgDocs();
+                if (currentState.view === 'all_docs') loadAllDocs();
+            }
+        }
+
+        async function updateGlobalDay(newDay) {
+            const day = parseInt(newDay);
+            if (!day || day < 1) return alert("Введите корректный день");
+            await supabaseClient.from('app_settings').update({ current_day: day }).eq('id', 1);
+            globalCurrentDay = day;
+            alert('Текущий день обновлен на ' + day);
+            if (currentState.view === 'org') loadOrgDocs();
+            if (currentState.view === 'all_docs') loadAllDocs();
         }
 
         // --- АВТОРИЗАЦИЯ ---
@@ -569,6 +616,8 @@
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
                 
+                await loadGlobalDay(); // Загружаем день
+
                 const saved = sessionStorage.getItem('adminLastView');
                 if (saved) {
                     const s = JSON.parse(saved);
@@ -644,7 +693,7 @@
                 document.getElementById('page-subtitle').textContent = 'Управление трудовыми книжками';
                 document.getElementById('content-hr_department').style.display = 'block';
                 btnCreate.style.display = 'none';
-                statsBar.style.display = 'none'; // Скрываем лишнее
+                statsBar.style.display = 'none';
                 loadHRData();
             }
             updateStats();
@@ -746,9 +795,16 @@
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 
-                const isActive = doc.status === 'active' || !doc.status;
-                const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
-                const btnRevoke = isActive ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
+                let statusHtml = '<span class="status-active">Действителен</span>';
+                const endDay = doc.metadata?.end_day;
+                
+                if (doc.status === 'revoked') {
+                    statusHtml = '<span class="status-revoked">Аннулирован</span>';
+                } else if (endDay && globalCurrentDay > endDay) {
+                    statusHtml = '<span class="status-expired">Срок истек</span>';
+                }
+
+                const btnRevoke = doc.status !== 'revoked' ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
 
                 tbody.innerHTML += `
                     <tr>
@@ -911,8 +967,14 @@
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 
-                const isActive = doc.status === 'active' || !doc.status;
-                const statusHtml = isActive ? '<span class="status-active">Действителен</span>' : '<span class="status-revoked">Аннулирован</span>';
+                let statusHtml = '<span class="status-active">Действителен</span>';
+                const endDay = doc.metadata?.end_day;
+                
+                if (doc.status === 'revoked') {
+                    statusHtml = '<span class="status-revoked">Аннулирован</span>';
+                } else if (endDay && globalCurrentDay > endDay) {
+                    statusHtml = '<span class="status-expired">Срок истек</span>';
+                }
 
                 tbody.innerHTML += `
                     <tr>
@@ -1134,7 +1196,6 @@
             renderHRStats();
             renderHRList();
             if(currentHREmployee) {
-                // Обновляем данные текущего сотрудника
                 currentHREmployee = allCitizens.find(c => c.id === currentHREmployee.id);
                 if(currentHREmployee) renderHRDetails(currentHREmployee);
             }
@@ -1250,16 +1311,22 @@
             `;
 
             const career=document.getElementById('hr-career-timeline');
-            // ИЗМЕНЕНО: Сортируем по игровому дню для истории
-            const careerRows=[...currentHRRecords].sort((a,b)=>(parseInt(a.game_day)||0)-(parseInt(b.game_day)||0));
+            // ИСПРАВЛЕНО: Сортируем по игровому дню
+            const careerRows=[...currentHRRecords].sort((a,b)=>{
+                const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
+                return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
+            });
             if(career) career.innerHTML=careerRows.length?careerRows.map(r=>`<div class="hr-career-item"><span class="hr-career-dot"></span><div><b>${hrEscape(new Date(r.real_date).toLocaleDateString('ru-RU'))} · Номер дня ${hrEscape(r.game_day??'—')}</b><p>${hrEscape(r.record_text||'Кадровое событие')}</p></div></div>`).join(''):'<div class="hr-empty-note">Кадровая история пока пуста</div>';
             
             const tbody = document.getElementById('hr-records-body');
             if (currentHRRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет записей</td></tr>';
             } else {
-                // ИЗМЕНЕНО: Сортируем таблицу строго по игровому дню (от 1 до 999)
-                const sorted = [...currentHRRecords].sort((a,b) => (parseInt(a.game_day) || 0) - (parseInt(b.game_day) || 0));
+                // ИСПРАВЛЕНО: Сортируем таблицу строго по игровому дню
+                const sorted = [...currentHRRecords].sort((a,b) => {
+                    const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
+                    return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
+                });
                 sorted.forEach((r, idx) => {
                     tbody.innerHTML += `
                         <tr>
@@ -1544,12 +1611,11 @@
                     const date = m.querySelector('#hr-date').value;
                     
                     const newCount = c.reprimands_count + 1;
-                    const repNum = Math.floor(Math.random() * 900) + 100; // Рандомный номер выговора
+                    const repNum = Math.floor(Math.random() * 900) + 100;
                     
                     let text = `Объявлен выговор №${repNum} (${newCount}/3). Причина: ${reason}`;
                     
                     if (newCount >= 3) {
-                        // Автоувольнение
                         const isOrg = HR_DB.orgs.some(o => o.name === c.current_org);
                         const fromStr = isOrg ? `из организации "${c.current_org}"` : `из работы "${c.current_org}"`;
                         text += `<br><br><b style="color:red;">АВТООТСТРАНЕНИЕ:</b> Уволен ${fromStr} с должности "${c.current_position}" — достигнуто 3 выговора`;
@@ -1584,14 +1650,12 @@
         }
 
         async function saveHRRecord(patientId, actionType, text, gameDay, realDate, profileUpdates) {
-            // Полное новое состояние = текущее + переопределения из profileUpdates
             const fullState = {
                 current_org: profileUpdates.current_org !== undefined ? profileUpdates.current_org : (currentHREmployee?.current_org ?? null),
                 current_position: profileUpdates.current_position !== undefined ? profileUpdates.current_position : (currentHREmployee?.current_position ?? null),
                 reprimands_count: profileUpdates.reprimands_count !== undefined ? profileUpdates.reprimands_count : (currentHREmployee?.reprimands_count ?? 0)
             };
 
-            // 1. Сохраняем запись с полным состоянием в metadata
             const { error: recError } = await supabaseClient.from('employment_records').insert({
                 patient_id: patientId,
                 action_type: actionType,
@@ -1603,7 +1667,6 @@
 
             if (recError) return alert('Ошибка записи: ' + recError.message);
 
-            // 2. Обновляем профиль полным состоянием
             const { error: profError } = await supabaseClient.from('profiles').update(fullState).eq('id', patientId);
             if (profError) return alert('Ошибка обновления профиля: ' + profError.message);
 
@@ -1612,7 +1675,6 @@
         }
 
         async function recalcHRProfile(patientId) {
-            // Загружаем все оставшиеся записи, сортируя по игровому дню и id
             const { data: records } = await supabaseClient
                 .from('employment_records')
                 .select('*')
@@ -1621,7 +1683,6 @@
                 .order('id', { ascending: true });
 
             if (!records || records.length === 0) {
-                // Все записи удалены — обнуляем профиль
                 await supabaseClient.from('profiles').update({
                     current_org: null,
                     current_position: null,
@@ -1630,7 +1691,6 @@
                 return;
             }
 
-            // Ищем последнюю запись с metadata (с конца)
             let lastState = null;
             for (let i = records.length - 1; i >= 0; i--) {
                 if (records[i].metadata) {
@@ -1639,7 +1699,7 @@
                 }
             }
 
-            if (!lastState) return; // Нет metadata — профиль не трогаем
+            if (!lastState) return;
 
             await supabaseClient.from('profiles').update({
                 current_org: lastState.current_org ?? null,
@@ -1657,10 +1717,7 @@
             const { error } = await supabaseClient.from('employment_records').delete().eq('id', id);
             if (error) return alert(error.message);
 
-            // Пересчитываем профиль по оставшимся записям
             await recalcHRProfile(patientId);
-
-            // Обновляем данные в интерфейсе
             loadHRData();
         }
 
