@@ -813,7 +813,7 @@
                     statusHtml = '<span class="status-revoked">Аннулирован</span>';
                 } else if (doc.status === 'expired') {
                     statusHtml = '<span class="status-expired">Срок истек</span>';
-                } else if (endDay && globalCurrentDay > endDay) {
+                } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
                     statusHtml = '<span class="status-expired">Срок истек</span>';
                 }
 
@@ -1002,7 +1002,7 @@
                     statusHtml = '<span class="status-revoked">Аннулирован</span>';
                 } else if (doc.status === 'expired') {
                     statusHtml = '<span class="status-expired">Срок истек</span>';
-                } else if (endDay && globalCurrentDay > endDay) {
+                } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
                     statusHtml = '<span class="status-expired">Срок истек</span>';
                 }
 
