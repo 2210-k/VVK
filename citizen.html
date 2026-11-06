@@ -908,10 +908,9 @@
                 globalCurrentDay = 1;
                 document.getElementById('citizen-current-day').textContent = 1;
             }
-        } catch (e) {
-            console.log(e);
-        }
+        } catch (e) { console.log(e); }
     }
+
     // ============================================================
     // ТЕМА
     // ============================================================
@@ -1078,7 +1077,6 @@
         const container=document.getElementById('tr-timeline');
         if(!container) return;
         
-        // ИСПРАВЛЕНО: сортируем строго по игровому дню и ID
         const sorted=[...state.trRecords].sort((a,b)=>{
             const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
             return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
@@ -1288,7 +1286,9 @@
             
             if (doc.status === 'revoked') {
                 statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
-            } else if (endDay && globalCurrentDay > endDay) {
+            } else if (doc.status === 'expired') {
+                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
+            } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
                 statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
             }
 
@@ -1442,7 +1442,9 @@
                 
                 if (doc.status === 'revoked') {
                     statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
-                } else if (endDay && globalCurrentDay > endDay) {
+                } else if (doc.status === 'expired') {
+                    statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
+                } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
                     statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
                 }
 
@@ -1559,7 +1561,8 @@
             let statusText = 'Действителен';
             const endDay = doc.metadata?.end_day;
             if (doc.status === 'revoked') statusText = 'Аннулирован';
-            else if (endDay && globalCurrentDay > endDay) statusText = 'Срок истек';
+            else if (doc.status === 'expired') statusText = 'Срок истек';
+            else if (endDay && Number(globalCurrentDay) > Number(endDay)) statusText = 'Срок истек';
 
             rows.push([
                 doc.doc_number,
@@ -1721,7 +1724,9 @@
             
             if (doc.status === 'revoked') {
                 statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
-            } else if (endDay && globalCurrentDay > endDay) {
+            } else if (doc.status === 'expired') {
+                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
+            } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
                 statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
             }
 
