@@ -131,6 +131,14 @@
             font-weight: bold; font-size: 16px; color: var(--text);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        
+        .global-day-badge {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-card); border: 2px solid var(--primary);
+            padding: 6px 12px; border-radius: 20px; font-weight: bold;
+            color: var(--primary); margin: 0 auto;
+        }
+
         .topbar-actions { display: flex; gap: 10px; align-items: center; }
         .icon-btn {
             position: relative; background: var(--bg-muted); border: none;
@@ -298,6 +306,7 @@
         }
         .status-active { background: rgba(16,185,129,0.15); color: var(--primary); }
         .status-revoked { background: rgba(220,38,38,0.15); color: var(--danger); }
+        .status-expired { background: rgba(245,158,11,0.15); color: var(--warning); }
 
         .doc-num-cell {
             display: flex; align-items: center; gap: 6px;
@@ -512,6 +521,9 @@
             .main-content { margin-left: 0; }
             .topbar { padding: 12px 15px; }
             .topbar-title { display: none; }
+            
+            .global-day-badge { padding: 6px 10px; font-size: 12px; margin: 0 auto; }
+            
             .topbar-actions { margin-left: auto; }
             .icon-btn { width: 40px; height: 40px; font-size: 17px; }
             .content-area { padding: 15px; }
@@ -646,6 +658,12 @@
             <!-- TOPBAR -->
             <header class="topbar">
                 <div class="topbar-title" id="topbar-title">Главная</div>
+                
+                <!-- СЧЕТЧИК ДНЯ -->
+                <div class="global-day-badge">
+                    📅 Текущий день: <span id="citizen-current-day">1</span>
+                </div>
+
                 <div class="topbar-actions">
                     <button class="icon-btn" onclick="openNotifications()" title="Уведомления">
                         🔔
@@ -750,7 +768,6 @@
                             <h2 class="section-title">📘 Моя трудовая книжка</h2>
                             <div style="color:var(--text-muted);font-size:13px;margin-top:5px;">Сведения о текущем месте работы и кадровой истории</div>
                         </div>
-                        <!-- ТЕПЕРЬ ЭТА КНОПКА ВЫЗЫВАЕТ НОВУЮ ВЫПИСКУ ИЗ citizen-pdf.js -->
                         <button class="btn-dl" onclick="downloadTrBookPDF()" style="padding:10px 18px;">⬇️ Скачать выписку ТК</button>
                     </div>
 
@@ -777,7 +794,6 @@
                         <div class="tr-tool-card">
                             <div class="tr-summary-label">СПРАВКА С МЕСТА РАБОТЫ</div>
                             <p>PDF-справка о текущей организации, должности и дате трудоустройства.</p>
-                            <!-- ВЫЗЫВАЕТСЯ НОВАЯ ФУНКЦИЯ ИЗ citizen-pdf.js -->
                             <button class="btn-dl" onclick="downloadEmploymentCertificatePDF()" style="padding:9px 14px;">⬇ Скачать справку PDF</button>
                         </div>
                         <div class="tr-tool-card tr-qr-card">
@@ -880,6 +896,16 @@
         trRecords: []
     };
 
+    let globalCurrentDay = 1;
+
+    async function loadGlobalDay() {
+        const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).single();
+        if (data) {
+            globalCurrentDay = data.current_day;
+            document.getElementById('citizen-current-day').textContent = globalCurrentDay;
+        }
+    }
+
     // ============================================================
     // ТЕМА
     // ============================================================
@@ -959,6 +985,8 @@
 
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('dashboard-screen').style.display = 'block';
+            
+            await loadGlobalDay();
             await loadMyDocs(session.user.id);
             await loadTrRecords(session.user.id);
         } else {
@@ -1043,7 +1071,13 @@
     function renderTrBook() {
         const container=document.getElementById('tr-timeline');
         if(!container) return;
-        const sorted=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+        
+        // ИСПРАВЛЕНО: сортируем строго по игровому дню и ID
+        const sorted=[...state.trRecords].sort((a,b)=>{
+            const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
+            return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
+        });
+        
         const tbody=document.getElementById('tr-history-table-body');
         const notices=document.getElementById('tr-change-notifications');
         if(!sorted.length){
@@ -1066,7 +1100,6 @@
     function getTrBookNumber(){
         const p=state.userProfile||{};
         const source=String(p.id||p.user_id||state.currentUser?.id||'');
-        // Короткий стабильный цифровой номер, одинаковый при каждом входе.
         let hash=2166136261;
         for(let i=0;i<source.length;i++){
             hash^=source.charCodeAt(i);
@@ -1087,7 +1120,6 @@
             if(note) note.textContent='Библиотека QR-кодов не загрузилась. Номер трудовой книжки указан выше.';
             return;
         }
-        // В QR передаются только 10 цифр номера ТрКн. Никаких других данных.
         const qrNumber=number.replace(/\D/g,'');
         if(!/^\d{10}$/.test(qrNumber)){
             if(note) note.textContent='Не удалось подготовить номер для QR. Номер ТрКн указан выше.';
@@ -1102,7 +1134,6 @@
             });
             if(note) note.textContent='QR содержит только цифровой номер трудовой книжки.';
         }catch(err){
-            // Не выводим техническую ошибку пользователю и не ломаем загрузку трудовой.
             target.innerHTML='<span style="font-size:11px;color:var(--text-muted);">QR-код недоступен</span>';
             if(note) note.textContent='Номер трудовой книжки указан выше. QR временно недоступен.';
         }
@@ -1118,7 +1149,10 @@
     }
 
     function getTrBookStartDate(){
-        const rows=[...state.trRecords].sort((a,b)=>new Date(a.real_date)-new Date(b.real_date));
+        const rows=[...state.trRecords].sort((a,b)=>{
+            const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
+            return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
+        });
         const row=rows.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||rows[0];
         return row?.real_date||null;
     }
@@ -1242,10 +1276,15 @@
             const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
             const orgName = state.orgMap[doc.organization_id] || 'Архив';
             const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            const isActive = doc.status === 'active' || !doc.status;
-            const statusBadge = isActive
-                ? '<span class="status-badge status-active">Действителен</span>'
-                : '<span class="status-badge status-revoked">Аннулирован</span>';
+            
+            let statusBadge = '<span class="status-badge status-active">Действителен</span>';
+            const endDay = doc.metadata?.end_day;
+            
+            if (doc.status === 'revoked') {
+                statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
+            } else if (endDay && globalCurrentDay > endDay) {
+                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
+            }
 
             tbody.innerHTML += `
                 <tr>
@@ -1391,10 +1430,15 @@
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 const orgName = state.orgMap[doc.organization_id] || 'Архив';
                 const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-                const isActive = doc.status === 'active' || !doc.status;
-                const statusBadge = isActive
-                    ? '<span class="status-badge status-active">Действителен</span>'
-                    : '<span class="status-badge status-revoked">Аннулирован</span>';
+                
+                let statusBadge = '<span class="status-badge status-active">Действителен</span>';
+                const endDay = doc.metadata?.end_day;
+                
+                if (doc.status === 'revoked') {
+                    statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
+                } else if (endDay && globalCurrentDay > endDay) {
+                    statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
+                }
 
                 tbody.innerHTML += `
                     <tr>
@@ -1505,13 +1549,18 @@
         filtered.forEach(doc => {
             const orgName = state.orgMap[doc.organization_id] || 'Архив';
             const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            const isActive = doc.status === 'active' || !doc.status;
+            
+            let statusText = 'Действителен';
+            const endDay = doc.metadata?.end_day;
+            if (doc.status === 'revoked') statusText = 'Аннулирован';
+            else if (endDay && globalCurrentDay > endDay) statusText = 'Срок истек';
+
             rows.push([
                 doc.doc_number,
                 doc.document_type,
                 orgName,
                 date,
-                isActive ? 'Действителен' : 'Аннулирован'
+                statusText
             ]);
         });
 
@@ -1660,10 +1709,15 @@
         filtered.forEach(doc => {
             const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
             const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            const isActive = doc.status === 'active' || !doc.status;
-            const statusBadge = isActive
-                ? '<span class="status-badge status-active">Действителен</span>'
-                : '<span class="status-badge status-revoked">Аннулирован</span>';
+            
+            let statusBadge = '<span class="status-badge status-active">Действителен</span>';
+            const endDay = doc.metadata?.end_day;
+            
+            if (doc.status === 'revoked') {
+                statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
+            } else if (endDay && globalCurrentDay > endDay) {
+                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
+            }
 
             tbody.innerHTML += `
                 <tr>
