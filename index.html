@@ -539,7 +539,6 @@
         }
         function hrEscape(value) { return String(value ?? '').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
         
-        // ИСПРАВЛЕНО: Сортировка для даты первого события
         function hrFirstDate(rows) {
             const sorted=[...(rows||[])].sort((a,b)=>{
                 const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
@@ -572,9 +571,7 @@
                     globalCurrentDay = 1;
                     document.getElementById('admin-current-day').value = 1;
                 }
-            } catch (e) {
-                console.log(e);
-            }
+            } catch (e) { console.log(e); }
         }
 
         async function updateGlobalDay(newDay) {
@@ -630,7 +627,7 @@
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
                 
-                await loadGlobalDay(); // Загружаем день
+                await loadGlobalDay();
 
                 const saved = sessionStorage.getItem('adminLastView');
                 if (saved) {
@@ -814,11 +811,18 @@
                 
                 if (doc.status === 'revoked') {
                     statusHtml = '<span class="status-revoked">Аннулирован</span>';
+                } else if (doc.status === 'expired') {
+                    statusHtml = '<span class="status-expired">Срок истек</span>';
                 } else if (endDay && globalCurrentDay > endDay) {
                     statusHtml = '<span class="status-expired">Срок истек</span>';
                 }
 
                 const btnRevoke = doc.status !== 'revoked' ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
+                
+                // Кнопка смены статуса на "Истек" / "Восстановить"
+                const btnExpired = doc.status === 'expired' 
+                    ? `<button class="btn-action btn-edit" onclick="toggleExpired(${doc.id}, 'active')" title="Восстановить">♻️</button>`
+                    : `<button class="btn-action btn-edit" onclick="toggleExpired(${doc.id}, 'expired')" title="Пометить истекшим">⏳</button>`;
 
                 tbody.innerHTML += `
                     <tr>
@@ -829,12 +833,22 @@
                         <td>${statusHtml}</td>
                         <td>
                             <button class="btn-action btn-view" onclick="previewDoc('${publicUrl}')">Просмотр</button>
+                            ${btnExpired}
                             ${btnRevoke}
                             <button class="btn-action btn-delete" onclick="deleteDoc(${doc.id}, '${doc.file_path}')">Удалить</button>
                         </td>
                     </tr>
                 `;
             });
+        }
+
+        async function toggleExpired(docId, newStatus) {
+            const { error } = await supabaseClient.from('documents').update({ status: newStatus }).eq('id', docId);
+            if (error) alert("Ошибка: " + error.message);
+            else {
+                if (currentState.view === 'org') loadOrgDocs();
+                else loadAllDocs();
+            }
         }
 
         async function revokeDoc(docId) {
@@ -986,6 +1000,8 @@
                 
                 if (doc.status === 'revoked') {
                     statusHtml = '<span class="status-revoked">Аннулирован</span>';
+                } else if (doc.status === 'expired') {
+                    statusHtml = '<span class="status-expired">Срок истек</span>';
                 } else if (endDay && globalCurrentDay > endDay) {
                     statusHtml = '<span class="status-expired">Срок истек</span>';
                 }
@@ -1325,7 +1341,6 @@
             `;
 
             const career=document.getElementById('hr-career-timeline');
-            // ИСПРАВЛЕНО: Сортируем по игровому дню
             const careerRows=[...currentHRRecords].sort((a,b)=>{
                 const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
                 return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
@@ -1336,7 +1351,6 @@
             if (currentHRRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет записей</td></tr>';
             } else {
-                // ИСПРАВЛЕНО: Сортируем таблицу строго по игровому дню
                 const sorted = [...currentHRRecords].sort((a,b) => {
                     const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
                     return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
