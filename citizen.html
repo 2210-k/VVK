@@ -899,13 +899,19 @@
     let globalCurrentDay = 1;
 
     async function loadGlobalDay() {
-        const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).single();
-        if (data) {
-            globalCurrentDay = data.current_day;
-            document.getElementById('citizen-current-day').textContent = globalCurrentDay;
+        try {
+            const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
+            if (data) {
+                globalCurrentDay = data.current_day;
+                document.getElementById('citizen-current-day').textContent = globalCurrentDay;
+            } else {
+                globalCurrentDay = 1;
+                document.getElementById('citizen-current-day').textContent = 1;
+            }
+        } catch (e) {
+            console.log(e);
         }
     }
-
     // ============================================================
     // ТЕМА
     // ============================================================
