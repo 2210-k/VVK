@@ -46,7 +46,7 @@ const COORDS_SPRAVKA = {
 };
 
 // ============================================================================
-// ⚠️ КООРДИНАТЫ ДЛЯ ВЫПИСКИ ИЗ ТРУДОВОЙ (ЗАПОЛНИ ВЕРХНЮЮ ЧАСТЬ)
+// ⚠️ КООРДИНАТЫ ДЛЯ ВЫПИСКИ ИЗ ТРУДОВОЙ
 // ============================================================================
 const COORDS_VYPISKA = {
     dateTop: { xStart: 308, xEnd: 536, y: 769 }, // Центр
@@ -61,12 +61,12 @@ const COORDS_VYPISKA = {
     regNumber: { x: 461, y: 672 },
     qrCode: { x: 375, y: 585, width: 60, height: 60 },
     
-    // БЛОК АВТОМАТИЧЕСКОЙ ТАБЛИЦЫ (ширина колонок подберется сама)
+    // БЛОК АВТОМАТИЧЕСКОЙ ТАБЛИЦЫ
     table: {
-        yStart: 535,      // Y-координата, где начнется ПЕРВАЯ строка (под шапкой)
-        yLimit: 31,       // Нижняя граница страницы (если дойдет до сюда, создастся новый лист)
-        startX: 43,       // Левый край таблицы
-        endX: 552         // Правый край таблицы
+        yStart: 535,      
+        yLimit: 31,       
+        startX: 43,       
+        endX: 552         
     }
 };
 
@@ -155,7 +155,12 @@ async function downloadEmploymentCertificatePDF() {
         const dobStr = p.dob ? formatDatePDF(new Date(p.dob)) : '—';
         const passportStr = `серия ${p.pass_series || '—'}, номер ${p.pass_number || '—'}`;
         
-        const hireRecord = state.trRecords.find(r => /принят|трудоустроен|зачислен/i.test(r.record_text));
+        // ИСПРАВЛЕНО: ищем первую запись о приеме с учетом сортировки
+        const sortedRecords = [...state.trRecords].sort((a,b) => {
+            const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
+            return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
+        });
+        const hireRecord = sortedRecords.find(r => /принят|трудоустроен|зачислен/i.test(r.record_text));
         const hireDateStr = hireRecord ? `${formatDatePDF(new Date(hireRecord.real_date))} (${hireRecord.game_day} день)` : '—';
         
         let reprimandsText = `${formatDatePDF(now)} `;
@@ -163,8 +168,7 @@ async function downloadEmploymentCertificatePDF() {
             reprimandsText += `активных выговоров не имеет.`;
         } else {
             reprimandsText += `имеет ${p.reprimands_count} выговор(ов): `;
-            const reps = state.trRecords.filter(r => r.action_type === 'reprimand').slice(-p.reprimands_count);
-            reps.sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
+            const reps = sortedRecords.filter(r => r.action_type === 'reprimand').slice(-p.reprimands_count);
             const repStrings = reps.map((r) => {
                 let repNum = '?';
                 const match = r.record_text.match(/№(\d+)/);
@@ -255,7 +259,6 @@ async function downloadTrBookPDF() {
         let currentPage = pdfDoc.getPages()[0];
         const now = new Date();
         
-        // Подготовка данных
         const firstNameStr = p.first_name || '—';
         const patronymicStr = p.patronymic || '—';
         const dobStr = p.dob ? formatDatePDF(new Date(p.dob)) : '—';
@@ -264,7 +267,6 @@ async function downloadTrBookPDF() {
         const trknNumber = getTrBookNumber(); 
         const regNumStr = `ТК-${String(Math.floor(Math.random() * 99)).padStart(2, '0')} ${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
 
-        // Рисуем верхнюю часть (Шапка)
         const opt12 = { size: 12, font: customFont, color: PDFLib.rgb(0, 0, 0) };
         const opt11 = { size: 11, font: customFont, color: PDFLib.rgb(0, 0, 0) };
         const darkRed = PDFLib.rgb(0.6, 0.1, 0.1); 
@@ -287,7 +289,6 @@ async function downloadTrBookPDF() {
         currentPage.drawText('Правительство', { x: COORDS_VYPISKA.responsible.x, y: COORDS_VYPISKA.responsible.y, ...opt11 });
         currentPage.drawText(regNumStr, { x: COORDS_VYPISKA.regNumber.x, y: COORDS_VYPISKA.regNumber.y, ...opt11 });
 
-        // QR-код
         const qrText = `ВЫПИСКА ИЗ ТРУДОВОЙ КНИЖКИ\nРеестр: ${regNumStr}\nТРКН: ${trknNumber}\nФИО: ${[p.last_name, p.first_name, p.patronymic].filter(Boolean).join(' ')}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`;
         const qrBytes = await fetch(qrUrl).then(r => r.arrayBuffer());
@@ -302,7 +303,6 @@ async function downloadTrBookPDF() {
         // ==========================================
         const tbl = COORDS_VYPISKA.table;
         
-        // Автоматический расчет ширины колонок (исходя из startX и endX)
         const colNumW = 30;
         const colDateW = 90;
         const colDayW = 50;
@@ -311,12 +311,16 @@ async function downloadTrBookPDF() {
         const colDateX = colNumX + colNumW + 5;
         const colDayX = colDateX + colDateW + 5;
         const colTextX = colDayX + colDayW + 5;
-        const colTextW = tbl.endX - colTextX; // Оставшееся место под текст
+        const colTextW = tbl.endX - colTextX; 
 
         let currentY = tbl.yStart;
-        const sortedRecords = [...state.trRecords].sort((a, b) => new Date(a.real_date) - new Date(b.real_date));
+        
+        // ИСПРАВЛЕНО: строгая сортировка
+        const sortedRecords = [...state.trRecords].sort((a, b) => {
+            const dA = parseInt(a.game_day) || 0, dB = parseInt(b.game_day) || 0;
+            return dA !== dB ? dA - dB : parseInt(a.id) - parseInt(b.id);
+        });
 
-        // Функция отрисовки шапки таблицы (полужирная)
         const drawTableHeader = (pg, y) => {
             pg.drawText('№', { x: colNumX, y: y, size: 10, font: boldFont });
             pg.drawText('Реальная дата', { x: colDateX, y: y, size: 10, font: boldFont });
@@ -328,10 +332,9 @@ async function downloadTrBookPDF() {
                 end: { x: tbl.endX, y: y - 4 }, 
                 thickness: 1, color: PDFLib.rgb(0.5, 0.5, 0.5) 
             });
-            return y - 20; // Отступ после шапки
+            return y - 20; 
         };
 
-        // Рисуем шапку на первой странице
         if (sortedRecords.length > 0) {
             currentY = drawTableHeader(currentPage, currentY);
         }
@@ -341,25 +344,19 @@ async function downloadTrBookPDF() {
             const dateStr = new Date(r.real_date).toLocaleDateString('ru-RU');
             const dayStr = r.game_day ? String(r.game_day) : '—';
             
-            // Переносим текст внутри колонки, если он длинный
             const eventLines = wrapText(r.record_text || '', colTextW, customFont, 9);
-            
-            // Высота строки зависит от количества строк в тексте
             const rowHeight = Math.max(18, eventLines.length * 12 + 6);
             
-            // Если не влезает на текущую страницу — создаем новую
             if (currentY - rowHeight < tbl.yLimit) {
-                currentPage = pdfDoc.addPage([595, 842]); // A4
-                currentY = 790; // Верхний отступ на новой странице
+                currentPage = pdfDoc.addPage([595, 842]); 
+                currentY = 790; 
                 currentY = drawTableHeader(currentPage, currentY);
             }
 
-            // Рисуем строку (основной текст 9 пт)
             currentPage.drawText(String(rowIndex), { x: colNumX, y: currentY, size: 9, font: customFont });
             currentPage.drawText(dateStr, { x: colDateX, y: currentY, size: 9, font: customFont });
             currentPage.drawText(dayStr, { x: colDayX, y: currentY, size: 9, font: customFont });
 
-            // Многострочный текст события
             let textY = currentY;
             eventLines.forEach(line => {
                 currentPage.drawText(line, { x: colTextX, y: textY, size: 9, font: customFont });
@@ -370,7 +367,6 @@ async function downloadTrBookPDF() {
             rowIndex++;
         }
 
-        // Сохранение и скачивание
         const finalPdfBytes = await pdfDoc.save();
         const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
         const link = document.createElement('a');
