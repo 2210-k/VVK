@@ -141,20 +141,20 @@
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
     
     // =====================================================================
-    // ✅ ТОЧНЫЕ КООРДИНАТЫ ИЗ АРЕНДЫ ТС
+    // ✅ ТВОИ ОТКАЛИБРОВАННЫЕ КООРДИНАТЫ
     // =====================================================================
     const COORDS = {
         docNumber: { xStart: 142, xEnd: 174, y: 197 },
         renterName: { x: 38, y: 174 }, 
-        housingType: { x: 57, y: 166 },
-        address: { x: 57, y: 158 }, 
+        housingType: { x: 38, y: 166 },
+        address: { x: 26, y: 158 }, 
         issueDate: { 
-            day: { xStart: 45, xEnd: 53, y: 41 }, 
-            month: { xStart: 55, xEnd: 63, y: 41 }, 
-            year: { xStart: 72, xEnd: 80, y: 41 } 
+            day: { xStart: 45, xEnd: 53, y: 42 }, 
+            month: { xStart: 55, xEnd: 63, y: 42 }, 
+            year: { xStart: 72, xEnd: 80, y: 42 } 
         },
-        dayNumber: { xStart: 88, xEnd: 100, y: 41 },
-        validUntil: { xStart: 7, xEnd: 95, y: 12 },
+        dayNumber: { xStart: 88, xEnd: 100, y: 42 },
+        validUntil: { xStart: 7, xEnd: 95, y: 13 },
         qrCode: { x: 130, y: 6, width: 45, height: 45 }
     };
 
@@ -185,7 +185,8 @@
             document.getElementById('rentDays').value = selectedHousing.days;
             document.getElementById('totalCost').value = selectedHousing.cost;
             const endDay = startDay + selectedHousing.days;
-            document.getElementById('validUntilDay').value = endDay;
+            // В интерфейсе тоже показываем со словом "дня"
+            document.getElementById('validUntilDay').value = `${endDay} дня`;
         } else {
             document.getElementById('rentDays').value = '';
             document.getElementById('totalCost').value = '';
@@ -306,14 +307,12 @@
             
             const page = pdfDoc.getPages()[0];
             
-            // ✅ ИСПОЛЬЗУЕМ ТОЧНЫЕ РАЗМЕРЫ КАК В АРЕНДЕ ТС
             const opt6 = { size: 6, font: customFont, color: PDFLib.rgb(0, 0, 0) };
             const opt11 = { size: 11, font: customFont, color: PDFLib.rgb(0, 0, 0) };
 
-            // Текст (шрифт 6)
             drawCenteredInRange(page, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt6);
             
-            // Имя и паспорт (шрифт 6)
+            // Имя и паспорт через запятую
             const renterNameStr = getVal('renterName');
             page.drawText(renterNameStr, { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt6 });
             
@@ -328,14 +327,14 @@
             page.drawText(selectedHousing.name, { x: COORDS.housingType.x, y: COORDS.housingType.y, ...opt6 });
             page.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...opt6 });
 
-            // Дата выдачи (шрифт 6)
+            // Дата выдачи
             drawCenteredInRange(page, issueDay, COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt6);
             drawCenteredInRange(page, issueMonth, COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt6);
             drawCenteredInRange(page, issueYear, COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt6);
             drawCenteredInRange(page, issueDayNum, COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt6);
 
-            // Действителен до (шрифт 11, как срок аренды в машинах)
-            drawCenteredInRange(page, String(endDay), COORDS.validUntil.xStart, COORDS.validUntil.xEnd, COORDS.validUntil.y, opt11);
+            // ✅ ДОБАВЛЕНО СЛОВО "дня" И ШРИФТ 11 (как в аренде ТС)
+            drawCenteredInRange(page, `${endDay} дня`, COORDS.validUntil.xStart, COORDS.validUntil.xEnd, COORDS.validUntil.y, opt11);
 
             // QR-код
             const qrText = `ДОГОВОР АРЕНДЫ ЖИЛЬЯ\n№ ${docNumber}\nАрендатор: ${renterNameStr} (${getVal('passportData')})\nЖилье: ${selectedHousing.name}\nАдрес: ${getVal('address')}\nСрок: ${selectedHousing.days} дней\nСтоимость: ${selectedHousing.cost} 💵\nДата выдачи: ${issueDay}.${issueMonth}.${issueYear} (${issueDayNum} день)\nДействителен до: ${endDay} дня`;
