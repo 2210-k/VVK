@@ -3,241 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Банк | Служебный портал</title>
+    <title>Банк | Служебный портал ЕПГУ</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #1e3a8a; 
-            --primary-light: #3b82f6;
-            --bg: #f3f4f6; 
-            --text: #333; 
-            --danger: #ef4444; 
-            --success: #10b981; 
-            --warning: #f59e0b;
-            --card-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding-bottom: 60px; }
+        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; --gold: #f59e0b; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 60px; }
         
-        /* === САЙДБАР КАК В ПОРТАЛЕ === */
-        .sidebar { width: 260px; background: var(--primary); color: white; position: fixed; height: 100vh; overflow-y: auto; z-index: 100; transition: 0.3s; }
-        .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 20px; }
-        .menu-label { padding: 15px 20px 5px 20px; font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        /* Сайдбар (как в index.html) */
+        .sidebar { width: 260px; background: var(--primary); color: white; position: fixed; height: 100%; overflow-y: auto; z-index: 100; }
+        .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
         .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #e2e8f0; }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; color: white; }
         
-        /* === ОСНОВНОЙ КОНТЕНТ === */
         .main-content { margin-left: 260px; padding: 30px; }
-        .workspace-header { background: white; padding: 25px 30px; border-radius: 12px; box-shadow: var(--card-shadow); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;}
         .workspace-title h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); }
         .workspace-title p { margin: 0; color: #64748b; font-size: 14px; }
-        
-        /* === ВКЛАДКИ === */
-        .tabs { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; overflow-x: auto; }
-        .tab { padding: 12px 20px; cursor: pointer; font-weight: bold; color: #64748b; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; }
-        .tab:hover { color: var(--primary); }
-        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* === КАРТОЧКИ КЛИЕНТОВ (Красивые) === */
-        .clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .client-card { background: white; border-radius: 16px; padding: 25px; box-shadow: var(--card-shadow); border-top: 4px solid var(--primary); position: relative; }
-        .client-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        .client-name { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
-        .client-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; color: white; }
-        .client-balance { font-size: 28px; font-weight: 800; color: var(--success); margin-bottom: 20px; }
-        .client-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .stat-box { padding: 12px; border-radius: 10px; font-size: 14px; }
-        .stat-box.fines { background: #fee2e2; color: #991b1b; border-left: 3px solid var(--danger); }
-        .stat-box.loans { background: #fef3c7; color: #92400e; border-left: 3px solid var(--warning); }
-        .stat-box strong { display: block; font-size: 18px; margin-top: 5px; }
-        
-        /* === КНОПКИ === */
-        .btn { border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn:hover { filter: brightness(0.9); }
-        .btn-primary { background: linear-gradient(135deg, #1e3a8a, #3b82f6); }
-        .btn-success { background: linear-gradient(135deg, #10b981, #34d399); }
-        .btn-danger { background: linear-gradient(135deg, #ef4444, #f87171); }
-        .btn-warning { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
-        .btn-full { width: 100%; }
-        
-        /* === ТАБЛИЦЫ === */
-        .table-responsive { width: 100%; overflow-x: auto; background: white; border-radius: 12px; box-shadow: var(--card-shadow); }
+        /* Таблицы */
+        .table-responsive { width: 100%; overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; min-width: 700px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
         th { background: #f8fafc; color: #64748b; font-weight: bold; font-size: 13px; text-transform: uppercase; }
         tbody tr:hover { background: #f8fafc; }
         
-        /* === МОДАЛКИ === */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
-        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
-        .modal-header h3 { margin: 0; color: var(--primary); }
-        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+        /* Кнопки */
+        .btn { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--gold); }
         
-        /* === ФОРМЫ === */
+        .status-active { color: #166534; font-weight: bold; background: #dcfce7; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-danger { color: #991b1b; font-weight: bold; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+
+        /* Модалки */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { margin-top: 0; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 10px;}
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #475569; }
-        .form-control { width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.2s; }
-        .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-
-        /* === СТАТУСЫ === */
-        .status-active { color: #166534; background: #dcfce7; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        .status-danger { color: #991b1b; background: #fee2e2; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        .status-warning { color: #92400e; background: #fef3c7; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-
-        /* === АДАПТАЦИЯ === */
-        .mobile-nav { display: none; }
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-content { margin-left: 0; padding: 15px; }
-            .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
-            .mobile-nav .menu-item { flex: 1; flex-direction: column; padding: 8px 2px; font-size: 10px; border-left: none; border-top: 3px solid transparent; text-align: center; gap: 2px; color: #64748b; min-width: 60px; }
-            .mobile-nav .menu-item.active { border-top-color: var(--primary); color: var(--primary); background: transparent; }
-            .mobile-nav .menu-item span { display: block; font-size: 18px; margin-bottom: 2px; }
-        }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+        
+        .tabs { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 15px; cursor: pointer; font-weight: bold; color: #64748b; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; font-size: 14px;}
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
     </style>
 </head>
 <body>
 
     <!-- САЙДБАР -->
     <div class="sidebar">
-        <h2>🏦 Стабильность Банк</h2>
-        <div class="menu-label">Управление</div>
-        <div class="menu-item active" onclick="switchView('clients', this)"><i class="fas fa-users"></i> Клиенты</div>
-        <div class="menu-item" onclick="switchView('fines', this)"><i class="fas fa-gavel"></i> Все штрафы</div>
-        <div class="menu-item" onclick="switchView('credits', this)"><i class="fas fa-credit-card"></i> Все кредиты</div>
-        <div class="menu-item" onclick="switchView('history', this)"><i class="fas fa-history"></i> История операций</div>
-        
-        <div class="menu-label" style="margin-top:20px;">Навигация</div>
-        <div class="menu-item" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> На портал</div>
-    </div>
-
-    <!-- НИЖНЕЕ МЕНЮ (Мобилки) -->
-    <div class="mobile-nav">
-        <div class="menu-item active" onclick="switchView('clients', this)"><span>👥</span>Клиенты</div>
-        <div class="menu-item" onclick="switchView('fines', this)"><span>⚖️</span>Штрафы</div>
-        <div class="menu-item" onclick="switchView('credits', this)"><span>💳</span>Кредиты</div>
-        <div class="menu-item" onclick="switchView('history', this)"><span>📜</span>История</div>
-        <div class="menu-item" onclick="window.location.href='index.html'"><span>⬅️</span>Портал</div>
+        <h2>🏦 Банк</h2>
+        <div class="menu-item active" onclick="switchTab('clients', this)">👥 Клиенты</div>
+        <div class="menu-item" onclick="switchTab('fines', this)">⚖️ Все штрафы</div>
+        <div class="menu-item" onclick="switchTab('credits', this)">💳 Все кредиты</div>
+        <div class="menu-item" onclick="switchTab('history', this)">📜 История</div>
+        <div class="menu-item" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1);" onclick="window.location.href='index.html'">← На портал</div>
     </div>
 
     <!-- ОСНОВНОЙ КОНТЕНТ -->
     <div class="main-content">
         <div class="workspace-header">
             <div class="workspace-title">
-                <h1 id="page-title">Клиенты Банка</h1>
-                <p id="page-subtitle">Управление счетами, штрафами и кредитами</p>
+                <h1 id="page-title">Клиенты банка</h1>
+                <p id="page-subtitle">Управление счетами граждан</p>
             </div>
-            <div>
-                <button class="btn btn-warning" onclick="runPenalties()"><i class="fas fa-sync"></i> Перерасчет (Пени)</button>
-            </div>
+            <button class="btn btn-warning" onclick="runDailyPenalties()">⚙️ Провести перерасчет (Пени)</button>
         </div>
 
         <!-- ВКЛАДКА: КЛИЕНТЫ -->
-        <div id="view-clients">
-            <div class="clients-grid" id="clients-grid">
-                <!-- Карточки клиентов рендерятся тут -->
+        <div id="tab-clients">
+            <input type="text" id="search-clients" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;" placeholder="🔍 Поиск по ФИО..." oninput="renderClients()">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Баланс</th>
+                            <th>Штрафы</th>
+                            <th>Кредиты</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-table-body"></tbody>
+                </table>
             </div>
         </div>
 
         <!-- ВКЛАДКА: ШТРАФЫ -->
-        <div id="view-fines" style="display:none;">
+        <div id="tab-fines" style="display:none;">
             <div class="table-responsive">
                 <table>
-                    <thead><tr><th>№ Документа</th><th>Клиент</th><th>Сумма</th><th>День</th><th>Статус</th><th>Действия</th></tr></thead>
-                    <tbody id="fines-body"></tbody>
+                    <thead>
+                        <tr>
+                            <th>№ Документа</th>
+                            <th>Клиент</th>
+                            <th>Сумма</th>
+                            <th>День выдачи</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fines-table-body"></tbody>
                 </table>
             </div>
         </div>
 
         <!-- ВКЛАДКА: КРЕДИТЫ -->
-        <div id="view-credits" style="display:none;">
+        <div id="tab-credits" style="display:none;">
             <div class="table-responsive">
                 <table>
-                    <thead><tr><th>№ Договора</th><th>Клиент</th><th>Остаток / К возврату</th><th>Выдан / До</th><th>Статус</th><th>Действия</th></tr></thead>
-                    <tbody id="credits-body"></tbody>
+                    <thead>
+                        <tr>
+                            <th>№ Договора</th>
+                            <th>Клиент</th>
+                            <th>Сумма / К возврату</th>
+                            <th>Выдан / До</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="credits-table-body"></tbody>
                 </table>
             </div>
         </div>
 
         <!-- ВКЛАДКА: ИСТОРИЯ -->
-        <div id="view-history" style="display:none;">
+        <div id="tab-history" style="display:none;">
             <div class="table-responsive">
                 <table>
-                    <thead><tr><th>Дата</th><th>Клиент</th><th>Тип</th><th>Сумма</th><th>Описание</th></tr></thead>
-                    <tbody id="history-body"></tbody>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Клиент</th>
+                            <th>Тип</th>
+                            <th>Сумма</th>
+                            <th>Описание</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <!-- МОДАЛКА УПРАВЛЕНИЯ КЛИЕНТОМ -->
-    <div id="client-modal" class="modal">
+    <div id="action-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="client-modal-title">Управление клиентом</h3>
-                <button class="close-btn" onclick="document.getElementById('client-modal').style.display='none'">✕</button>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 id="action-title">Управление</h3>
+                <button class="btn btn-danger" onclick="document.getElementById('action-modal').style.display='none'">✕</button>
             </div>
             
-            <input type="hidden" id="modal-user-id">
+            <input type="hidden" id="action-user-id">
             
-            <!-- Вкладки в модалке -->
-            <div class="tabs" style="margin-bottom:15px;">
-                <div class="tab active" id="tab-main" onclick="switchModalTab('main')">Главная</div>
-                <div class="tab" id="tab-fines" onclick="switchModalTab('fines')">Штрафы</div>
-                <div class="tab" id="tab-credits" onclick="switchModalTab('credits')">Кредиты</div>
-                <div class="tab" id="tab-history" onclick="switchModalTab('history')">История</div>
+            <!-- Вкладки модалки -->
+            <div class="tabs">
+                <div class="tab active" id="m-tab-main" onclick="switchModalTab('main')">Операции</div>
+                <div class="tab" id="m-tab-fines" onclick="switchModalTab('fines')">Штрафы</div>
+                <div class="tab" id="m-tab-credits" onclick="switchModalTab('credits')">Кредиты</div>
+                <div class="tab" id="m-tab-history" onclick="switchModalTab('history')">История</div>
             </div>
 
-            <!-- Главная -->
-            <div id="modal-content-main">
-                <div style="background:#f8fafc; padding:15px; border-radius:10px; text-align:center; margin-bottom:20px; border: 1px solid #e2e8f0;">
-                    <div style="font-size:13px; color:#64748b; text-transform:uppercase; font-weight:bold;">Текущий баланс</div>
-                    <div id="modal-balance" style="font-size:32px; font-weight:800; color:var(--success);">0 💵</div>
+            <!-- Операции -->
+            <div id="m-content-main">
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center;">
+                    <div style="font-size:14px; color:#64748b;">Баланс</div>
+                    <div id="m-balance" style="font-size:28px; font-weight:bold; color:var(--success);">0 💵</div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <button class="btn btn-success" onclick="actionTransaction('deposit')"><i class="fas fa-plus"></i> Пополнить</button>
-                    <button class="btn btn-danger" onclick="actionTransaction('withdraw')"><i class="fas fa-minus"></i> Снять</button>
-                    <button class="btn btn-warning" onclick="actionFine()"><i class="fas fa-gavel"></i> Штраф</button>
-                    <button class="btn btn-primary" onclick="actionCredit()"><i class="fas fa-money-check"></i> Кредит</button>
-                    <button class="btn btn-success" style="grid-column: span 2;" onclick="actionSalary()"><i class="fas fa-wallet"></i> Выдать Зарплату</button>
+                    <button class="btn btn-success" onclick="actionTransaction('deposit')">➕ Пополнить</button>
+                    <button class="btn btn-danger" onclick="actionTransaction('withdraw')">➖ Снять</button>
+                    <button class="btn btn-warning" onclick="actionFine()">⚖️ Выдать Штраф</button>
+                    <button class="btn btn-primary" onclick="actionCredit()">💳 Выдать Кредит</button>
+                    <button class="btn btn-primary" onclick="openSalaryModal()">💼 Выдать ЗП</button>
+                    <button class="btn" style="background:#7209b7; color:white;" onclick="actionPrize()">🎁 Приз/Премия</button>
                 </div>
             </div>
 
-            <!-- Штрафы -->
-            <div id="modal-content-fines" style="display:none;">
-                <div id="modal-fines-list" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
-
-            <!-- Кредиты -->
-            <div id="modal-content-credits" style="display:none;">
-                <div id="modal-credits-list" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
-
-            <!-- История -->
-            <div id="modal-content-history" style="display:none;">
-                <div id="modal-history-list" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
+            <!-- Списки -->
+            <div id="m-content-fines" style="display:none;"><div id="m-fines-list"></div></div>
+            <div id="m-content-credits" style="display:none;"><div id="m-credits-list"></div></div>
+            <div id="m-content-history" style="display:none;"><div id="m-history-list" style="max-height:300px; overflow-y:auto;"></div></div>
         </div>
     </div>
 
     <!-- МОДАЛКА ЗАРПЛАТЫ -->
     <div id="salary-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-wallet"></i> Выдача зарплаты</h3>
-                <button class="close-btn" onclick="document.getElementById('salary-modal').style.display='none'">✕</button>
+        <div class="modal-content" style="max-width:500px;">
+            <h3>Начисление зарплаты</h3>
+            <div id="salary-emp-info" style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <div style="font-size:14px; color:#64748b;">Сотрудник</div>
+                <div id="salary-name" style="font-size:18px; font-weight:bold;"></div>
+                <div id="salary-job" style="font-size:14px; color:var(--primary); margin-top:5px;"></div>
             </div>
             
-            <div id="salary-info" style="margin-bottom:20px; background:#f8fafc; padding:15px; border-radius:10px;"></div>
-            
-            <div id="salary-dynamic-inputs"></div>
-            
-            <div style="margin-top:20px; font-size:20px; font-weight:bold; text-align:center;">
-                Итого: <span id="salary-total-val" style="color:var(--success);">0</span> 💵
+            <div id="salary-inputs"></div>
+
+            <div style="margin-top:20px; font-size:20px; text-align:right;">
+                Итого: <b id="salary-total" style="color:var(--success);">0</b> 💵
             </div>
             
-            <button class="btn btn-success btn-full" style="margin-top:20px;" onclick="submitSalary()">Начислить на баланс</button>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-success" style="flex:1; padding:12px;" onclick="issueSalary()">Выдать</button>
+                <button class="btn" style="flex:1; background:#e2e8f0; color:#333; padding:12px;" onclick="document.getElementById('salary-modal').style.display='none'">Отмена</button>
+            </div>
         </div>
     </div>
 
@@ -251,8 +223,9 @@
         let allBalances = {};
         let allFines = [];
         let allCredits = [];
+        let currentActionUserId = null;
 
-        // --- ЗАГРУЗКА ДАННЫХ ---
+        // Загрузка данных
         async function loadData() {
             const { data: dayData } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
             if (dayData) globalCurrentDay = dayData.current_day;
@@ -271,448 +244,371 @@
             allCredits = credits || [];
 
             renderClients();
+            renderFines();
+            renderCredits();
+            renderGlobalHistory();
         }
 
-        // --- НАВИГАЦИЯ ---
-        function switchView(view, el) {
-            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.sidebar .menu-item').forEach(item => item.classList.remove('active'));
             if (el) el.classList.add('active');
-
-            ['clients', 'fines', 'credits', 'history'].forEach(v => {
-                document.getElementById(`view-${v}`).style.display = 'none';
+            
+            ['clients', 'fines', 'credits', 'history'].forEach(id => {
+                document.getElementById(`tab-${id}`).style.display = 'none';
             });
-            document.getElementById(`view-${view}`).style.display = 'block';
+            document.getElementById(`tab-${tabId}`).style.display = 'block';
 
             const titles = {
-                clients: { t: 'Клиенты Банка', s: 'Управление счетами и операциями' },
-                fines: { t: 'Все штрафы', s: 'Список выданных штрафов' },
-                credits: { t: 'Все кредиты', s: 'Активные и погашенные кредиты' },
-                history: { t: 'История операций', s: 'Последние 100 транзакций' }
+                clients: { title: 'Клиенты банка', sub: 'Управление счетами' },
+                fines: { title: 'Все штрафы', sub: 'Просмотр и управление' },
+                credits: { title: 'Все кредиты', sub: 'Просмотр и управление' },
+                history: { title: 'История операций', sub: 'Все транзакции по банку' }
             };
-            document.getElementById('page-title').textContent = titles[view].t;
-            document.getElementById('page-subtitle').textContent = titles[view].s;
-
-            if (view === 'fines') renderFines();
-            if (view === 'credits') renderCredits();
-            if (view === 'history') renderHistory();
+            document.getElementById('page-title').textContent = titles[tabId].title;
+            document.getElementById('page-subtitle').textContent = titles[tabId].sub;
         }
 
-        // --- РЕНДЕР КЛИЕНТОВ ---
+        // === РЕНДЕР ТАБЛИЦ ===
         function renderClients() {
-            const grid = document.getElementById('clients-grid');
-            grid.innerHTML = '';
+            const tbody = document.getElementById('clients-table-body');
+            const query = document.getElementById('search-clients').value.toLowerCase();
+            
+            let filtered = allClients.filter(c => {
+                const fio = `${c.last_name} ${c.first_name} ${c.patronymic || ''}`.toLowerCase();
+                return fio.includes(query);
+            });
 
-            allClients.forEach(c => {
+            tbody.innerHTML = '';
+            if (filtered.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Нет клиентов</td></tr>';
+
+            filtered.forEach(c => {
                 const bal = allBalances[c.id] || 0;
-                const uFines = allFines.filter(f => f.user_id === c.id && f.status === 'unpaid').reduce((s, f) => s + Number(f.amount), 0);
-                const uCredits = allCredits.filter(cr => cr.user_id === c.id && cr.status === 'active').reduce((s, cr) => s + Number(cr.remaining_amount), 0);
+                const userFines = allFines.filter(f => f.user_id === c.id && f.status === 'unpaid').length;
+                const userCredits = allCredits.filter(cr => cr.user_id === c.id && cr.status === 'active').length;
                 
-                grid.innerHTML += `
-                    <div class="client-card">
-                        <div class="client-header">
-                            <div class="client-name">
-                                <div class="client-avatar">${c.last_name[0]}</div>
-                                <div>${c.last_name} ${c.first_name}</div>
-                            </div>
-                        </div>
-                        <div class="client-balance">${bal.toLocaleString()} 💵</div>
-                        <div class="client-stats">
-                            <div class="stat-box fines">Штрафы <strong>${uFines.toLocaleString()} 💵</strong></div>
-                            <div class="stat-box loans">Кредиты <strong>${uCredits.toLocaleString()} 💵</strong></div>
-                        </div>
-                        <button class="btn btn-primary btn-full" onclick="openClientModal('${c.id}', '${c.last_name} ${c.first_name}')">Управление</button>
-                    </div>
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${c.last_name} ${c.first_name} ${c.patronymic || ''}</b></td>
+                        <td style="font-weight:bold; color:${bal < 0 ? 'var(--danger)' : 'var(--success)'}">${bal.toLocaleString()} 💵</td>
+                        <td>${userFines > 0 ? `<span class="status-danger">${userFines}</span>` : '<span class="status-active">0</span>'}</td>
+                        <td>${userCredits > 0 ? `<span class="status-danger">${userCredits}</span>` : '<span class="status-active">0</span>'}</td>
+                        <td><button class="btn btn-primary" onclick="openActionModal('${c.id}')">⚙️ Управление</button></td>
+                    </tr>
                 `;
             });
         }
 
-        // --- МОДАЛКА КЛИЕНТА ---
-        function openClientModal(userId, name) {
-            document.getElementById('modal-user-id').value = userId;
-            document.getElementById('client-modal-title').textContent = name;
-            document.getElementById('client-modal').style.display = 'flex';
-            switchModalTab('main');
-            updateModalBalance(userId);
-            loadClientDetails(userId);
+        function renderFines() {
+            const tbody = document.getElementById('fines-table-body');
+            tbody.innerHTML = allFines.length === 0 ? '<tr><td colspan="6" style="text-align:center;">Нет штрафов</td></tr>' : '';
+            allFines.forEach(f => {
+                const client = allClients.find(c => c.id === f.user_id);
+                const name = client ? `${client.last_name} ${client.first_name}` : 'Неизвестный';
+                let statusHtml = f.status === 'paid' ? '<span class="status-active">Погашен</span>' : (f.status === 'cancelled' ? 'Отменен' : '<span class="status-danger">Не оплачен</span>');
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${f.doc_number}</b></td>
+                        <td>${name}</td>
+                        <td style="color:var(--danger); font-weight:bold;">${f.amount.toLocaleString()} 💵</td>
+                        <td>${f.issue_day} день</td>
+                        <td>${statusHtml}</td>
+                        <td>${f.status === 'unpaid' ? `<button class="btn btn-success" onclick="payFine('${f.id}')">Погасить</button><button class="btn btn-danger" onclick="cancelFine('${f.id}')">Отменить</button>` : ''}</td>
+                    </tr>
+                `;
+            });
         }
 
-        function updateModalBalance(userId) {
+        function renderCredits() {
+            const tbody = document.getElementById('credits-table-body');
+            tbody.innerHTML = allCredits.length === 0 ? '<tr><td colspan="6" style="text-align:center;">Нет кредитов</td></tr>' : '';
+            allCredits.forEach(c => {
+                const client = allClients.find(cl => cl.id === c.user_id);
+                const name = client ? `${client.last_name} ${client.first_name}` : 'Неизвестный';
+                let statusHtml = c.status === 'paid' ? '<span class="status-active">Погашен</span>' : (c.status === 'cancelled' ? 'Отменен' : '<span class="status-danger">Активен</span>');
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${c.doc_number}</b></td>
+                        <td>${name}</td>
+                        <td>${c.amount.toLocaleString()} / <b>${c.remaining_amount.toLocaleString()}</b> 💵</td>
+                        <td>${c.issue_day} / ${c.end_day} день</td>
+                        <td>${statusHtml}</td>
+                        <td>${c.status === 'active' ? `<button class="btn btn-success" onclick="repayCredit('${c.id}')">Погасить часть</button><button class="btn btn-danger" onclick="cancelCredit('${c.id}')">Аннулировать</button>` : ''}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function renderGlobalHistory() {
+            const { data: txs } = await supabaseClient.from('bank_transactions').select('*').order('created_at', { ascending: false }).limit(50);
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+            if (!txs || txs.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">История пуста</td></tr>'; return; }
+            txs.forEach(t => {
+                const client = allClients.find(c => c.id === t.user_id);
+                const name = client ? `${client.last_name} ${client.first_name}` : 'Неизвестный';
+                let amtColor = t.amount > 0 ? 'var(--success)' : (t.amount < 0 ? 'var(--danger)' : '#333');
+                let amtStr = t.amount > 0 ? `+${t.amount}` : t.amount;
+                tbody.innerHTML += `<tr><td>${new Date(t.created_at).toLocaleString('ru-RU')}</td><td>${name}</td><td>${t.type}</td><td style="font-weight:bold; color:${amtColor};">${amtStr} 💵</td><td>${t.description}</td></tr>`;
+            });
+        }
+
+        // === МОДАЛКА КЛИЕНТА ===
+        function openActionModal(userId) {
+            currentActionUserId = userId;
+            const client = allClients.find(c => c.id === userId);
+            document.getElementById('action-title').textContent = `${client.last_name} ${client.first_name}`;
+            document.getElementById('action-user-id').value = userId;
+            
             const bal = allBalances[userId] || 0;
-            document.getElementById('modal-balance').textContent = `${bal.toLocaleString()} 💵`;
-            document.getElementById('modal-balance').style.color = bal < 0 ? 'var(--danger)' : 'var(--success)';
+            document.getElementById('m-balance').textContent = `${bal.toLocaleString()} 💵`;
+            document.getElementById('m-balance').style.color = bal < 0 ? 'var(--danger)' : 'var(--success)';
+
+            switchModalTab('main');
+            document.getElementById('action-modal').style.display = 'flex';
+            loadClientDetails(userId);
         }
 
         function switchModalTab(tab) {
             ['main', 'fines', 'credits', 'history'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.remove('active');
-                document.getElementById(`modal-content-${t}`).style.display = 'none';
+                document.getElementById(`m-tab-${t}`).classList.remove('active');
+                document.getElementById(`m-content-${t}`).style.display = 'none';
             });
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`modal-content-${tab}`).style.display = 'block';
+            document.getElementById(`m-tab-${tab}`).classList.add('active');
+            document.getElementById(`m-content-${tab}`).style.display = 'block';
         }
 
         async function loadClientDetails(userId) {
             // Штрафы
             const userFines = allFines.filter(f => f.user_id === userId);
-            const fDiv = document.getElementById('modal-fines-list');
-            fDiv.innerHTML = userFines.length === 0 ? '<p style="text-align:center; color:#888;">Нет штрафов</p>' : userFines.map(f => `
+            const finesList = document.getElementById('m-fines-list');
+            finesList.innerHTML = userFines.length === 0 ? '<p style="text-align:center; color:#888;">Нет штрафов</p>' : userFines.map(f => `
                 <div style="border-bottom:1px solid #eee; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>№${f.doc_number}</b><br><small>${f.reason}</small></div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:bold; color:${f.status==='unpaid'?'var(--danger)':'var(--success)'}">${f.amount} 💵</div>
-                        ${f.status === 'unpaid' ? `<button class="btn btn-danger" style="padding:5px 10px; font-size:12px; margin-top:5px;" onclick="payFine('${f.id}')">Оплатить</button>` : ''}
-                    </div>
+                    <div><b>№${f.doc_number}</b> - ${f.amount} 💵 <br><small>${f.reason} (${f.status})</small></div>
+                    ${f.status === 'unpaid' ? `<button class="btn btn-success" onclick="payFine('${f.id}')">Оплатить</button>` : ''}
                 </div>
             `).join('');
 
             // Кредиты
             const userCredits = allCredits.filter(c => c.user_id === userId);
-            const cDiv = document.getElementById('modal-credits-list');
-            cDiv.innerHTML = userCredits.length === 0 ? '<p style="text-align:center; color:#888;">Нет кредитов</p>' : userCredits.map(c => `
+            const creditsList = document.getElementById('m-credits-list');
+            creditsList.innerHTML = userCredits.length === 0 ? '<p style="text-align:center; color:#888;">Нет кредитов</p>' : userCredits.map(c => `
                 <div style="border-bottom:1px solid #eee; padding:10px 0;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <b>№${c.doc_number}</b>
-                        <span style="color:${c.status==='active'?'var(--warning)':'var(--success)'}; font-weight:bold;">${c.status}</span>
-                    </div>
-                    <div style="margin-top:5px;">Осталось: <b>${c.remaining_amount} 💵</b> из ${c.total_due} (до ${c.end_day} дня)</div>
+                    <b>№${c.doc_number}</b> - Осталось: ${c.remaining_amount} из ${c.total_due} 💵 <br>
+                    <small>Статус: ${c.status} (до ${c.end_day} дня)</small>
                 </div>
             `).join('');
 
             // История
             const { data: txs } = await supabaseClient.from('bank_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
-            const hDiv = document.getElementById('modal-history-list');
-            hDiv.innerHTML = (!txs || txs.length === 0) ? '<p style="text-align:center; color:#888;">Нет операций</p>' : txs.map(t => `
-                <div style="border-bottom:1px solid #eee; padding:8px 0; font-size:14px; display:flex; justify-content:space-between;">
-                    <div>${t.description}<br><small style="color:#888;">${new Date(t.created_at).toLocaleString('ru-RU')}</small></div>
-                    <b style="color:${t.amount > 0 ? 'var(--success)' : 'var(--danger)'};">${t.amount > 0 ? '+' : ''}${t.amount} 💵</b>
+            const historyList = document.getElementById('m-history-list');
+            historyList.innerHTML = (!txs || txs.length === 0) ? '<p style="text-align:center; color:#888;">Нет операций</p>' : txs.map(t => `
+                <div style="border-bottom:1px solid #eee; padding:8px 0; font-size:13px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>${t.description}</span>
+                        <b style="color:${t.amount > 0 ? 'var(--success)' : 'var(--danger)'};">${t.amount > 0 ? '+' : ''}${t.amount} 💵</b>
+                    </div>
+                    <small style="color:#888;">${new Date(t.created_at).toLocaleString('ru-RU')}</small>
                 </div>
             `).join('');
         }
 
-        // --- БАЗОВЫЕ ОПЕРАЦИИ (ПОПОЛНИТЬ/СНЯТЬ) ---
-        async function actionTransaction(type) {
-            const userId = document.getElementById('modal-user-id').value;
-            const val = prompt(type === 'deposit' ? "Сумма для пополнения (💵):" : "Сумма для снятия (💵):");
-            const amount = parseFloat(val);
-            if (!amount || amount <= 0) return;
-
-            const desc = type === 'deposit' ? 'Пополнение счета' : 'Снятие средств';
-            const finalAmount = type === 'deposit' ? amount : -amount;
-
-            await processTransaction(userId, finalAmount, type, desc);
-            alert('Успешно!');
-            openClientModal(userId, document.getElementById('client-modal-title').textContent);
-        }
-
+        // === ОПЕРАЦИИ ===
         async function processTransaction(userId, amount, type, desc) {
             const currentBal = allBalances[userId] || 0;
             const newBal = currentBal + amount;
-            
-            await supabaseClient.from('bank_accounts').upsert({ user_id: userId, balance: newBal });
+            await supabaseClient.from('bank_accounts').upsert({ user_id: userId, balance: newBal, updated_at: new Date().toISOString() });
             await supabaseClient.from('bank_transactions').insert({ user_id: userId, amount: amount, type: type, description: desc, game_day: globalCurrentDay });
-            
-            allBalances[userId] = newBal;
-            renderClients();
+            await loadData();
         }
 
-        // --- ШТРАФЫ ---
+        async function actionTransaction(type) {
+            const amount = parseFloat(prompt(type === 'deposit' ? "Сумма пополнения (💵):" : "Сумма снятия (💵):"));
+            if (!amount || amount <= 0) return;
+            await processTransaction(currentActionUserId, type === 'deposit' ? amount : -amount, type, type === 'deposit' ? 'Пополнение' : 'Снятие');
+            openActionModal(currentActionUserId);
+        }
+
         async function actionFine() {
-            const userId = document.getElementById('modal-user-id').value;
             const amount = parseFloat(prompt("Сумма штрафа (💵):"));
             if (!amount || amount <= 0) return;
             const reason = prompt("Причина штрафа:");
             if (!reason) return;
-
             const docNum = String(Math.floor(Math.random() * 9999999)).padStart(7, '0');
-            await supabaseClient.from('bank_fines').insert({ user_id: userId, doc_number: docNum, amount: amount, reason: reason, issue_day: globalCurrentDay, status: 'unpaid' });
-            await supabaseClient.from('bank_transactions').insert({ user_id: userId, amount: 0, type: 'fine', description: `Выдан штраф №${docNum}`, game_day: globalCurrentDay });
-            
-            alert('Штраф выдан!');
-            loadData().then(() => openClientModal(userId, document.getElementById('client-modal-title').textContent));
+            await supabaseClient.from('bank_fines').insert({ user_id: currentActionUserId, doc_number: docNum, amount: amount, reason: reason, issue_day: globalCurrentDay, status: 'unpaid' });
+            await supabaseClient.from('bank_transactions').insert({ user_id: currentActionUserId, amount: 0, type: 'fine', description: `Штраф №${docNum}: ${reason}`, game_day: globalCurrentDay });
+            await loadData();
+            openActionModal(currentActionUserId);
         }
 
-        async function payFine(fineId) {
-            const fine = allFines.find(f => f.id === fineId);
-            if (!confirm(`Оплатить штраф на ${fine.amount} 💵?`)) return;
-            
-            await processTransaction(fine.user_id, -fine.amount, 'fine_payment', `Оплата штрафа №${fine.doc_number}`);
-            await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
-            
-            alert('Оплачено!');
-            loadData().then(() => openClientModal(fine.user_id, document.getElementById('client-modal-title').textContent));
-        }
-
-        // --- КРЕДИТЫ ---
         async function actionCredit() {
-            const userId = document.getElementById('modal-user-id').value;
             const amount = parseFloat(prompt("Сумма кредита (💵):"));
             if (!amount || amount <= 0) return;
-            const rate = parseFloat(prompt("Процентная ставка (%):"));
-            if (isNaN(rate)) return;
+            const rate = parseFloat(prompt("Процент (%):"));
+            if (isNaN(rate) || rate < 0) return;
 
             const totalDue = amount + (amount * (rate / 100));
             const docNum = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
             const endDay = globalCurrentDay + 50;
 
-            const existing = allCredits.filter(c => c.user_id === userId && c.status === 'active');
+            const existing = allCredits.filter(c => c.user_id === currentActionUserId && c.status === 'active');
             if (existing.length > 0) return alert('У клиента уже есть активный кредит!');
 
-            await supabaseClient.from('bank_credits').insert({ user_id: userId, doc_number: docNum, amount: amount, rate: rate, total_due: totalDue, remaining_amount: totalDue, issue_day: globalCurrentDay, end_day: endDay, status: 'active' });
-            await processTransaction(userId, amount, 'credit_issue', `Выдача кредита №${docNum}`);
+            await supabaseClient.from('bank_credits').insert({ user_id: currentActionUserId, doc_number: docNum, amount: amount, rate: rate, total_due: totalDue, remaining_amount: totalDue, issue_day: globalCurrentDay, end_day: endDay, status: 'active' });
+            await processTransaction(currentActionUserId, amount, 'credit_issue', `Выдача кредита №${docNum}`);
             
-            window.open(`generator-credit.html?user=${userId}&amount=${amount}&rate=${rate}&doc=${docNum}&start=${globalCurrentDay}`, '_blank');
-            loadData().then(() => openClientModal(userId, document.getElementById('client-modal-title').textContent));
+            alert('Кредит выдан! Открываю договор...');
+            window.open(`generator-credit.html?user=${currentActionUserId}&amount=${amount}&rate=${rate}&doc=${docNum}&start=${globalCurrentDay}`, '_blank');
+            openActionModal(currentActionUserId);
         }
 
-        // --- ЗАРПЛАТА (АВТОМАТИЧЕСКАЯ ИЗ ТрКн) ---
-        let currentSalaryBase = 0;
-        let currentSalaryMult = 1;
+        async function actionPrize() {
+            const amount = parseFloat(prompt("Сумма приза/премии (💵):"));
+            if (!amount || amount <= 0) return;
+            await processTransaction(currentActionUserId, amount, 'prize', 'Приз/Премия');
+            openActionModal(currentActionUserId);
+        }
 
-        async function actionSalary() {
-            const userId = document.getElementById('modal-user-id').value;
-            const client = allClients.find(c => c.id === userId);
+        async function payFine(fineId) {
+            const fine = allFines.find(f => f.id === fineId);
+            await processTransaction(fine.user_id, -fine.amount, 'fine_payment', `Погашение штрафа №${fine.doc_number}`);
+            await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
+            await loadData();
+            if(document.getElementById('action-modal').style.display === 'flex') openActionModal(fine.user_id);
+        }
+
+        async function cancelFine(fineId) {
+            await supabaseClient.from('bank_fines').update({ status: 'cancelled' }).eq('id', fineId);
+            await loadData();
+            if(document.getElementById('action-modal').style.display === 'flex') openActionModal(currentActionUserId);
+        }
+
+        async function repayCredit(creditId) {
+            const credit = allCredits.find(c => c.id === creditId);
+            const payAmt = parseFloat(prompt(`Осталось: ${credit.remaining_amount} 💵. Сумма к погашению:`));
+            if (!payAmt || payAmt <= 0) return;
             
-            if (!client || !client.current_org) {
-                return alert("У этого гражданина нет текущего места работы в Трудовой книжке!");
-            }
+            let newRem = credit.remaining_amount - payAmt;
+            let status = newRem <= 0 ? 'paid' : 'active';
+            if (newRem < 0) newRem = 0;
 
-            document.getElementById('salary-modal').style.display = 'flex';
-            document.getElementById('salary-info').innerHTML = `
-                <div style="font-size:16px; font-weight:bold; margin-bottom:5px;">${client.last_name} ${client.first_name}</div>
-                <div style="color:#64748b;">Организация: <b>${client.current_org}</b></div>
-                <div style="color:#64748b;">Должность: <b>${client.current_position || 'Не указана'}</b></div>
-            `;
+            await supabaseClient.from('bank_credits').update({ remaining_amount: newRem, status: status }).eq('id', creditId);
+            await processTransaction(credit.user_id, -payAmt, 'credit_payment', `Погашение кредита №${credit.doc_number}`);
+            await loadData();
+            if(document.getElementById('action-modal').style.display === 'flex') openActionModal(currentActionUserId);
+        }
 
-            const container = document.getElementById('salary-dynamic-inputs');
-            container.innerHTML = '';
+        async function cancelCredit(creditId) {
+            if (!confirm("Аннулировать кредит?")) return;
+            await supabaseClient.from('bank_credits').update({ status: 'cancelled', remaining_amount: 0 }).eq('id', creditId);
+            await loadData();
+            if(document.getElementById('action-modal').style.display === 'flex') openActionModal(currentActionUserId);
+        }
+
+        // === ЗАРПЛАТА ===
+        function openSalaryModal() {
+            const client = allClients.find(c => c.id === currentActionUserId);
+            if (!client.current_org) return alert('Гражданин нигде не работает! (Проверьте трудовую)');
+
+            document.getElementById('salary-name').textContent = `${client.last_name} ${client.first_name}`;
+            document.getElementById('salary-job').textContent = `${client.current_org} — ${client.current_position}`;
+            
+            const inputs = document.getElementById('salary-inputs');
+            inputs.innerHTML = '';
+            let base = 0;
             const org = client.current_org;
             const pos = client.current_position;
-            currentSalaryMult = 1;
-            currentSalaryBase = 0;
 
-            // Логика расчета
-            if (org.includes('Горнодобывающая')) {
-                currentSalaryBase = 300;
-                container.innerHTML = `<p>Фиксированная ставка: <b>300 💵</b></p>`;
-            } 
-            else if (org.includes('Курьерская')) {
-                currentSalaryBase = 80;
-                container.innerHTML = `<label>Кол-во заказов (макс 9):</label><input type="number" id="sal-input" class="form-control" value="1" min="1" max="9" oninput="calcSalary(80, 'orders')">`;
-            }
-            else if (org.includes('Почтовое')) {
-                currentSalaryBase = 1000;
-                container.innerHTML = `<p>Фиксированная ставка: <b>1000 💵</b></p>`;
-            }
-            else if (org.includes('Таксопарк')) {
-                currentSalaryBase = 180;
-                container.innerHTML = `
-                    <label>Кол-во клиентов (макс 7):</label><input type="number" id="sal-input" class="form-control" value="1" min="1" max="7" oninput="calcSalary(180, 'taxi')">
-                    <label style="margin-top:10px;">Класс ТС:</label>
-                    <select id="sal-class" class="form-control" onchange="calcSalary(180, 'taxi')">
-                        <option value="0">Низкий (+0)</option>
-                        <option value="300">Средний (+300)</option>
-                        <option value="600">Высокий (+600)</option>
-                        <option value="1200">Бизнес (+1200)</option>
-                    </select>
-                    <div style="margin-top:15px; background:#f1f5f9; padding:10px; border-radius:8px;">
-                        <label><input type="checkbox" id="t1" value="1.2" onchange="calcSalary(180, 'taxi')"> Музыка (x1.2)</label><br>
-                        <label><input type="checkbox" id="t2" value="1.3" onchange="calcSalary(180, 'taxi')"> Тонировка I (x1.3)</label><br>
-                        <label><input type="checkbox" id="t3" value="1.4" onchange="calcSalary(180, 'taxi')"> Тонировка II (x1.4)</label>
-                    </div>
-                `;
-            }
-            else if (org.includes('Автобусная')) {
-                currentSalaryBase = 1600;
-                container.innerHTML = `
-                    <p>Базовая ставка: <b>1600 💵</b></p>
-                    <label>Тюнинг:</label>
-                    <select id="sal-class" class="form-control" onchange="calcSalary(1600, 'bus')">
-                        <option value="1">Без тюнинга</option>
-                        <option value="1.3">VIP-салон (x1.3)</option>
-                        <option value="1.4">Шумоизоляция (x1.4)</option>
-                        <option value="1.5">Климат-контроль (x1.5)</option>
-                    </select>
-                `;
-            }
-            else if (org.includes('Коммунальная')) {
-                currentSalaryBase = 2700;
-                container.innerHTML = `<p>Фиксированная ставка: <b>2700 💵</b></p>`;
-            }
-            else if (org.includes('Служба доставки')) {
-                currentSalaryBase = 1400;
-                container.innerHTML = `
-                    <p>Базовая ставка: <b>1400 💵</b></p>
-                    <div style="margin-top:15px; background:#f1f5f9; padding:10px; border-radius:8px;">
-                        <label><input type="checkbox" id="t1" value="1.2" onchange="calcSalary(1400, 'delivery')"> Багажник (x1.2)</label><br>
-                        <label><input type="checkbox" id="t2" value="1.5" onchange="calcSalary(1400, 'delivery')"> Пневмоподвеска (x1.5)</label>
-                    </div>
-                `;
-            }
-            else if (org.includes('Транспортная')) {
-                currentSalaryBase = 0;
-                container.innerHTML = `<label>Сумма контракта (💵):</label><input type="number" id="sal-input" class="form-control" value="0" oninput="calcSalary(0, 'custom')">`;
-            }
-            else if (org.includes('ЕСС') || org.includes('Единая служба')) {
+            if (org === 'Горнодобывающая организация') {
+                base = 300; inputs.innerHTML = `<p>Фикс: <b>300</b> 💵</p>`;
+            } else if (org === 'Курьерская служба') {
+                base = 80; inputs.innerHTML = `<label>Кол-во заказов (1-9):</label><input type="number" id="sal-qty" min="1" max="9" value="1" oninput="calcSal(80, 720)">`;
+            } else if (org === 'Почтовое отделение №7') {
+                base = 1000; inputs.innerHTML = `<p>Фикс: <b>1000</b> 💵</p>`;
+            } else if (org === 'Таксопарк') {
+                base = 180; inputs.innerHTML = `
+                    <label>Клиентов (1-7):</label><input type="number" id="sal-qty" min="1" max="7" value="1">
+                    <label>Класс ТС:</label><select id="sal-class"><option value="0">Низкий</option><option value="300">Средний (+300)</option><option value="600">Высокий (+600)</option><option value="1200">Бизнес (+1200)</option></select>
+                    <label><input type="checkbox" id="t1" value="1.2"> Музыка (x1.2)</label><br>
+                    <label><input type="checkbox" id="t2" value="1.3"> Тонировка I (x1.3)</label><br>
+                    <label><input type="checkbox" id="t3" value="1.4"> Тонировка II (x1.4)</label><br>
+                    <button class="btn btn-primary" onclick="calcTaxi()">Рассчитать</button>`;
+            } else if (org === 'Автобусная компания') {
+                base = 1600; inputs.innerHTML = `
+                    <p>База: <b>1600</b> 💵</p>
+                    <label><input type="checkbox" id="t1" value="1.3"> VIP (x1.3)</label><br>
+                    <label><input type="checkbox" id="t2" value="1.4"> Шумоизоляция (x1.4)</label><br>
+                    <label><input type="checkbox" id="t3" value="1.5"> Климат (x1.5)</label><br>
+                    <button class="btn btn-primary" onclick="calcBus()">Рассчитать</button>`;
+            } else if (org === 'Коммунальная служба') {
+                base = 2700; inputs.innerHTML = `<p>Фикс: <b>2700</b> 💵</p>`;
+            } else if (org === 'Служба доставки') {
+                base = 1400; inputs.innerHTML = `
+                    <p>База: <b>1400</b> 💵</p>
+                    <label><input type="checkbox" id="t1" value="1.2"> Багажник (x1.2)</label><br>
+                    <label><input type="checkbox" id="t2" value="1.5"> Пневмо (x1.5)</label><br>
+                    <button class="btn btn-primary" onclick="calcDel()">Рассчитать</button>`;
+            } else if (org === 'Транспортная компания') {
+                base = 0; inputs.innerHTML = `<label>Сумма контракта (💵):</label><input type="number" id="sal-qty" value="0" oninput="calcCont()">`;
+            } else if (org === 'Единая служба спасения') {
                 const rates = { 'Водитель': 1500, 'Пожарный': 1800, 'Спасатель': 2200, 'Инспектор': 2500, 'Фельдшер': 2800, 'Врач': 3200, 'Нарколог': 3600, 'Хирург': 4000 };
-                currentSalaryBase = rates[pos] || 1500;
-                container.innerHTML = `<p>Оклад по должности: <b>${currentSalaryBase} 💵</b></p>`;
-            }
-            else if (org.includes('МВД') || org.includes('Министерство внутренних')) {
-                const rates = { 'Рядовой': 1500, 'Младший сержант': 1800, 'Мл. сержант': 1800, 'Сержант': 2100, 'Старшина': 2400, 'Прапорщик': 2700, 'Младший лейтенант': 3000, 'Мл. лейтенант': 3000, 'Лейтенант': 3300, 'Капитан': 3600, 'Майор': 3900, 'Подполковник': 4200 };
-                currentSalaryBase = rates[pos] || 1500;
-                container.innerHTML = `<p>Оклад по званию: <b>${currentSalaryBase} 💵</b></p>`;
-            }
-            else if (org.includes('Воинская') || org.includes('ВЧ')) {
+                base = rates[pos] || 1500; inputs.innerHTML = `<p>По должности: <b>${base}</b> 💵</p>`;
+            } else if (org === 'Министерство внутренних дел по Соль-Илецкому г.о') {
+                const rates = { 'Рядовой': 1500, 'Младший сержант': 1800, 'Сержант': 2100, 'Старшина': 2400, 'Прапорщик': 2700, 'Младший лейтенант': 3000, 'Лейтенант': 3300, 'Капитан': 3600, 'Майор': 3900, 'Подполковник': 4200 };
+                base = rates[pos] || 1500; inputs.innerHTML = `<p>По званию: <b>${base}</b> 💵</p>`;
+            } else if (org === 'Воинская часть №205') {
                 const rates = { 'Рядовой': 500, 'Ефрейтор': 800, 'Мл. сержант': 1100, 'Сержант': 2000, 'Ст. сержант': 2300, 'Старшина': 2600, 'Прапорщик': 2900, 'Мл. лейтенант': 3200, 'Лейтенант': 3500 };
-                currentSalaryBase = rates[pos] || 500;
-                container.innerHTML = `<p>Оклад по званию: <b>${currentSalaryBase} 💵</b></p>`;
-            }
-            else {
-                currentSalaryBase = 0;
-                container.innerHTML = `<label>Неизвестная организация. Введите сумму вручную:</label><input type="number" id="sal-input" class="form-control" value="0" oninput="calcSalary(0, 'custom')">`;
+                base = rates[pos] || 500; inputs.innerHTML = `<p>По званию: <b>${base}</b> 💵</p>`;
             }
 
-            calcSalary(currentSalaryBase, 'init');
+            document.getElementById('salary-total').textContent = base;
+            document.getElementById('salary-total').dataset.final = base;
+            document.getElementById('salary-modal').style.display = 'flex';
         }
 
-        function calcSalary(base, type) {
-            let final = base;
-            
-            if (type === 'orders') {
-                let qty = parseInt(document.getElementById('sal-input').value) || 1;
-                if (qty > 9) qty = 9;
-                final = base * qty;
-                if (final > 720) final = 720;
-            } 
-            else if (type === 'taxi') {
-                let qty = parseInt(document.getElementById('sal-input').value) || 1;
-                if (qty > 7) qty = 7;
-                let classAdd = parseInt(document.getElementById('sal-class').value) || 0;
-                
-                let mult = 1;
-                if (document.getElementById('t1')?.checked) mult *= 1.2;
-                if (document.getElementById('t2')?.checked) mult *= 1.3;
-                if (document.getElementById('t3')?.checked) mult *= 1.4;
+        function calcSal(b, max) { let t = (parseInt(document.getElementById('sal-qty').value)||0) * b; if(t>max) t=max; document.getElementById('salary-total').textContent=t; document.getElementById('salary-total').dataset.final=t; }
+        function calcTaxi() { let q=parseInt(document.getElementById('sal-qty').value)||0, c=parseInt(document.getElementById('sal-class').value)||0, t=(180*q)+c, m=1; if(document.getElementById('t1').checked)m*=1.2; if(document.getElementById('t2').checked)m*=1.3; if(document.getElementById('t3').checked)m*=1.4; t=Math.round(t*m); document.getElementById('salary-total').textContent=t; document.getElementById('salary-total').dataset.final=t; }
+        function calcBus() { let t=1600, m=1; if(document.getElementById('t1').checked)m*=1.3; if(document.getElementById('t2').checked)m*=1.4; if(document.getElementById('t3').checked)m*=1.5; t=Math.round(t*m); document.getElementById('salary-total').textContent=t; document.getElementById('salary-total').dataset.final=t; }
+        function calcDel() { let t=1400, m=1; if(document.getElementById('t1').checked)m*=1.2; if(document.getElementById('t2').checked)m*=1.5; t=Math.round(t*m); document.getElementById('salary-total').textContent=t; document.getElementById('salary-total').dataset.final=t; }
+        function calcCont() { let v=parseFloat(document.getElementById('sal-qty').value)||0; document.getElementById('salary-total').textContent=v; document.getElementById('salary-total').dataset.final=v; }
 
-                final = ((base * qty) + classAdd) * mult;
-                if (final > 1260 && classAdd === 0 && mult === 1) final = 1260; // лимит без надбавок
-            }
-            else if (type === 'bus') {
-                let mult = parseFloat(document.getElementById('sal-class').value) || 1;
-                final = base * mult;
-            }
-            else if (type === 'delivery') {
-                let mult = 1;
-                if (document.getElementById('t1')?.checked) mult *= 1.2;
-                if (document.getElementById('t2')?.checked) mult *= 1.5;
-                final = base * mult;
-            }
-            else if (type === 'custom') {
-                final = parseFloat(document.getElementById('sal-input').value) || 0;
-            }
-
-            final = Math.round(final);
-            document.getElementById('salary-total-val').textContent = final.toLocaleString();
-            currentSalaryMult = final; // сохраняем итог
-        }
-
-        async function submitSalary() {
-            const userId = document.getElementById('modal-user-id').value;
-            const amount = currentSalaryMult;
-            if (!amount || amount <= 0) return alert('Сумма равна нулю');
-            
-            await processTransaction(userId, amount, 'salary', `Начисление заработной платы`);
-            alert('Зарплата успешно начислена!');
-            
+        async function issueSalary() {
+            const amt = parseFloat(document.getElementById('salary-total').dataset.final);
+            if (!amt || amt <= 0) return alert('Сумма не рассчитана!');
+            await processTransaction(currentActionUserId, amt, 'salary', 'Начисление ЗП');
+            alert('Зарплата выдана!');
             document.getElementById('salary-modal').style.display = 'none';
-            openClientModal(userId, document.getElementById('client-modal-title').textContent);
+            openActionModal(currentActionUserId);
         }
 
-        // --- ГЛОБАЛЬНЫЕ СПИСКИ ---
-        function renderFines() {
-            const tbody = document.getElementById('fines-body');
-            tbody.innerHTML = allFines.map(f => {
-                const c = allClients.find(cl => cl.id === f.user_id);
-                return `
-                    <tr>
-                        <td><b>${f.doc_number}</b></td>
-                        <td>${c ? c.last_name+' '+c.first_name : 'Неизвестный'}</td>
-                        <td style="color:var(--danger); font-weight:bold;">${f.amount} 💵</td>
-                        <td>${f.issue_day} день</td>
-                        <td><span class="status-${f.status === 'unpaid' ? 'danger' : 'active'}">${f.status}</span></td>
-                        <td>
-                            ${f.status === 'unpaid' ? `<button class="btn btn-success" style="padding:5px 10px; font-size:12px;" onclick="payFine('${f.id}')">Оплатить</button>` : ''}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderCredits() {
-            const tbody = document.getElementById('credits-body');
-            tbody.innerHTML = allCredits.map(c => {
-                const cl = allClients.find(x => x.id === c.user_id);
-                return `
-                    <tr>
-                        <td><b>${c.doc_number}</b></td>
-                        <td>${cl ? cl.last_name+' '+cl.first_name : 'Неизвестный'}</td>
-                        <td><b>${c.remaining_amount}</b> / ${c.total_due} 💵</td>
-                        <td>${c.issue_day} - ${c.end_day} день</td>
-                        <td><span class="status-${c.status === 'active' ? 'warning' : 'active'}">${c.status}</span></td>
-                        <td></td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        async function renderHistory() {
-            const { data: txs } = await supabaseClient.from('bank_transactions').select('*').order('created_at', { ascending: false }).limit(100);
-            const tbody = document.getElementById('history-body');
-            tbody.innerHTML = (txs || []).map(t => {
-                const c = allClients.find(cl => cl.id === t.user_id);
-                return `
-                    <tr>
-                        <td>${new Date(t.created_at).toLocaleString('ru-RU')}</td>
-                        <td>${c ? c.last_name+' '+c.first_name : 'Неизвестный'}</td>
-                        <td>${t.type}</td>
-                        <td style="font-weight:bold; color:${t.amount > 0 ? 'var(--success)' : 'var(--danger)'};">${t.amount > 0 ? '+' : ''}${t.amount} 💵</td>
-                        <td>${t.description}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // --- ПЕРЕРАСЧЕТ ---
-        async function runPenalties() {
-            if (!confirm("Запустить перерасчет пеней и штрафов?")) return;
-            let fCount = 0, cCount = 0;
-            
+        // Автоматический перерасчет (Пени)
+        async function runDailyPenalties() {
+            if (!confirm("Начислить пени по просроченным кредитам и штрафам?")) return;
+            let countF = 0, countC = 0;
             for (const f of allFines) {
                 if (f.status === 'unpaid' && !f.penalty_applied && (globalCurrentDay - f.issue_day) > 15) {
                     await supabaseClient.from('bank_fines').update({ amount: f.amount * 1.5, penalty_applied: true }).eq('id', f.id);
-                    fCount++;
+                    countF++;
                 }
             }
-            
             for (const c of allCredits) {
                 if (c.status === 'active' && globalCurrentDay > c.end_day) {
                     let newRem = c.remaining_amount + 200;
                     let bal = allBalances[c.user_id] || 0;
-                    let ded = 500;
-                    if (bal >= 500) { bal -= 500; newRem -= 500; }
-                    else { ded = bal; bal = 0; newRem -= ded; }
-                    
-                    await supabaseClient.from('bank_accounts').update({ balance: bal }).eq('user_id', c.user_id);
-                    await supabaseClient.from('bank_credits').update({ remaining_amount: newRem, status: newRem <= 0 ? 'paid' : 'active' }).eq('id', c.id);
-                    await supabaseClient.from('bank_transactions').insert({ user_id: c.user_id, amount: -ded, type: 'penalty', description: 'Списание по просрочке', game_day: globalCurrentDay });
-                    cCount++;
+                    let deduct = Math.min(bal, 500);
+                    newRem -= deduct;
+                    await supabaseClient.from('bank_accounts').update({ balance: bal - deduct }).eq('user_id', c.user_id);
+                    let st = newRem <= 0 ? 'paid' : 'active';
+                    if (newRem < 0) newRem = 0;
+                    await supabaseClient.from('bank_credits').update({ remaining_amount: newRem, status: st }).eq('id', c.id);
+                    await supabaseClient.from('bank_transactions').insert({ user_id: c.user_id, amount: -deduct, type: 'credit_penalty', description: 'Списание по просрочке', game_day: globalCurrentDay });
+                    countC++;
                 }
             }
-            alert(`Готово! Штрафов: ${fCount}, Кредитов: ${cCount}`);
+            alert(`Перерасчет окончен!\nОбработано штрафов: ${countF}\nКредитов: ${countC}`);
             loadData();
         }
 
-        // Старт
+        // Запуск
         loadData();
     </script>
 </body>
