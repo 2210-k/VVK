@@ -141,14 +141,11 @@
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
     
     // =====================================================================
-    // ✅ ТОЧНЫЕ КООРДИНАТЫ ИЗ АРЕНДЫ ТС (как ты и просил!)
+    // ✅ ТОЧНЫЕ КООРДИНАТЫ ИЗ АРЕНДЫ ТС (как ты и просил)
     // =====================================================================
     const COORDS = {
         docNumber: { xStart: 142, xEnd: 174, y: 197 },
-        renterName: { x: 38, y: 174 },
-        
-        // Паспорт в одну линию (в аренде ТС он разбит, тут просто сдвигаем x)
-        passportData: { x: 139, y: 174 }, 
+        renterName: { x: 38, y: 174 }, // Сюда встанет имя и паспорт
         
         // Тип жилья (аналог vehicleName)
         housingType: { x: 57, y: 166 },
@@ -166,7 +163,7 @@
         // Номер дня
         dayNumber: { xStart: 88, xEnd: 100, y: 41 },
         
-        // Действителен до (аналог validDays)
+        // Действителен до
         validUntil: { xStart: 7, xEnd: 95, y: 12 },
         
         // QR-код
@@ -332,8 +329,19 @@
 
             // Текст
             drawCenteredInRange(page, docNumber, COORDS.docNumber.xStart, COORDS.docNumber.xEnd, COORDS.docNumber.y, opt);
-            page.drawText(getVal('renterName'), { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt });
-            page.drawText(`, № ${getVal('passportData')}`, { x: COORDS.renterName.x + 150, y: COORDS.renterName.y, ...opt }); // Паспорт в ту же строку
+            
+            // === ЛОГИКА ПАСПОРТА ЧЕРЕЗ ЗАПЯТУЮ ===
+            const renterNameStr = getVal('renterName');
+            page.drawText(renterNameStr, { x: COORDS.renterName.x, y: COORDS.renterName.y, ...opt });
+            
+            // Считаем ширину имени и ставим паспорт сразу после него
+            const nameWidth = customFont.widthOfTextAtSize(renterNameStr, opt.size);
+            const passportString = `, № ${getVal('passportData')}`;
+            page.drawText(passportString, { 
+                x: COORDS.renterName.x + nameWidth, 
+                y: COORDS.renterName.y, 
+                ...opt 
+            });
             
             page.drawText(selectedHousing.name, { x: COORDS.housingType.x, y: COORDS.housingType.y, ...opt });
             page.drawText(getVal('address'), { x: COORDS.address.x, y: COORDS.address.y, ...opt });
@@ -342,13 +350,13 @@
             drawCenteredInRange(page, issueDay, COORDS.issueDate.day.xStart, COORDS.issueDate.day.xEnd, COORDS.issueDate.day.y, opt);
             drawCenteredInRange(page, issueMonth, COORDS.issueDate.month.xStart, COORDS.issueDate.month.xEnd, COORDS.issueDate.month.y, opt);
             drawCenteredInRange(page, issueYear, COORDS.issueDate.year.xStart, COORDS.issueDate.year.xEnd, COORDS.issueDate.year.y, opt);
-            drawCenteredInRange(page, issueDayNum, COORDS.issueDayNumber.xStart, COORDS.issueDayNumber.xEnd, COORDS.issueDayNumber.y, opt);
+            drawCenteredInRange(page, issueDayNum, COORDS.dayNumber.xStart, COORDS.dayNumber.xEnd, COORDS.dayNumber.y, opt);
 
             // Действителен до
             drawCenteredInRange(page, String(endDay), COORDS.validUntil.xStart, COORDS.validUntil.xEnd, COORDS.validUntil.y, { ...opt, size: 12 });
 
             // QR-код
-            const qrText = `ДОГОВОР АРЕНДЫ ЖИЛЬЯ\n№ ${docNumber}\nАрендатор: ${getVal('renterName')} (${getVal('passportData')})\nЖилье: ${selectedHousing.name}\nАдрес: ${getVal('address')}\nСрок: ${selectedHousing.days} дней\nСтоимость: ${selectedHousing.cost} 💵\nДата выдачи: ${issueDay}.${issueMonth}.${issueYear} (${issueDayNum} день)\nДействителен до: ${endDay} дня`;
+            const qrText = `ДОГОВОР АРЕНДЫ ЖИЛЬЯ\n№ ${docNumber}\nАрендатор: ${renterNameStr} (${getVal('passportData')})\nЖилье: ${selectedHousing.name}\nАдрес: ${getVal('address')}\nСрок: ${selectedHousing.days} дней\nСтоимость: ${selectedHousing.cost} 💵\nДата выдачи: ${issueDay}.${issueMonth}.${issueYear} (${issueDayNum} день)\nДействителен до: ${endDay} дня`;
             const qrBytes = await createQrImage(qrText);
             const qrImage = await pdfDoc.embedPng(qrBytes);
             page.drawImage(qrImage, {
