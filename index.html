@@ -7,8 +7,13 @@
     <title>Служебный портал ЕПГУ</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- Библиотеки для банка -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
     <style>
-        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; }
+        :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; --gold: #f59e0b; }
         body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 60px; }
         
         /* Вход */
@@ -38,17 +43,8 @@
         .btn-create:hover { background: #059669; transform: translateY(-2px); }
         
         /* СЧЕТЧИК ДНЯ */
-        .global-day-badge {
-            display: flex; align-items: center; gap: 8px;
-            background: #fff; border: 2px solid var(--primary);
-            padding: 6px 12px; border-radius: 20px; font-weight: bold;
-            color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .global-day-badge input {
-            width: 60px; border: none; background: #eef5ff; text-align: center;
-            font-weight: bold; color: var(--primary); border-radius: 4px; padding: 4px;
-            font-size: 16px; outline: none;
-        }
+        .global-day-badge { display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid var(--primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .global-day-badge input { width: 60px; border: none; background: #eef5ff; text-align: center; font-weight: bold; color: var(--primary); border-radius: 4px; padding: 4px; font-size: 16px; outline: none; }
 
         .tabs { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; overflow-x: auto; }
         .tab { padding: 12px 20px; cursor: pointer; font-weight: bold; color: #64748b; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; }
@@ -73,7 +69,8 @@
         th span { font-size: 10px; margin-left: 5px; color: #94a3b8; }
         tbody tr:hover { background: #f8fafc; cursor: pointer; }
         
-        .btn-action { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 4px; margin-right: 4px; }
+        .btn-action { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 4px; margin-right: 4px; transition: 0.2s; }
+        .btn-action:hover { opacity: 0.8; }
         .btn-edit { background: #eab308; }
         .btn-delete { background: var(--danger); }
         .btn-download { background: #64748b; }
@@ -123,16 +120,8 @@
         .hr-modal .modal-actions button:hover { filter:brightness(.97); transform:translateY(-1px); }
 
         /* Автокомплит для кадрового отдела */
-        .autocomplete-dropdown {
-            position: absolute; top: 100%; left: 0; right: 0;
-            background: #fff; border: 1px solid #d7dee8; border-top: none;
-            border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto;
-            z-index: 300; display: none; box-shadow: 0 8px 20px rgba(15,23,42,.12);
-        }
-        .autocomplete-item {
-            padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f2f5;
-            font-size: 13px; color: #1e293b; line-height: 1.4;
-        }
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #d7dee8; border-top: none; border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto; z-index: 300; display: none; box-shadow: 0 8px 20px rgba(15,23,42,.12); }
+        .autocomplete-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f2f5; font-size: 13px; color: #1e293b; line-height: 1.4; }
         .autocomplete-item:last-child { border-bottom: none; }
         .autocomplete-item:hover { background-color: #eef5ff; }
         .autocomplete-item b { color: #0056b3; }
@@ -186,13 +175,38 @@
         #hr-employee-details .table-responsive { border:1px solid #e8edf3; border-radius:8px; overflow:auto; }
         #hr-employee-details table { margin:0; }
 
+        /* БАНК (Внутренние стили) */
+        .bank-layout { display: grid; grid-template-columns: 280px minmax(0,1fr); height:calc(100vh - 260px); min-height:430px; gap:14px; }
+        .bank-sidebar { background: white; border: 1px solid #e5eaf1; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .bank-list-heading { position:sticky; top:0; z-index:2; background:#fff; padding:15px 16px 12px; border-bottom:1px solid #e9eef5; }
+        .bank-client-item { padding:12px 14px; border-bottom:1px solid #f0f2f5; border-left:3px solid transparent; cursor:pointer; transition:0.2s; }
+        .bank-client-item:hover,.bank-client-item.active { background:#f3f7ff; border-left-color:var(--primary); }
+        .bank-client-item h4 { margin:0 0 4px 0; font-size:13px; color:#1e293b; }
+        .bank-client-item p { margin:0; font-size:11px; color:#64748b; }
+        .bank-main { background: white; border: 1px solid #e5eaf1; border-radius: 8px; padding: 22px; overflow-y: auto; }
+        
+        .bank-actions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .btn-bank { border: none; padding: 12px; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; text-align: center; transition: 0.2s; }
+        .btn-bank:hover { opacity: 0.85; }
+        .bg-green { background: var(--success); } .bg-red { background: var(--danger); }
+        .bg-blue { background: var(--primary); } .bg-gold { background: var(--gold); } .bg-purple { background: #8b5cf6; }
+
+        .table-mini { width: 100%; border-collapse: collapse; border: 1px solid #eee; border-radius: 6px; overflow: hidden; margin-top: 10px; }
+        .table-mini th, .table-mini td { padding: 10px 12px; font-size: 13px; text-align: left; border-bottom: 1px solid #eee; }
+        .table-mini th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; }
+        .table-mini tr:last-child td { border-bottom: none; }
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .badge-unpaid { background: #fee2e2; color: #991b1b; }
+        .badge-paid { background: #dcfce7; color: #166534; }
+        .badge-active { background: #e0e7ff; color: #3730a3; }
+
         /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         .mobile-nav { display: none; }
         
         @media (max-width: 900px) {
-            .hr-dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); }
-            .hr-layout { grid-template-columns:230px minmax(0,1fr); }
-            .hr-header-card { flex-direction:column; }
+            .hr-dashboard, .bank-dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .hr-layout, .bank-layout { grid-template-columns:230px minmax(0,1fr); }
+            .hr-header-card, .client-header { flex-direction:column; }
             .hr-actions { justify-content:flex-start; }
         }
         @media (max-width: 768px) {
@@ -213,13 +227,13 @@
             .btn-create { justify-content: center; }
             .modal-content { width: 95%; padding: 20px; }
             .tabs { overflow-x: auto; }
-            .hr-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
-            .hr-sidebar { max-height:260px; min-height:120px; }
-            .hr-main { min-height:300px; padding:15px; }
+            .hr-layout, .bank-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
+            .hr-sidebar, .bank-sidebar { max-height:260px; min-height:120px; }
+            .hr-main, .bank-main { min-height:300px; padding:15px; }
             .hr-header-card h2 { font-size:18px; }
-            .hr-dashboard { gap:8px; margin-bottom:10px; }
-            .hr-stat { padding:11px 12px; }
-            .hr-stat-value { font-size:21px; }
+            .hr-dashboard, .bank-dashboard { gap:8px; margin-bottom:10px; }
+            .hr-stat, .stat-card { padding:11px 12px; }
+            .hr-stat-value, .stat-value { font-size:21px; }
         }
     </style>
 </head>
@@ -253,7 +267,7 @@
 
             <div class="menu-label" style="margin-top: 20px;">Общее</div>
             <div class="menu-item" id="menu-hr" onclick="switchView('hr_department')">🗂️ Кадровый отдел</div>
-            <div class="menu-item" id="menu-bank" onclick="window.location.href='bank.html'">🏦 Банк</div>
+            <div class="menu-item" id="menu-bank" onclick="switchView('bank')">🏦 Банк</div>
             <div class="menu-item" id="menu-all-docs" onclick="switchView('all_docs')">📄 Все документы</div>
             <div class="menu-item" id="menu-manage-citizens" onclick="switchView('manage_citizens')">👥 Граждане (Ред.)</div>
         </div>
@@ -265,7 +279,7 @@
             <div class="menu-item org-tab" data-org="3" onclick="switchView('org', 3, 'Прав.', this)"><span>🏛️</span>Прав.</div>
             <div class="menu-item org-tab" data-org="4" onclick="switchView('org', 4, 'ВЧ', this)"><span>🪖</span>ВЧ</div>
             <div class="menu-item" onclick="switchView('hr_department')"><span>🗂️</span>Кадры</div>
-            <div class="menu-item" id="menu-bank" onclick="window.location.href='bank.html'">🏦 Банк</div>
+            <div class="menu-item" onclick="switchView('bank')"><span>🏦</span>Банк</div>
             <div class="menu-item" onclick="switchView('all_docs')"><span>📄</span>Все</div>
             <div class="menu-item" onclick="switchView('manage_citizens')"><span>👥</span>Гражд.</div>
         </div>
@@ -410,15 +424,37 @@
                     <div class="hr-stat"><div class="hr-stat-label">С выговорами</div><div class="hr-stat-value" id="hr-stat-reprimands">—</div><div class="hr-stat-note">Есть активные взыскания</div></div>
                 </div>
                 <div class="hr-layout">
-                    <!-- Список сотрудников -->
-                    <div class="hr-sidebar" id="hr-employee-list">
-                        <!-- Заполняется через JS -->
-                    </div>
-                    <!-- Детали сотрудника -->
+                    <div class="hr-sidebar" id="hr-employee-list"></div>
                     <div class="hr-main" id="hr-employee-details">
                         <div style="text-align:center; padding: 50px 20px; color:#888;">
                             <h2>Выберите сотрудника</h2>
                             <p>Слева появится список всех граждан.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- КОНТЕНТ: БАНК -->
+            <div id="content-bank" style="display: none;">
+                <div class="bank-dashboard" style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px;">
+                    <div class="hr-stat"><div class="hr-stat-label">Всего клиентов</div><div class="hr-stat-value" id="bank-stat-clients">0</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">Общий баланс</div><div class="hr-stat-value" id="bank-stat-balance">0 💵</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">Активные штрафы</div><div class="hr-stat-value" id="bank-stat-fines">0</div></div>
+                    <div class="hr-stat"><div class="hr-stat-label">Активные кредиты</div><div class="hr-stat-value" id="bank-stat-credits">0</div></div>
+                </div>
+                
+                <div class="bank-layout">
+                    <div class="bank-sidebar">
+                        <div class="bank-list-heading">
+                            <strong>Клиенты банка</strong>
+                            <input type="text" class="hr-filter-control" placeholder="Поиск по ФИО..." oninput="renderBankClients()" id="bank-search">
+                        </div>
+                        <div id="bank-clients-list" style="flex:1; overflow-y:auto;"></div>
+                    </div>
+                    <div class="bank-main" id="bank-client-details">
+                        <div style="text-align:center; padding: 50px 20px; color:#888;">
+                            <h2>Выберите клиента</h2>
+                            <p>Слева появится список граждан.</p>
                         </div>
                     </div>
                 </div>
@@ -476,6 +512,18 @@
         </div>
     </div>
 
+    <!-- БАНК: МОДАЛКА ОПЕРАЦИЙ -->
+    <div id="bank-action-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="bank-modal-title" style="margin-top:0; color:var(--primary);">Операция</h3>
+            <div id="bank-modal-body"></div>
+            <div class="modal-actions">
+                <button class="btn-save" style="flex:1;" id="bank-modal-submit">Подтвердить</button>
+                <button class="btn-cancel" style="flex:1;" onclick="closeModal('bank-action-modal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <!-- МОДАЛКА ПРОСМОТРА -->
     <div id="preview-modal">
         <div class="preview-container">
@@ -511,6 +559,13 @@
         let allCitizens = [];
         let currentCitizenDocs = []; 
         let docSort = { col: 'created_at', asc: false };
+
+        // --- БАНК ДАННЫЕ ---
+        let bankBalances = {};
+        let bankFines = [];
+        let bankCredits = [];
+        let selectedBankClient = null;
+        let currentBankAction = null;
 
         // --- HR DATA ---
         const HR_DB = {
@@ -665,6 +720,7 @@
                 if (viewType === 'all_docs') document.getElementById('menu-all-docs').classList.add('active');
                 if (viewType === 'manage_citizens') document.getElementById('menu-manage-citizens').classList.add('active');
                 if (viewType === 'hr_department') document.getElementById('menu-hr').classList.add('active');
+                if (viewType === 'bank') document.getElementById('menu-bank').classList.add('active');
             }
 
             document.getElementById('content-docs').style.display = 'none';
@@ -672,6 +728,7 @@
             document.getElementById('content-manage-citizens').style.display = 'none';
             document.getElementById('content-citizen-details').style.display = 'none';
             document.getElementById('content-hr_department').style.display = 'none';
+            document.getElementById('content-bank').style.display = 'none';
             document.getElementById('view-org-tabs').style.display = 'none';
             document.getElementById('view-all-tabs').style.display = 'none';
             
@@ -708,6 +765,13 @@
                 btnCreate.style.display = 'none';
                 statsBar.style.display = 'none';
                 loadHRData();
+            } else if (viewType === 'bank') {
+                document.getElementById('page-title').textContent = 'Банк';
+                document.getElementById('page-subtitle').textContent = 'Управление финансами';
+                document.getElementById('content-bank').style.display = 'block';
+                btnCreate.style.display = 'none';
+                statsBar.style.display = 'none';
+                loadBankData();
             }
             updateStats();
         }
@@ -820,8 +884,6 @@
                 }
 
                 const btnRevoke = doc.status !== 'revoked' ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
-                
-                // Кнопка смены статуса на "Истек" / "Восстановить"
                 const btnExpired = doc.status === 'expired' 
                     ? `<button class="btn-action btn-edit" onclick="toggleExpired(${doc.id}, 'active')" title="Восстановить">♻️</button>`
                     : `<button class="btn-action btn-edit" onclick="toggleExpired(${doc.id}, 'expired')" title="Пометить истекшим">⏳</button>`;
@@ -1771,6 +1833,355 @@
                 if (error) return alert(error.message);
                 renderHRDetails(currentHREmployee);
             });
+        }
+
+        // ==========================================
+        // 🏦 БАНК (ЛОГИКА)
+        // ==========================================
+        async function loadBankData() {
+            try {
+                const { data: clients } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+                allCitizens = clients || [];
+
+                const { data: accounts } = await supabaseClient.from('bank_accounts').select('*');
+                bankBalances = {};
+                (accounts || []).forEach(a => bankBalances[a.user_id] = Number(a.balance));
+
+                const { data: fines } = await supabaseClient.from('bank_fines').select('*');
+                bankFines = fines || [];
+
+                const { data: credits } = await supabaseClient.from('bank_credits').select('*');
+                bankCredits = credits || [];
+
+                renderBankStats();
+                renderBankClients();
+                if (selectedBankClient) {
+                    renderBankClientDetails(selectedBankClient.id);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка загрузки банка: " + e.message);
+            }
+        }
+
+        function renderBankStats() {
+            document.getElementById('bank-stat-clients').textContent = allCitizens.length;
+            const totalBal = Object.values(bankBalances).reduce((a, b) => a + b, 0);
+            document.getElementById('bank-stat-balance').textContent = totalBal.toLocaleString() + ' 💵';
+            document.getElementById('bank-stat-fines').textContent = bankFines.filter(f => f.status === 'unpaid').length;
+            document.getElementById('bank-stat-credits').textContent = bankCredits.filter(c => c.status === 'active').length;
+        }
+
+        function renderBankClients() {
+            const box = document.getElementById('bank-clients-list');
+            const q = document.getElementById('bank-search').value.toLowerCase();
+            
+            const visible = allCitizens.filter(c => {
+                const fio = `${c.last_name} ${c.first_name} ${c.patronymic || ''}`.toLowerCase();
+                return fio.includes(q);
+            });
+
+            box.innerHTML = '';
+            if (!visible.length) {
+                box.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Ничего не найдено</div>';
+                return;
+            }
+
+            visible.forEach(c => {
+                const div = document.createElement('div');
+                div.className = `bank-client-item ${selectedBankClient?.id === c.id ? 'active' : ''}`;
+                const bal = bankBalances[c.id] || 0;
+                
+                div.innerHTML = `
+                    <h4>${c.last_name} ${c.first_name}</h4>
+                    <p>Баланс: <b style="color:${bal < 0 ? 'var(--danger)' : 'var(--success)'}">${bal.toLocaleString()} 💵</b></p>
+                `;
+                div.onclick = () => {
+                    selectedBankClient = c;
+                    renderBankClients();
+                    renderBankClientDetails(c.id);
+                };
+                box.appendChild(div);
+            });
+        }
+
+        function renderBankClientDetails(userId) {
+            const client = allCitizens.find(c => c.id === userId);
+            if (!client) return;
+            
+            const bal = bankBalances[userId] || 0;
+            const fines = bankFines.filter(f => f.user_id === userId);
+            const credits = bankCredits.filter(c => c.user_id === userId);
+
+            const mainBox = document.getElementById('bank-client-details');
+            
+            let html = `
+                <div class="client-header" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:20px;">
+                    <div>
+                        <h2 style="margin:0; font-size:22px; color:#172033;">${client.last_name} ${client.first_name} ${client.patronymic || ''}</h2>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:12px; color:#64748b; font-weight:bold;">ТЕКУЩИЙ БАЛАНС</div>
+                        <div style="font-size:28px; font-weight:bold; color:${bal < 0 ? 'var(--danger)' : 'var(--success)'};">${bal.toLocaleString()} 💵</div>
+                    </div>
+                </div>
+
+                <div class="bank-actions-grid">
+                    <button class="btn-bank bg-green" onclick="openBankAction('deposit')">➕ Пополнить</button>
+                    <button class="btn-bank bg-red" onclick="openBankAction('withdraw')">➖ Снять</button>
+                    <button class="btn-bank bg-gold" onclick="openBankAction('fine')">⚖️ Штраф</button>
+                    <button class="btn-bank bg-blue" onclick="openBankAction('credit')">💳 Кредит</button>
+                    <button class="btn-bank bg-blue" onclick="openBankAction('salary')">💼 ЗП</button>
+                    <button class="btn-bank bg-purple" onclick="openBankAction('prize')">🎁 Премия</button>
+                </div>
+            `;
+
+            html += `<div class="details-section"><h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px;">🚨 Штрафы (${fines.filter(f=>f.status==='unpaid').length} активных)</h3>`;
+            if (!fines.length) {
+                html += `<p style="color:#888; font-size:13px;">Нет штрафов</p>`;
+            } else {
+                html += `<table class="table-mini"><thead><tr><th>Номер</th><th>Причина</th><th>Сумма</th><th>Статус</th><th>Действие</th></tr></thead><tbody>`;
+                fines.forEach(f => {
+                    const badge = f.status === 'paid' ? '<span class="badge badge-paid">Оплачен</span>' : (f.status === 'cancelled' ? '<span class="badge" style="background:#eee;">Отменен</span>' : '<span class="badge badge-unpaid">Не оплачен</span>');
+                    const btn = f.status === 'unpaid' ? `<button class="btn-action bg-green" style="padding:5px 8px; font-size:11px;" onclick="payBankFine('${f.id}')">Оплатить</button>` : '';
+                    html += `<tr><td><b>${f.doc_number}</b></td><td>${f.reason}</td><td style="color:var(--danger); font-weight:bold;">${f.amount} 💵</td><td>${badge}</td><td>${btn}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+            html += `</div>`;
+
+            html += `<div class="details-section"><h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px;">💳 Кредиты</h3>`;
+            if (!credits.length) {
+                html += `<p style="color:#888; font-size:13px;">Нет кредитов</p>`;
+            } else {
+                html += `<table class="table-mini"><thead><tr><th>Договор</th><th>Сумма / Остаток</th><th>До дня</th><th>Статус</th></tr></thead><tbody>`;
+                credits.forEach(c => {
+                    const badge = c.status === 'paid' ? '<span class="badge badge-paid">Погашен</span>' : (c.status === 'cancelled' ? '<span class="badge" style="background:#eee;">Отменен</span>' : '<span class="badge badge-active">Активен</span>');
+                    html += `<tr><td><b>${c.doc_number}</b></td><td>${c.amount} / <b>${c.remaining_amount}</b> 💵</td><td>${c.end_day}</td><td>${badge}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+            html += `</div>`;
+
+            mainBox.innerHTML = html;
+        }
+
+        function openBankAction(type) {
+            currentBankAction = type;
+            const modal = document.getElementById('bank-action-modal');
+            const title = document.getElementById('bank-modal-title');
+            const body = document.getElementById('bank-modal-body');
+            const btn = document.getElementById('bank-modal-submit');
+            
+            body.innerHTML = '';
+            btn.onclick = null;
+
+            if (type === 'deposit') {
+                title.textContent = 'Пополнение баланса';
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="bank-op-amount" min="1"></div><div class="form-group"><label>Описание</label><input type="text" id="bank-op-desc" value="Пополнение счета"></div>`;
+                btn.onclick = () => doBankDeposit();
+            } else if (type === 'withdraw') {
+                title.textContent = 'Снятие средств';
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="bank-op-amount" min="1"></div><div class="form-group"><label>Описание</label><input type="text" id="bank-op-desc" value="Снятие средств"></div>`;
+                btn.onclick = () => doBankWithdraw();
+            } else if (type === 'fine') {
+                title.textContent = 'Выдача штрафа';
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="bank-op-amount" min="1"></div><div class="form-group"><label>Причина</label><input type="text" id="bank-op-desc" placeholder="Например: Нарушение ПДД"></div>`;
+                btn.onclick = () => doBankFine();
+            } else if (type === 'credit') {
+                title.textContent = 'Выдача кредита';
+                body.innerHTML = `<div class="form-group"><label>Сумма кредита (💵)</label><input type="number" id="bank-op-amount" min="100"></div><div class="form-group"><label>Процент (%)</label><input type="number" id="bank-op-rate" min="0" value="15"></div>`;
+                btn.onclick = () => doBankCredit();
+            } else if (type === 'prize') {
+                title.textContent = 'Приз / Премия';
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="bank-op-amount" min="1"></div><div class="form-group"><label>Тип</label><select id="bank-op-desc"><option value="Приз лотереи">Приз лотереи</option><option value="Премия">Премия</option></select></div>`;
+                btn.onclick = () => doBankPrize();
+            } else if (type === 'salary') {
+                title.textContent = 'Начисление ЗП';
+                prepareBankSalaryModal();
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        async function processBankTx(userId, amount, type, desc) {
+            const currentBal = bankBalances[userId] || 0;
+            const newBal = currentBal + amount;
+            await supabaseClient.from('bank_accounts').upsert({ user_id: userId, balance: newBal });
+            await supabaseClient.from('bank_transactions').insert({ user_id: userId, amount: amount, type: type, description: desc, game_day: globalCurrentDay });
+            bankBalances[userId] = newBal;
+            await loadBankData();
+        }
+
+        async function doBankDeposit() {
+            const amt = parseFloat(document.getElementById('bank-op-amount').value);
+            if (!amt || amt <= 0) return alert('Введите сумму');
+            await processBankTx(selectedBankClient.id, amt, 'deposit', document.getElementById('bank-op-desc').value);
+            closeModal('bank-action-modal');
+        }
+
+        async function doBankWithdraw() {
+            const amt = parseFloat(document.getElementById('bank-op-amount').value);
+            if (!amt || amt <= 0) return alert('Введите сумму');
+            if ((bankBalances[selectedBankClient.id] || 0) < amt) return alert('Недостаточно средств!');
+            await processBankTx(selectedBankClient.id, -amt, 'withdraw', document.getElementById('bank-op-desc').value);
+            closeModal('bank-action-modal');
+        }
+
+        async function doBankFine() {
+            const amt = parseFloat(document.getElementById('bank-op-amount').value);
+            const desc = document.getElementById('bank-op-desc').value;
+            if (!amt || !desc) return alert('Заполните поля');
+            const docNum = String(Math.floor(Math.random() * 9999999)).padStart(7, '0');
+            await supabaseClient.from('bank_fines').insert({ user_id: selectedBankClient.id, doc_number: docNum, amount: amt, reason: desc, issue_day: globalCurrentDay, status: 'unpaid' });
+            await supabaseClient.from('bank_transactions').insert({ user_id: selectedBankClient.id, amount: 0, type: 'fine', description: `Штраф №${docNum}`, game_day: globalCurrentDay });
+            await loadBankData();
+            closeModal('bank-action-modal');
+        }
+
+        async function doBankPrize() {
+            const amt = parseFloat(document.getElementById('bank-op-amount').value);
+            const type = document.getElementById('bank-op-desc').value;
+            if (!amt || amt <= 0) return alert('Введите сумму');
+            await processBankTx(selectedBankClient.id, amt, type === 'Премия' ? 'bonus' : 'prize', type);
+            closeModal('bank-action-modal');
+        }
+
+        async function doBankCredit() {
+            const amt = parseFloat(document.getElementById('bank-op-amount').value);
+            const rate = parseFloat(document.getElementById('bank-op-rate').value);
+            if (!amt || amt <= 0 || isNaN(rate)) return alert('Введите корректные данные');
+            
+            const existing = bankCredits.filter(c => c.user_id === selectedBankClient.id && c.status === 'active');
+            if (existing.length > 0) return alert('У клиента уже есть кредит!');
+
+            const totalDue = amt + (amt * (rate / 100));
+            const docNum = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+            const endDay = globalCurrentDay + 50;
+
+            await supabaseClient.from('bank_credits').insert({ user_id: selectedBankClient.id, doc_number: docNum, amount: amt, rate: rate, total_due: totalDue, remaining_amount: totalDue, issue_day: globalCurrentDay, end_day: endDay, status: 'active' });
+            await processBankTx(selectedBankClient.id, amt, 'credit_issue', `Кредит №${docNum}`);
+            
+            // Генерация PDF
+            try {
+                const COORDS = {
+                    date: { day: { xStart: 100, xEnd: 125, y: 755 }, month: { xStart: 130, xEnd: 190, y: 755 }, year: { xStart: 200, xEnd: 225, y: 755 } },
+                    dayNum: { xStart: 240, xEnd: 280, y: 755 }, docNum: { xStart: 500, xEnd: 550, y: 755 },
+                    borrowerName: { x: 100, y: 700 }, passSeries: { xStart: 330, xEnd: 370, y: 675 }, passNumber: { xStart: 430, xEnd: 490, y: 675 },
+                    amount: { xStart: 150, xEnd: 250, y: 640 }, rate: { xStart: 150, xEnd: 250, y: 620 }, totalReturn: { xStart: 150, xEnd: 250, y: 600 },
+                    issueDay: { xStart: 150, xEnd: 250, y: 575 }, endDay: { xStart: 250, xEnd: 350, y: 555 },
+                    qrCode: { x: 42, y: 740, width: 70, height: 70 }, barcode: { x: 479, y: 770, width: 70, height: 40 }
+                };
+                const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+                
+                const pdfBytes = await fetch('./credit_template.pdf').then(r => r.arrayBuffer());
+                const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+                pdfDoc.registerFontkit(fontkit);
+                const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+                const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
+                const customFont = await pdfDoc.embedFont(fontBytes);
+                const page = pdfDoc.getPages()[0];
+                const opt = { size: 10, font: customFont, color: PDFLib.rgb(0,0,0) };
+                
+                const drawCentered = (txt, xS, xE, y, o) => {
+                    if(!txt) return;
+                    const w = o.font.widthOfTextAtSize(txt, o.size);
+                    page.drawText(txt, { ...o, x: xS + ((xE - xS) - w) / 2, y });
+                };
+
+                const d = new Date();
+                drawCentered(String(d.getDate()), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt);
+                drawCentered(MONTHS[d.getMonth()], COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt);
+                drawCentered(String(d.getFullYear()).slice(-2), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt);
+                drawCentered(String(globalCurrentDay), COORDS.dayNum.xStart, COORDS.dayNum.xEnd, COORDS.dayNum.y, opt);
+                drawCentered(docNum, COORDS.docNum.xStart, COORDS.docNum.xEnd, COORDS.docNum.y, opt);
+
+                page.drawText(`${selectedBankClient.first_name} ${selectedBankClient.patronymic || ''}`, { x: COORDS.borrowerName.x, y: COORDS.borrowerName.y, ...opt });
+                drawCentered(selectedBankClient.pass_series || '—', COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt);
+                drawCentered(selectedBankClient.pass_number || '—', COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt);
+
+                drawCentered(String(amt), COORDS.amount.xStart, COORDS.amount.xEnd, COORDS.amount.y, opt);
+                drawCentered(String(rate), COORDS.rate.xStart, COORDS.rate.xEnd, COORDS.rate.y, opt);
+                drawCentered(String(totalDue), COORDS.totalReturn.xStart, COORDS.totalReturn.xEnd, COORDS.totalReturn.y, opt);
+                drawCentered(String(globalCurrentDay), COORDS.issueDay.xStart, COORDS.issueDay.xEnd, COORDS.issueDay.y, opt);
+                drawCentered(String(endDay), COORDS.endDay.xStart, COORDS.endDay.xEnd, COORDS.endDay.y, opt);
+
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`КРЕДИТ\n№${docNum}\n${selectedBankClient.last_name}`)}`;
+                const qrBytes = await fetch(qrUrl).then(r => r.arrayBuffer());
+                const qrImg = await pdfDoc.embedPng(qrBytes);
+                page.drawImage(qrImg, { x: COORDS.qrCode.x, y: COORDS.qrCode.y, width: COORDS.qrCode.width, height: COORDS.qrCode.height });
+
+                const bcCanvas = document.createElement('canvas');
+                JsBarcode(bcCanvas, docNum, { format: "CODE128", width: 2, height: 60, displayValue: false, margin: 0 });
+                const bcBytes = await fetch(bcCanvas.toDataURL("image/png")).then(r => r.arrayBuffer());
+                const bcImg = await pdfDoc.embedPng(bcBytes);
+                page.drawImage(bcImg, { x: COORDS.barcode.x, y: COORDS.barcode.y, width: COORDS.barcode.width, height: COORDS.barcode.height });
+
+                const finalPdf = await pdfDoc.save();
+                const blob = new Blob([finalPdf], { type: 'application/pdf' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `Credit_${docNum}.pdf`;
+                link.click();
+                alert('PDF кредита скачан!');
+            } catch(e) {
+                alert('Ошибка генерации PDF (проверьте credit_template.pdf): ' + e.message);
+            }
+            
+            closeModal('bank-action-modal');
+        }
+
+        async function payBankFine(fineId) {
+            const fine = bankFines.find(f => f.id === fineId);
+            const bal = bankBalances[fine.user_id] || 0;
+            if (bal < fine.amount) return alert('У клиента недостаточно средств для оплаты!');
+            
+            await processBankTx(fine.user_id, -fine.amount, 'fine_payment', `Оплата штрафа №${fine.doc_number}`);
+            await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
+            await loadBankData();
+        }
+
+        function prepareBankSalaryModal() {
+            const client = selectedBankClient;
+            if (!client.current_org) {
+                document.getElementById('bank-modal-body').innerHTML = '<p style="color:red;">Гражданин не трудоустроен!</p>';
+                document.getElementById('bank-modal-submit').style.display = 'none';
+                return;
+            }
+            document.getElementById('bank-modal-submit').style.display = 'block';
+            let html = `<p style="font-weight:bold; margin-bottom:15px; color:var(--primary);">${client.current_org} — ${client.current_position}</p>`;
+            let base = 0;
+            const org = client.current_org;
+            const pos = client.current_position;
+
+            if (org === 'Горнодобывающая организация') { base = 300; html += `<p>Фикс: <b>300</b> 💵</p>`; }
+            else if (org === 'Курьерская служба') { base = 80; html += `<div class="form-group"><label>Заказы (1-9)</label><input type="number" id="bank-s-qty" value="1" min="1" max="9" oninput="calcBankSal(80,720)"></div>`; }
+            else if (org === 'Почтовое отделение №7') { base = 1000; html += `<p>Фикс: <b>1000</b> 💵</p>`; }
+            else if (org === 'Таксопарк') { base = 180; html += `<div class="form-group"><label>Клиентов (1-7)</label><input type="number" id="bank-s-qty" value="1" min="1" max="7" oninput="calcBankTaxi()"></div><div class="form-group"><label>Класс</label><select id="bank-s-class" onchange="calcBankTaxi()"><option value="0">Низкий</option><option value="300">Средний (+300)</option><option value="600">Высокий (+600)</option><option value="1200">Бизнес (+1200)</option></select></div><label><input type="checkbox" id="bank-t1" value="1.2" onchange="calcBankTaxi()"> Музыка (x1.2)</label><br><label><input type="checkbox" id="bank-t2" value="1.3" onchange="calcBankTaxi()"> Тонировка I (x1.3)</label><br><label><input type="checkbox" id="bank-t3" value="1.4" onchange="calcBankTaxi()"> Тонировка II (x1.4)</label>`; }
+            else if (org === 'Автобусная компания') { base = 1600; html += `<p>База: <b>1600</b></p><label><input type="checkbox" id="bank-t1" value="1.3" onchange="calcBankBus()"> VIP (x1.3)</label><br><label><input type="checkbox" id="bank-t2" value="1.4" onchange="calcBankBus()"> Шумоизоляция (x1.4)</label><br><label><input type="checkbox" id="bank-t3" value="1.5" onchange="calcBankBus()"> Климат (x1.5)</label>`; }
+            else if (org === 'Коммунальная служба') { base = 2700; html += `<p>Фикс: <b>2700</b> 💵</p>`; }
+            else if (org === 'Служба доставки') { base = 1400; html += `<p>База: <b>1400</b></p><label><input type="checkbox" id="bank-t1" value="1.2" onchange="calcBankDel()"> Багажник (x1.2)</label><br><label><input type="checkbox" id="bank-t2" value="1.5" onchange="calcBankDel()"> Пневмо (x1.5)</label>`; }
+            else if (org === 'Транспортная компания') { base = 0; html += `<div class="form-group"><label>Сумма контракта</label><input type="number" id="bank-s-qty" value="0" oninput="calcBankCont()"></div>`; }
+            else if (org === 'Единая служба спасения') { const rates = { 'Водитель': 1500, 'Пожарный': 1800, 'Спасатель': 2200, 'Инспектор': 2500, 'Фельдшер': 2800, 'Врач': 3200, 'Нарколог': 3600, 'Хирург': 4000 }; base = rates[pos] || 1500; html += `<p>По должности: <b>${base}</b> 💵</p>`; }
+            else if (org === 'Министерство внутренних дел по Соль-Илецкому г.о') { const rates = { 'Рядовой': 1500, 'Младший сержант': 1800, 'Сержант': 2100, 'Старшина': 2400, 'Прапорщик': 2700, 'Младший лейтенант': 3000, 'Лейтенант': 3300, 'Капитан': 3600, 'Майор': 3900, 'Подполковник': 4200 }; base = rates[pos] || 1500; html += `<p>По званию: <b>${base}</b> 💵</p>`; }
+            else if (org === 'Воинская часть №205') { const rates = { 'Рядовой': 500, 'Ефрейтор': 800, 'Мл. сержант': 1100, 'Сержант': 2000, 'Ст. сержант': 2300, 'Старшина': 2600, 'Прапорщик': 2900, 'Мл. лейтенант': 3200, 'Лейтенант': 3500 }; base = rates[pos] || 500; html += `<p>По званию: <b>${base}</b> 💵</p>`; }
+            
+            html += `<div style="margin-top:15px; font-size:20px;">Итого: <b id="bank-s-total" style="color:var(--success);">${base}</b> 💵</div><input type="hidden" id="bank-s-final" value="${base}">`;
+            document.getElementById('bank-modal-body').innerHTML = html;
+            document.getElementById('bank-modal-submit').onclick = () => doBankSalary();
+        }
+
+        function calcBankSal(b, max) { let t = (parseInt(document.getElementById('bank-s-qty').value)||0)*b; if(t>max)t=max; document.getElementById('bank-s-total').textContent=t; document.getElementById('bank-s-final').value=t; }
+        function calcBankTaxi() { let q=parseInt(document.getElementById('bank-s-qty').value)||0, c=parseInt(document.getElementById('bank-s-class').value)||0, t=(180*q)+c, m=1; if(document.getElementById('bank-t1').checked)m*=1.2; if(document.getElementById('bank-t2').checked)m*=1.3; if(document.getElementById('bank-t3').checked)m*=1.4; t=Math.round(t*m); document.getElementById('bank-s-total').textContent=t; document.getElementById('bank-s-final').value=t; }
+        function calcBankBus() { let t=1600, m=1; if(document.getElementById('bank-t1').checked)m*=1.3; if(document.getElementById('bank-t2').checked)m*=1.4; if(document.getElementById('bank-t3').checked)m*=1.5; t=Math.round(t*m); document.getElementById('bank-s-total').textContent=t; document.getElementById('bank-s-final').value=t; }
+        function calcBankDel() { let t=1400, m=1; if(document.getElementById('bank-t1').checked)m*=1.2; if(document.getElementById('bank-t2').checked)m*=1.5; t=Math.round(t*m); document.getElementById('bank-s-total').textContent=t; document.getElementById('bank-s-final').value=t; }
+        function calcBankCont() { let v=parseFloat(document.getElementById('bank-s-qty').value)||0; document.getElementById('bank-s-total').textContent=v; document.getElementById('bank-s-final').value=v; }
+
+        async function doBankSalary() {
+            const amt = parseFloat(document.getElementById('bank-s-final').value);
+            if (!amt || amt <= 0) return alert('Сумма 0');
+            await processBankTx(selectedBankClient.id, amt, 'salary', 'Начисление ЗП');
+            closeModal('bank-action-modal');
         }
     </script>
 </body>
