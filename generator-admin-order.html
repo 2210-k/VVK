@@ -141,11 +141,9 @@
             </div>
             <div class="form-group">
                 <label>№ документа на Т/С (выбор из базы)</label>
-                <!-- ВЫПАДАЮЩИЙ СПИСОК -->
                 <select id="vehicleDocSelect" class="form-select" onchange="onVehicleDocSelect()">
                     <option value="">-- Загрузка или ручной ввод --</option>
                 </select>
-                <!-- САМО ПОЛЕ ОСТАЕТСЯ РЕДАКТИРУЕМЫМ -->
                 <input type="text" id="vehicleDoc" style="text-align:center;" placeholder="Введите вручную или выберите выше">
             </div>
         </div>
@@ -428,6 +426,12 @@
         document.getElementById('offDay').value = d;
         document.getElementById('offYear').value = y;
 
+        // АВТОПОДСТАНОВКА ТЕКУЩЕГО ВРЕМЕНИ
+        const hh = String(today.getHours()).padStart(2, '0');
+        const mm = String(today.getMinutes()).padStart(2, '0');
+        document.getElementById('offTimeH').value = hh;
+        document.getElementById('offTimeM').value = mm;
+
         const sel1 = document.getElementById('dateMonth');
         const sel2 = document.getElementById('offMonth');
         const sel3 = document.getElementById('dobMonth');
@@ -489,7 +493,6 @@
 
     // ЗАГРУЗКА ДОКУМЕНТОВ НА Т/С
     async function loadActiveVehicleDocs() {
-        // Ищем действующие ДАТС или ПТС
         const { data, error } = await supabaseClient
             .from('documents')
             .select('doc_number, document_type, metadata, patient_id') 
@@ -501,23 +504,19 @@
             return;
         }
 
-        // На всякий случай фильтруем те, у которых нет статуса (старые записи)
         activeVehicleDocs = (data || []).filter(d => d.status === 'active' || !d.status);
 
         const sel = document.getElementById('vehicleDocSelect');
         sel.innerHTML = '<option value="">-- Выбрать из базы --</option>';
         
         activeVehicleDocs.forEach(doc => {
-            // Ищем ФИО владельца в загруженном кэше граждан
             let fio = 'В архиве';
             if (doc.patient_id) {
                 const c = allCitizensCache.find(x => x.id === doc.patient_id);
-                if (c) fio = `${c.first_name} ${c.patronymic || ''}`.trim(); // Имя Отчество
+                if (c) fio = `${c.first_name} ${c.patronymic || ''}`.trim();
             }
 
-            // Добавляем марку машины в подсказку для удобства
             const vName = doc.metadata?.vehicle_name ? ` - ${doc.metadata.vehicle_name}` : '';
-
             const label = `${doc.doc_number} (${fio})${vName}`;
             sel.add(new Option(label, doc.doc_number));
         });
@@ -531,10 +530,8 @@
         const doc = activeVehicleDocs.find(d => d.doc_number === selectedNum);
         if (!doc) return;
 
-        // Подставляем номер документа
         document.getElementById('vehicleDoc').value = doc.doc_number;
 
-        // Подставляем данные из metadata, если они есть
         if (doc.metadata) {
             if (doc.metadata.vehicle_name) {
                 document.getElementById('vehicleModel').value = doc.metadata.vehicle_name;
@@ -872,6 +869,29 @@
                 status: 'active'
             });
 
+            // === ДОБАВЛЕНИЕ ШТРАФА В БАНК ===
+            if (cbFine.checked && actualCitizenId) {
+                const fineAmountVal = parseFloat(getVal('fineAmount')) || 0;
+                if (fineAmountVal > 0) {
+                    await supabaseClient.from('bank_fines').insert({
+                        user_id: actualCitizenId,
+                        doc_number: docNumber,
+                        amount: fineAmountVal,
+                        reason: `Административное правонарушение (ст. ${articleCode})`,
+                        status: 'unpaid',
+                        issue_day: parseInt(dayNumberVal)
+                    });
+                    // Добавляем в историю транзакций для гражданина
+                    await supabaseClient.from('bank_transactions').insert({
+                        user_id: actualCitizenId,
+                        amount: 0,
+                        type: 'fine',
+                        description: `Выписан штраф по постановлению №${docNumber}`,
+                        game_day: parseInt(dayNumberVal)
+                    });
+                }
+            }
+
             const fileUrl = URL.createObjectURL(currentPdfBlob);
             document.getElementById('pdf-preview-frame').src = fileUrl + '#' + Date.now();
             document.getElementById('preview-modal').style.display = 'flex';
@@ -895,26 +915,21 @@
     initVehicleAutocomplete();
     initArticleAutocomplete();
     
-    // Делаем последовательный запуск: сначала грузим людей, потом машины
     (async () => {
         await loadCitizens(); 
         await loadActiveVehicleDocs(); 
     })();
-        // АВТОМАТИЧЕСКАЯ ПОДСТАНОВКА ТЕКУЩЕГО ДНЯ
+
+    // АВТОМАТИЧЕСКАЯ ПОДСТАНОВКА ТЕКУЩЕГО ДНЯ
     async function autoFillGlobalDay() {
         const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).single();
         if (data) {
             const dayInput = document.getElementById('dayNumber');
             if (dayInput) {
                 dayInput.value = data.current_day;
-                // Если есть пересчет дат (в аренде или разрешении) — вызываем обновление
-                if (typeof updateValidity === 'function') updateValidity();
-                if (typeof calcTotal === 'function') calcTotal();
             }
         }
     }
-    
-    // Вызываем после инициализации страницы
     setTimeout(autoFillGlobalDay, 500);
 </script>
 </body>
