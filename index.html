@@ -253,7 +253,7 @@
 
             <div class="menu-label" style="margin-top: 20px;">Общее</div>
             <div class="menu-item" id="menu-hr" onclick="switchView('hr_department')">🗂️ Кадровый отдел</div>
-            <div class="menu-item" id="menu-bank" onclick="window.location.href='finance.html'">🏦 Банк</div>
+            <div class="menu-item" id="menu-bank" onclick="switchView('finance')">🏦 Банк</div>
             <div class="menu-item" id="menu-all-docs" onclick="switchView('all_docs')">📄 Все документы</div>
             <div class="menu-item" id="menu-manage-citizens" onclick="switchView('manage_citizens')">👥 Граждане (Ред.)</div>
         </div>
@@ -265,7 +265,7 @@
             <div class="menu-item org-tab" data-org="3" onclick="switchView('org', 3, 'Прав.', this)"><span>🏛️</span>Прав.</div>
             <div class="menu-item org-tab" data-org="4" onclick="switchView('org', 4, 'ВЧ', this)"><span>🪖</span>ВЧ</div>
             <div class="menu-item" onclick="switchView('hr_department')"><span>🗂️</span>Кадры</div>
-            <div class="menu-item" id="menu-bank" onclick="window.location.href='finance.html'">🏦 Банк</div>
+            <div class="menu-item" onclick="switchView('finance')"><span>🏦</span>Банк</div>
             <div class="menu-item" onclick="switchView('all_docs')"><span>📄</span>Все</div>
             <div class="menu-item" onclick="switchView('manage_citizens')"><span>👥</span>Гражд.</div>
         </div>
@@ -422,6 +422,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- КОНТЕНТ: БАНК (IFRAME) -->
+            <div id="content-finance" style="display: none; height: calc(100vh - 120px);">
+                <iframe src="finance.html" style="width: 100%; height: 100%; border: none; border-radius: 8px;"></iframe>
             </div>
 
         </div>
@@ -665,6 +670,7 @@
                 if (viewType === 'all_docs') document.getElementById('menu-all-docs').classList.add('active');
                 if (viewType === 'manage_citizens') document.getElementById('menu-manage-citizens').classList.add('active');
                 if (viewType === 'hr_department') document.getElementById('menu-hr').classList.add('active');
+                if (viewType === 'finance') document.getElementById('menu-bank').classList.add('active');
             }
 
             document.getElementById('content-docs').style.display = 'none';
@@ -672,6 +678,7 @@
             document.getElementById('content-manage-citizens').style.display = 'none';
             document.getElementById('content-citizen-details').style.display = 'none';
             document.getElementById('content-hr_department').style.display = 'none';
+            document.getElementById('content-finance').style.display = 'none'; /* Скрываем банк при переходе */
             document.getElementById('view-org-tabs').style.display = 'none';
             document.getElementById('view-all-tabs').style.display = 'none';
             
@@ -708,6 +715,12 @@
                 btnCreate.style.display = 'none';
                 statsBar.style.display = 'none';
                 loadHRData();
+            } else if (viewType === 'finance') {
+                document.getElementById('page-title').textContent = 'Банк';
+                document.getElementById('page-subtitle').textContent = 'Управление финансами';
+                document.getElementById('content-finance').style.display = 'block';
+                btnCreate.style.display = 'none';
+                statsBar.style.display = 'none';
             }
             updateStats();
         }
@@ -821,7 +834,6 @@
 
                 const btnRevoke = doc.status !== 'revoked' ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
                 
-                // Кнопка смены статуса на "Истек" / "Восстановить"
                 const btnExpired = doc.status === 'expired' 
                     ? `<button class="btn-action btn-edit" onclick="toggleExpired(${doc.id}, 'active')" title="Восстановить">♻️</button>`
                     : `<button class="btn-action btn-edit" onclick="toggleExpired(${doc.id}, 'expired')" title="Пометить истекшим">⏳</button>`;
