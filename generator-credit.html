@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор Договора Кредита</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button { background: #10b981; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row > .form-group { flex: 1; min-width: 150px; }
+        #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .preview-container { width: 95%; height: 95%; background: white; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-header { padding: 15px 20px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .preview-iframe { flex: 1; width: 100%; border: none; }
+        .btn-dl { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-close { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Договор о предоставлении кредита</h2>
+    <form id="creditForm">
+        <div class="form-group">
+            <label>Заемщик (Имя Отчество)</label>
+            <input type="text" id="borrowerName" required>
+        </div>
+
+        <div class="row">
+            <div class="form-group"><label>Паспорт (Серия)</label><input type="text" id="passSeries" maxlength="4" required></div>
+            <div class="form-group"><label>Паспорт (Номер)</label><input type="text" id="passNumber" maxlength="6" required></div>
+        </div>
+
+        <div class="row" style="background:#f0fdf4; padding:15px; border-radius:8px; border:1px solid #bbf7d0;">
+            <div class="form-group">
+                <label>Сумма кредита (💵)</label>
+                <input type="number" id="creditAmount" min="100" required oninput="calcCredit()">
+            </div>
+            <div class="form-group">
+                <label>Процентная ставка (%)</label>
+                <input type="number" id="creditRate" min="0" step="1" required oninput="calcCredit()">
+            </div>
+            <div class="form-group">
+                <label>Итоговая сумма к возврату (💵)</label>
+                <input type="number" id="totalReturn" readonly style="background:#eee; font-weight:bold;">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Дата выдачи (ДД / ММ / ГГ)</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="dateDay" maxlength="2" placeholder="ДД" required>
+                    <input type="text" id="dateMonth" maxlength="2" placeholder="ММ" required>
+                    <input type="text" id="dateYear" maxlength="2" placeholder="ГГ" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Номер дня (000-999)</label>
+                <input type="text" id="dayNumber" required oninput="calcCredit()">
+            </div>
+            <div class="form-group">
+                <label>№ Договора (0753ННН)</label>
+                <input type="text" id="docNumber" required>
+            </div>
+        </div>
+
+        <div class="form-group" style="background:#fef3c7; padding:15px; border-radius:8px; border:1px solid #fde68a;">
+            <label style="color:#92400e;">Дата окончания действия договора (Крайний срок):</label>
+            <input type="text" id="endDayStr" readonly style="font-size:18px; font-weight:bold; color:#92400e; text-align:center; background:transparent; border:none;">
+        </div>
+
+        <button type="submit" id="submitBtn">Сгенерировать Договор</button>
+    </form>
+</div>
+
+<div id="preview-modal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3>Договор сформирован!</h3>
+            <div>
+                <button class="btn-dl" id="download-btn">Скачать PDF</button>
+                <button class="btn-close" onclick="window.location.href='bank.html'">Вернуться в Банк</button>
+            </div>
+        </div>
+        <iframe id="pdf-preview-frame" class="preview-iframe"></iframe>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+<script>
+    const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
+    
+    const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+
+    // =====================================================================
+    // ⚠️ ТВОИ КООРДИНАТЫ (Настрой завтра под бланк credit_template.pdf)
+    // Везде, где нужно центрирование, используется xStart и xEnd!
+    // =====================================================================
+    const COORDS = {
+        // Даты (центрирование)
+        date: { 
+            day:   { xStart: 49, xEnd: 63, y: 667 }, 
+            month: { xStart: 72, xEnd: 133, y: 667 }, 
+            year:  { xStart: 148, xEnd: 162, y: 667 } 
+        },
+        dayNum: { xStart: 177, xEnd: 194, y: 667 },
+        docNum: { xStart: 506, xEnd: 550, y: 667 },
+        
+        // Заемщик (просто x, y по твоей просьбе)
+        borrowerName: { x: 93, y: 597 },
+        
+        // Паспорт (центрирование)
+        passSeries: { xStart: 405, xEnd: 439, y: 597 },
+        passNumber: { xStart: 456, xEnd: 548, y: 597 },
+        
+        // Финансы (центрирование)
+        amount: { xStart: 126, xEnd: 184, y: 556 },
+        rate: { xStart: 149, xEnd: 184, y: 542 },
+        totalReturn: { xStart: 189, xEnd: 290, y: 526 },
+        
+        // Дни кредита (центрирование)
+        issueDay: { xStart: 160, xEnd: 198, y: 504 },
+        endDay: { xStart: 350, xEnd: 470, y: 475 },
+        
+        // Коды (твои координаты)
+        qrCode: { x: 42, y: 740, width: 70, height: 70 },
+        barcode: { x: 479, y: 770, width: 70, height: 40 }
+    };
+
+    let currentPdfBlob = null;
+
+    // Функция для точного центрирования текста
+    function drawCenteredInRange(page, text, xStart, xEnd, y, options) {
+        if (!text) return;
+        const textWidth = options.font.widthOfTextAtSize(text, options.size);
+        const startX = xStart + ((xEnd - xStart) - textWidth) / 2;
+        page.drawText(text, { ...options, x: startX, y });
+    }
+
+    function calcCredit() {
+        const amt = parseFloat(document.getElementById('creditAmount').value) || 0;
+        const rate = parseFloat(document.getElementById('creditRate').value) || 0;
+        
+        // Считаем итоговую сумму (Сумма + проценты)
+        const total = amt + (amt * (rate / 100));
+        document.getElementById('totalReturn').value = Math.round(total);
+
+        // Считаем день окончания (Текущий день + 50)
+        const day = parseInt(document.getElementById('dayNumber').value) || 0;
+        if (day > 0) {
+            document.getElementById('endDayStr').value = `${day + 50} день`;
+        } else {
+            document.getElementById('endDayStr').value = '';
+        }
+    }
+
+    function initDates() {
+        const today = new Date();
+        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+        document.getElementById('docNumber').value = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+    }
+
+    async function createQrImage(text) {
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+        return await fetch(url).then(res => res.arrayBuffer());
+    }
+
+    async function createBarcodeImage(text) {
+        const canvas = document.createElement('canvas');
+        JsBarcode(canvas, text, { format: "CODE128", width: 2, height: 60, displayValue: false, margin: 0 });
+        return await fetch(canvas.toDataURL("image/png")).then(r => r.arrayBuffer());
+    }
+
+    document.getElementById('creditForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Генерация...';
+
+        try {
+            const getVal = (id) => document.getElementById(id).value;
+            const docNumber = getVal('docNumber');
+            const amount = getVal('creditAmount');
+            const rate = getVal('creditRate');
+            const totalReturn = getVal('totalReturn');
+            const issueDay = getVal('dayNumber');
+            const endDay = parseInt(issueDay) + 50;
+
+            // Получаем месяц словами
+            const monthNum = parseInt(getVal('dateMonth'));
+            const monthWord = MONTHS_GENITIVE[monthNum - 1] || '';
+
+            const pdfBytes = await fetch('./credit_template.pdf').then(r => r.arrayBuffer());
+            const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            
+            const fontUrlReg = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytesReg = await fetch(fontUrlReg).then(res => res.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytesReg);
+            
+            const page = pdfDoc.getPages()[0];
+            const opt10 = { size: 10, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+            const opt12 = { size: 12, font: customFont, color: PDFLib.rgb(0, 0, 0) };
+
+            // Отрисовка (используем drawCenteredInRange для центрирования)
+            
+            // Дата выдачи
+            drawCenteredInRange(page, getVal('dateDay'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt10);
+            drawCenteredInRange(page, monthWord, COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt10);
+            drawCenteredInRange(page, getVal('dateYear'), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt10);
+
+            // Номер дня и Номер договора
+            drawCenteredInRange(page, getVal('dayNumber'), COORDS.dayNum.xStart, COORDS.dayNum.xEnd, COORDS.dayNum.y, opt10);
+            drawCenteredInRange(page, docNumber, COORDS.docNum.xStart, COORDS.docNum.xEnd, COORDS.docNum.y, opt10);
+
+            // Заемщик (просто x, y)
+            page.drawText(getVal('borrowerName'), { x: COORDS.borrowerName.x, y: COORDS.borrowerName.y, ...opt10 });
+
+            // Паспорт
+            drawCenteredInRange(page, getVal('passSeries'), COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt10);
+            drawCenteredInRange(page, getVal('passNumber'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt10);
+
+            // Финансы
+            drawCenteredInRange(page, amount, COORDS.amount.xStart, COORDS.amount.xEnd, COORDS.amount.y, opt12);
+            drawCenteredInRange(page, rate, COORDS.rate.xStart, COORDS.rate.xEnd, COORDS.rate.y, opt12);
+            drawCenteredInRange(page, totalReturn, COORDS.totalReturn.xStart, COORDS.totalReturn.xEnd, COORDS.totalReturn.y, opt12);
+
+            // Дни кредита
+            drawCenteredInRange(page, issueDay, COORDS.issueDay.xStart, COORDS.issueDay.xEnd, COORDS.issueDay.y, opt10);
+            drawCenteredInRange(page, String(endDay), COORDS.endDay.xStart, COORDS.endDay.xEnd, COORDS.endDay.y, opt10);
+
+            // QR и Штрих-код
+            const qrText = `ДОГОВОР КРЕДИТА\n№ ${docNumber}\nЗаемщик: ${getVal('borrowerName')}\nСумма: ${amount} 💵\nСтавка: ${rate}%\nК возврату: ${totalReturn} 💵\nВыдан: ${issueDay} день\nПогасить до: ${endDay} дня`;
+            const qrBytes = await createQrImage(qrText);
+            const qrImage = await pdfDoc.embedPng(qrBytes);
+            page.drawImage(qrImage, { x: COORDS.qrCode.x, y: COORDS.qrCode.y, width: COORDS.qrCode.width, height: COORDS.qrCode.height });
+
+            const bcBytes = await createBarcodeImage(docNumber);
+            const bcImage = await pdfDoc.embedPng(bcBytes);
+            page.drawImage(bcImage, { x: COORDS.barcode.x, y: COORDS.barcode.y, width: COORDS.barcode.width, height: COORDS.barcode.height });
+
+            const finalPdfBytes = await pdfDoc.save();
+            currentPdfBlob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+            
+            const fileName = `${Date.now()}_CREDIT_${docNumber}.pdf`;
+
+            // Сохраняем документ в Storage
+            await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            
+            const fileUrl = URL.createObjectURL(currentPdfBlob);
+            document.getElementById('pdf-preview-frame').src = fileUrl;
+            document.getElementById('preview-modal').style.display = 'flex';
+            
+            document.getElementById('download-btn').onclick = () => {
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = `Договор_Кредита_${docNumber}.pdf`;
+                link.click();
+            };
+
+        } catch (error) {
+            console.error(error);
+            alert("Ошибка: " + error.message + "\nУбедитесь, что файл credit_template.pdf лежит в корне!");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать Договор';
+        }
+    });
+
+    initDates();
+    calcCredit();
+</script>
+</body>
+</html>
