@@ -3,34 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Банк | Служебный портал</title>
+    <title>Банк</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
-        /* Базовые стили из портала */
         :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; --gold: #f59e0b; }
-        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 60px; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
-        /* Сайдбар */
-        .sidebar { width: 260px; background: var(--primary); color: white; position: fixed; height: 100%; overflow-y: auto; z-index: 100; }
-        .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
-        .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #e2e8f0; }
-        .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; color: white; }
-        
-        .main-content { margin-left: 260px; padding: 30px; }
-        
-        /* Статистика сверху (как hr-dashboard) */
-        .bank-dashboard { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .bank-container { padding: 0; height: 100%; display: flex; flex-direction: column; }
+
+        /* Статистика */
+        .bank-dashboard { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 15px; }
         .stat-card { background: #fff; border: 1px solid #e5eaf1; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .stat-label { color: #64748b; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
         .stat-value { color: #172033; font-size: 24px; font-weight: bold; }
 
-        /* Layout (как hr-layout) */
-        .bank-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: calc(100vh - 180px); min-height: 500px; }
+        /* Layout */
+        .bank-layout { display: grid; grid-template-columns: 280px 1fr; gap: 15px; flex: 1; min-height: 0; }
         
-        /* Левая колонка (список клиентов) */
+        /* Левая колонка */
         .bank-sidebar { background: white; border: 1px solid #e5eaf1; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .bank-list-heading { padding: 15px; border-bottom: 1px solid #eee; background: #f8fafc; }
         .bank-list-heading strong { display: block; font-size: 14px; color: #1e293b; margin-bottom: 10px; }
@@ -41,7 +34,7 @@
         .client-item h4 { margin: 0 0 4px 0; font-size: 14px; color: #1e293b; }
         .client-item p { margin: 0; font-size: 12px; color: #64748b; }
 
-        /* Правая колонка (инфа по клиенту) */
+        /* Правая колонка */
         .bank-main { background: white; border: 1px solid #e5eaf1; border-radius: 8px; padding: 20px; overflow-y: auto; }
         .empty-state { text-align: center; padding: 50px; color: #888; }
         
@@ -88,17 +81,8 @@
 </head>
 <body>
 
-    <!-- САЙДБАР -->
-    <div class="sidebar">
-        <h2>🏦 Банк</h2>
-        <div class="menu-item active">👥 Управление банком</div>
-        <div class="menu-item" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1);" onclick="window.location.href='index.html'">← На портал</div>
-    </div>
-
-    <!-- ОСНОВНОЙ КОНТЕНТ -->
-    <div class="main-content">
-        
-        <!-- ГЛОБАЛЬНАЯ СТАТИСТИКА -->
+    <div class="bank-container">
+        <!-- СТАТИСТИКА -->
         <div class="bank-dashboard">
             <div class="stat-card">
                 <div class="stat-label">Всего клиентов</div>
@@ -118,20 +102,18 @@
             </div>
         </div>
 
-        <!-- МАКЕТ КАК В КАДРАХ -->
+        <!-- МАКЕТ -->
         <div class="bank-layout">
-            <!-- ЛЕВАЯ КОЛОНКА: СПИСОК КЛИЕНТОВ -->
+            <!-- ЛЕВАЯ КОЛОНКА -->
             <div class="bank-sidebar">
                 <div class="bank-list-heading">
                     <strong>Реестр клиентов</strong>
                     <input type="text" id="search-client" class="search-box" placeholder="Поиск по ФИО..." oninput="renderClientList()">
                 </div>
-                <div class="bank-clients-scroll" id="clients-list">
-                    <!-- Сюда рендерятся клиенты -->
-                </div>
+                <div class="bank-clients-scroll" id="clients-list"></div>
             </div>
 
-            <!-- ПРАВАЯ КОЛОНКА: ИНФА ПО КЛИЕНТУ -->
+            <!-- ПРАВАЯ КОЛОНКА -->
             <div class="bank-main" id="client-details">
                 <div class="empty-state">
                     <h2>Выберите клиента</h2>
@@ -166,7 +148,6 @@
         let allFines = [];
         let allCredits = [];
         let currentSelectedClient = null;
-        let currentActionType = null;
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -175,7 +156,6 @@
             setTimeout(() => t.classList.remove('show'), 3000);
         }
 
-        // Загрузка данных
         async function loadData() {
             try {
                 const { data: dayData } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
@@ -205,21 +185,18 @@
                 }
             } catch (e) {
                 console.error(e);
-                showToast("ОШИБКА БАЗЫ: " + e.message);
+                showToast("ОШИБКА: " + e.message);
             }
         }
 
         function updateGlobalStats() {
             document.getElementById('stat-clients').textContent = allClients.length;
-            
             const totalBal = Object.values(allBalances).reduce((a, b) => a + b, 0);
             document.getElementById('stat-balance').textContent = totalBal.toLocaleString() + ' 💵';
-            
             document.getElementById('stat-fines').textContent = allFines.filter(f => f.status === 'unpaid').length;
             document.getElementById('stat-credits').textContent = allCredits.filter(c => c.status === 'active').length;
         }
 
-        // Левая колонка
         function renderClientList() {
             const box = document.getElementById('clients-list');
             const q = document.getElementById('search-client').value.toLowerCase();
@@ -253,7 +230,6 @@
             });
         }
 
-        // Правая колонка (КАК В КАДРАХ)
         function renderClientDetails(userId) {
             const client = allClients.find(c => c.id === userId);
             if (!client) return;
@@ -264,12 +240,10 @@
 
             const mainBox = document.getElementById('client-details');
             
-            // Формируем HTML
             let html = `
                 <div class="client-header">
                     <div>
                         <h2>${client.last_name} ${client.first_name} ${client.patronymic || ''}</h2>
-                        <p style="margin:5px 0 0 0; color:#64748b; font-size:14px;">ID: ${client.id.slice(0,8)}</p>
                     </div>
                     <div class="balance-box">
                         <div class="balance-label">ТЕКУЩИЙ БАЛАНС</div>
@@ -287,7 +261,6 @@
                 </div>
             `;
 
-            // Штрафы
             html += `<div class="details-section"><h3>🚨 Штрафы (${fines.filter(f=>f.status==='unpaid').length} активных)</h3>`;
             if (!fines.length) {
                 html += `<p style="color:#888; font-size:13px;">Нет штрафов</p>`;
@@ -302,7 +275,6 @@
             }
             html += `</div>`;
 
-            // Кредиты
             html += `<div class="details-section"><h3>💳 Кредиты</h3>`;
             if (!credits.length) {
                 html += `<p style="color:#888; font-size:13px;">Нет кредитов</p>`;
@@ -319,9 +291,7 @@
             mainBox.innerHTML = html;
         }
 
-        // --- МОДАЛКИ И ОПЕРАЦИИ ---
         function openAction(type) {
-            currentActionType = type;
             const modal = document.getElementById('action-modal');
             const title = document.getElementById('modal-title');
             const body = document.getElementById('modal-body');
@@ -332,50 +302,25 @@
 
             if (type === 'deposit') {
                 title.textContent = 'Пополнение баланса';
-                body.innerHTML = `
-                    <div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div>
-                    <div class="form-group"><label>Описание</label><input type="text" id="op-desc" value="Пополнение счета"></div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div><div class="form-group"><label>Описание</label><input type="text" id="op-desc" value="Пополнение счета"></div>`;
                 btn.onclick = () => doDeposit();
-            } 
-            else if (type === 'withdraw') {
+            } else if (type === 'withdraw') {
                 title.textContent = 'Снятие средств';
-                body.innerHTML = `
-                    <div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div>
-                    <div class="form-group"><label>Описание</label><input type="text" id="op-desc" value="Снятие средств"></div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div><div class="form-group"><label>Описание</label><input type="text" id="op-desc" value="Снятие средств"></div>`;
                 btn.onclick = () => doWithdraw();
-            }
-            else if (type === 'fine') {
+            } else if (type === 'fine') {
                 title.textContent = 'Выдача штрафа';
-                body.innerHTML = `
-                    <div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div>
-                    <div class="form-group"><label>Причина</label><input type="text" id="op-desc" placeholder="Например: Нарушение ПДД"></div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div><div class="form-group"><label>Причина</label><input type="text" id="op-desc" placeholder="Например: Нарушение ПДД"></div>`;
                 btn.onclick = () => doFine();
-            }
-            else if (type === 'credit') {
+            } else if (type === 'credit') {
                 title.textContent = 'Выдача кредита';
-                body.innerHTML = `
-                    <div class="form-group"><label>Сумма кредита (💵)</label><input type="number" id="op-amount" min="100"></div>
-                    <div class="form-group"><label>Процент (%)</label><input type="number" id="op-rate" min="0" value="15"></div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>Сумма кредита (💵)</label><input type="number" id="op-amount" min="100"></div><div class="form-group"><label>Процент (%)</label><input type="number" id="op-rate" min="0" value="15"></div>`;
                 btn.onclick = () => doCredit();
-            }
-            else if (type === 'prize') {
+            } else if (type === 'prize') {
                 title.textContent = 'Приз / Премия';
-                body.innerHTML = `
-                    <div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div>
-                    <div class="form-group"><label>Тип</label>
-                        <select id="op-desc">
-                            <option value="Приз лотереи">Приз лотереи</option>
-                            <option value="Премия">Премия</option>
-                        </select>
-                    </div>
-                `;
+                body.innerHTML = `<div class="form-group"><label>Сумма (💵)</label><input type="number" id="op-amount" min="1"></div><div class="form-group"><label>Тип</label><select id="op-desc"><option value="Приз лотереи">Приз лотереи</option><option value="Премия">Премия</option></select></div>`;
                 btn.onclick = () => doPrize();
-            }
-            else if (type === 'salary') {
+            } else if (type === 'salary') {
                 title.textContent = 'Начисление ЗП';
                 prepareSalaryModal();
             }
@@ -383,18 +328,13 @@
             modal.style.display = 'flex';
         }
 
-        function closeModal() {
-            document.getElementById('action-modal').style.display = 'none';
-        }
+        function closeModal() { document.getElementById('action-modal').style.display = 'none'; }
 
-        // --- ЛОГИКА ОПЕРАЦИЙ ---
         async function processTx(amount, type, desc) {
             const currentBal = allBalances[currentSelectedClient.id] || 0;
             const newBal = currentBal + amount;
-            
             await supabaseClient.from('bank_accounts').upsert({ user_id: currentSelectedClient.id, balance: newBal });
             await supabaseClient.from('bank_transactions').insert({ user_id: currentSelectedClient.id, amount: amount, type: type, description: desc, game_day: globalCurrentDay });
-            
             allBalances[currentSelectedClient.id] = newBal;
             await loadData();
         }
@@ -402,34 +342,26 @@
         async function doDeposit() {
             const amt = parseFloat(document.getElementById('op-amount').value);
             if (!amt || amt <= 0) return showToast('Введите сумму');
-            const desc = document.getElementById('op-desc').value;
-            await processTx(amt, 'deposit', desc);
-            showToast('Пополнено');
-            closeModal();
+            await processTx(amt, 'deposit', document.getElementById('op-desc').value);
+            showToast('Пополнено'); closeModal();
         }
 
         async function doWithdraw() {
             const amt = parseFloat(document.getElementById('op-amount').value);
             if (!amt || amt <= 0) return showToast('Введите сумму');
             if ((allBalances[currentSelectedClient.id] || 0) < amt) return showToast('Недостаточно средств!');
-            const desc = document.getElementById('op-desc').value;
-            await processTx(-amt, 'withdraw', desc);
-            showToast('Снято');
-            closeModal();
+            await processTx(-amt, 'withdraw', document.getElementById('op-desc').value);
+            showToast('Снято'); closeModal();
         }
 
         async function doFine() {
             const amt = parseFloat(document.getElementById('op-amount').value);
             const desc = document.getElementById('op-desc').value;
             if (!amt || !desc) return showToast('Заполните поля');
-            
             const docNum = String(Math.floor(Math.random() * 9999999)).padStart(7, '0');
             await supabaseClient.from('bank_fines').insert({ user_id: currentSelectedClient.id, doc_number: docNum, amount: amt, reason: desc, issue_day: globalCurrentDay, status: 'unpaid' });
             await supabaseClient.from('bank_transactions').insert({ user_id: currentSelectedClient.id, amount: 0, type: 'fine', description: `Штраф №${docNum}`, game_day: globalCurrentDay });
-            
-            showToast(`Штраф №${docNum} выдан`);
-            await loadData();
-            closeModal();
+            showToast(`Штраф №${docNum} выдан`); await loadData(); closeModal();
         }
 
         async function doPrize() {
@@ -437,16 +369,13 @@
             const type = document.getElementById('op-desc').value;
             if (!amt || amt <= 0) return showToast('Введите сумму');
             await processTx(amt, type === 'Премия' ? 'bonus' : 'prize', type);
-            showToast('Начислено');
-            closeModal();
+            showToast('Начислено'); closeModal();
         }
 
         async function doCredit() {
             const amt = parseFloat(document.getElementById('op-amount').value);
             const rate = parseFloat(document.getElementById('op-rate').value);
             if (!amt || amt <= 0 || isNaN(rate)) return showToast('Введите корректные данные');
-
-            // Проверка на 1 кредит
             const existing = allCredits.filter(c => c.user_id === currentSelectedClient.id && c.status === 'active');
             if (existing.length > 0) return showToast('У клиента уже есть кредит!');
 
@@ -456,11 +385,9 @@
 
             await supabaseClient.from('bank_credits').insert({ user_id: currentSelectedClient.id, doc_number: docNum, amount: amt, rate: rate, total_due: totalDue, remaining_amount: totalDue, issue_day: globalCurrentDay, end_day: endDay, status: 'active' });
             await processTx(amt, 'credit_issue', `Кредит №${docNum}`);
-
             showToast('Кредит сохранен. Генерация PDF...');
             
             try {
-                // Генерация PDF прямо тут
                 const COORDS = {
                     date: { day: { xStart: 100, xEnd: 125, y: 755 }, month: { xStart: 130, xEnd: 190, y: 755 }, year: { xStart: 200, xEnd: 225, y: 755 } },
                     dayNum: { xStart: 240, xEnd: 280, y: 755 }, docNum: { xStart: 500, xEnd: 550, y: 755 },
@@ -524,23 +451,18 @@
             } catch(e) {
                 showToast('Ошибка PDF: ' + e.message);
             }
-            
-            await loadData();
-            closeModal();
+            await loadData(); closeModal();
         }
 
         async function payFine(fineId) {
             const fine = allFines.find(f => f.id === fineId);
             const bal = allBalances[fine.user_id] || 0;
             if (bal < fine.amount) return showToast('У клиента недостаточно средств для оплаты!');
-            
             await processTx(-fine.amount, 'fine_payment', `Оплата штрафа №${fine.doc_number}`);
             await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
-            showToast('Штраф оплачен');
-            await loadData();
+            showToast('Штраф оплачен'); await loadData();
         }
 
-        // --- ЗП ---
         function prepareSalaryModal() {
             const client = currentSelectedClient;
             if (!client.current_org) {
@@ -548,58 +470,25 @@
                 document.getElementById('modal-submit').style.display = 'none';
                 return;
             }
-
             document.getElementById('modal-submit').style.display = 'block';
             let html = `<p style="font-weight:bold; margin-bottom:15px; color:var(--primary);">${client.current_org} — ${client.current_position}</p>`;
             let base = 0;
             const org = client.current_org;
             const pos = client.current_position;
 
-            if (org === 'Горнодобывающая организация') {
-                base = 300; html += `<p>Фикс: <b>300</b> 💵</p>`;
-            } else if (org === 'Курьерская служба') {
-                base = 80; html += `<div class="form-group"><label>Заказы (1-9)</label><input type="number" id="s-qty" value="1" min="1" max="9" oninput="calcSal(80,720)"></div>`;
-            } else if (org === 'Почтовое отделение №7') {
-                base = 1000; html += `<p>Фикс: <b>1000</b> 💵</p>`;
-            } else if (org === 'Таксопарк') {
-                base = 180; html += `
-                    <div class="form-group"><label>Клиентов (1-7)</label><input type="number" id="s-qty" value="1" min="1" max="7" oninput="calcTaxi()"></div>
-                    <div class="form-group"><label>Класс</label><select id="s-class" onchange="calcTaxi()"><option value="0">Низкий</option><option value="300">Средний (+300)</option><option value="600">Высокий (+600)</option><option value="1200">Бизнес (+1200)</option></select></div>
-                    <label><input type="checkbox" id="t1" value="1.2" onchange="calcTaxi()"> Музыка (x1.2)</label><br>
-                    <label><input type="checkbox" id="t2" value="1.3" onchange="calcTaxi()"> Тонировка I (x1.3)</label><br>
-                    <label><input type="checkbox" id="t3" value="1.4" onchange="calcTaxi()"> Тонировка II (x1.4)</label>
-                `;
-            } else if (org === 'Автобусная компания') {
-                base = 1600; html += `
-                    <p>База: <b>1600</b></p>
-                    <label><input type="checkbox" id="t1" value="1.3" onchange="calcBus()"> VIP (x1.3)</label><br>
-                    <label><input type="checkbox" id="t2" value="1.4" onchange="calcBus()"> Шумоизоляция (x1.4)</label><br>
-                    <label><input type="checkbox" id="t3" value="1.5" onchange="calcBus()"> Климат (x1.5)</label>
-                `;
-            } else if (org === 'Коммунальная служба') {
-                base = 2700; html += `<p>Фикс: <b>2700</b> 💵</p>`;
-            } else if (org === 'Служба доставки') {
-                base = 1400; html += `
-                    <p>База: <b>1400</b></p>
-                    <label><input type="checkbox" id="t1" value="1.2" onchange="calcDel()"> Багажник (x1.2)</label><br>
-                    <label><input type="checkbox" id="t2" value="1.5" onchange="calcDel()"> Пневмо (x1.5)</label>
-                `;
-            } else if (org === 'Транспортная компания') {
-                base = 0; html += `<div class="form-group"><label>Сумма контракта</label><input type="number" id="s-qty" value="0" oninput="calcCont()"></div>`;
-            } else if (org === 'Единая служба спасения') {
-                const rates = { 'Водитель': 1500, 'Пожарный': 1800, 'Спасатель': 2200, 'Инспектор': 2500, 'Фельдшер': 2800, 'Врач': 3200, 'Нарколог': 3600, 'Хирург': 4000 };
-                base = rates[pos] || 1500; html += `<p>По должности: <b>${base}</b> 💵</p>`;
-            } else if (org === 'Министерство внутренних дел по Соль-Илецкому г.о') {
-                const rates = { 'Рядовой': 1500, 'Младший сержант': 1800, 'Сержант': 2100, 'Старшина': 2400, 'Прапорщик': 2700, 'Младший лейтенант': 3000, 'Лейтенант': 3300, 'Капитан': 3600, 'Майор': 3900, 'Подполковник': 4200 };
-                base = rates[pos] || 1500; html += `<p>По званию: <b>${base}</b> 💵</p>`;
-            } else if (org === 'Воинская часть №205') {
-                const rates = { 'Рядовой': 500, 'Ефрейтор': 800, 'Мл. сержант': 1100, 'Сержант': 2000, 'Ст. сержант': 2300, 'Старшина': 2600, 'Прапорщик': 2900, 'Мл. лейтенант': 3200, 'Лейтенант': 3500 };
-                base = rates[pos] || 500; html += `<p>По званию: <b>${base}</b> 💵</p>`;
-            }
+            if (org === 'Горнодобывающая организация') { base = 300; html += `<p>Фикс: <b>300</b> 💵</p>`; }
+            else if (org === 'Курьерская служба') { base = 80; html += `<div class="form-group"><label>Заказы (1-9)</label><input type="number" id="s-qty" value="1" min="1" max="9" oninput="calcSal(80,720)"></div>`; }
+            else if (org === 'Почтовое отделение №7') { base = 1000; html += `<p>Фикс: <b>1000</b> 💵</p>`; }
+            else if (org === 'Таксопарк') { base = 180; html += `<div class="form-group"><label>Клиентов (1-7)</label><input type="number" id="s-qty" value="1" min="1" max="7" oninput="calcTaxi()"></div><div class="form-group"><label>Класс</label><select id="s-class" onchange="calcTaxi()"><option value="0">Низкий</option><option value="300">Средний (+300)</option><option value="600">Высокий (+600)</option><option value="1200">Бизнес (+1200)</option></select></div><label><input type="checkbox" id="t1" value="1.2" onchange="calcTaxi()"> Музыка (x1.2)</label><br><label><input type="checkbox" id="t2" value="1.3" onchange="calcTaxi()"> Тонировка I (x1.3)</label><br><label><input type="checkbox" id="t3" value="1.4" onchange="calcTaxi()"> Тонировка II (x1.4)</label>`; }
+            else if (org === 'Автобусная компания') { base = 1600; html += `<p>База: <b>1600</b></p><label><input type="checkbox" id="t1" value="1.3" onchange="calcBus()"> VIP (x1.3)</label><br><label><input type="checkbox" id="t2" value="1.4" onchange="calcBus()"> Шумоизоляция (x1.4)</label><br><label><input type="checkbox" id="t3" value="1.5" onchange="calcBus()"> Климат (x1.5)</label>`; }
+            else if (org === 'Коммунальная служба') { base = 2700; html += `<p>Фикс: <b>2700</b> 💵</p>`; }
+            else if (org === 'Служба доставки') { base = 1400; html += `<p>База: <b>1400</b></p><label><input type="checkbox" id="t1" value="1.2" onchange="calcDel()"> Багажник (x1.2)</label><br><label><input type="checkbox" id="t2" value="1.5" onchange="calcDel()"> Пневмо (x1.5)</label>`; }
+            else if (org === 'Транспортная компания') { base = 0; html += `<div class="form-group"><label>Сумма контракта</label><input type="number" id="s-qty" value="0" oninput="calcCont()"></div>`; }
+            else if (org === 'Единая служба спасения') { const rates = { 'Водитель': 1500, 'Пожарный': 1800, 'Спасатель': 2200, 'Инспектор': 2500, 'Фельдшер': 2800, 'Врач': 3200, 'Нарколог': 3600, 'Хирург': 4000 }; base = rates[pos] || 1500; html += `<p>По должности: <b>${base}</b> 💵</p>`; }
+            else if (org === 'Министерство внутренних дел по Соль-Илецкому г.о') { const rates = { 'Рядовой': 1500, 'Младший сержант': 1800, 'Сержант': 2100, 'Старшина': 2400, 'Прапорщик': 2700, 'Младший лейтенант': 3000, 'Лейтенант': 3300, 'Капитан': 3600, 'Майор': 3900, 'Подполковник': 4200 }; base = rates[pos] || 1500; html += `<p>По званию: <b>${base}</b> 💵</p>`; }
+            else if (org === 'Воинская часть №205') { const rates = { 'Рядовой': 500, 'Ефрейтор': 800, 'Мл. сержант': 1100, 'Сержант': 2000, 'Ст. сержант': 2300, 'Старшина': 2600, 'Прапорщик': 2900, 'Мл. лейтенант': 3200, 'Лейтенант': 3500 }; base = rates[pos] || 500; html += `<p>По званию: <b>${base}</b> 💵</p>`; }
             
-            html += `<div style="margin-top:15px; font-size:20px;">Итого: <b id="s-total" style="color:var(--success);">${base}</b> 💵</div>`;
-            html += `<input type="hidden" id="s-final" value="${base}">`;
-            
+            html += `<div style="margin-top:15px; font-size:20px;">Итого: <b id="s-total" style="color:var(--success);">${base}</b> 💵</div><input type="hidden" id="s-final" value="${base}">`;
             document.getElementById('modal-body').innerHTML = html;
             document.getElementById('modal-submit').onclick = () => doSalary();
         }
@@ -614,11 +503,9 @@
             const amt = parseFloat(document.getElementById('s-final').value);
             if (!amt || amt <= 0) return showToast('Сумма 0');
             await processTx(amt, 'salary', 'Начисление ЗП');
-            showToast('ЗП выдана');
-            closeModal();
+            showToast('ЗП выдана'); closeModal();
         }
 
-        // Запуск
         loadData();
     </script>
 </body>
