@@ -634,6 +634,7 @@
             </div>
             <div class="menu">
                 <div class="menu-item active" onclick="switchTab('home', this)">🏠 Главная</div>
+                <div class="menu-item" onclick="switchTab('bank', this)">🏦 Мой банк</div>
                 <div class="menu-item" onclick="switchTab('docs', this)">📄 Мои документы</div>
                 <div class="menu-item" onclick="switchTab('all_docs', this)">🗂️ Все документы</div>
                 <div class="menu-item" onclick="switchTab('tr_book', this)">📘 Моя трудовая</div>
@@ -647,6 +648,7 @@
         <!-- МОБИЛЬНОЕ МЕНЮ -->
         <div class="mobile-nav">
             <div class="menu-item active" onclick="switchTab('home', this)"><span>🏠</span>Главная</div>
+            <div class="menu-item" onclick="switchTab('bank', this)"><span>🏦</span>Банк</div>
             <div class="menu-item" onclick="switchTab('docs', this)"><span>📄</span>Мои</div>
             <div class="menu-item" onclick="switchTab('all_docs', this)"><span>🗂️</span>Все</div>
             <div class="menu-item" onclick="switchTab('tr_book', this)"><span>📘</span>Трудовая</div>
@@ -703,6 +705,72 @@
                     <h2 class="section-title">Последние документы</h2>
                     <div id="home-recent-docs">
                         <p style="color:var(--text-muted);">Загрузка...</p>
+                    </div>
+                </div>
+
+                <!-- ВКЛАДКА: МОЙ БАНК -->
+                <div id="tab-bank" style="display:none;">
+                    <h2 class="section-title">🏦 Мой банк</h2>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card" style="border-left-color: var(--primary);">
+                            <h3>Текущий баланс</h3>
+                            <div class="value" id="bank-balance">0 💵</div>
+                        </div>
+                        <div class="stat-card" style="border-left-color: var(--danger);">
+                            <h3>Активные штрафы</h3>
+                            <div class="value" id="bank-fines-total">0 💵</div>
+                        </div>
+                        <div class="stat-card" style="border-left-color: var(--warning);">
+                            <h3>Задолженность по кредиту</h3>
+                            <div class="value" id="bank-credits-total">0 💵</div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-card); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                        <h3 style="margin-top:0; color:var(--primary);">Оформить кредит</h3>
+                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Вы можете взять только один кредит. Ставка зависит от суммы: до 10 000 - 15%, до 20 000 - 25%, свыше 20 000 - 35%.</p>
+                        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:150px;">
+                                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">Сумма кредита (💵)</label>
+                                <input type="number" id="loan-amount" class="search-bar" style="margin:0;" oninput="calcLoan()" placeholder="Например: 5000">
+                            </div>
+                            <div style="flex:1; min-width:150px;">
+                                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">К возврату</label>
+                                <input type="text" id="loan-total" class="search-bar" style="margin:0; background:#eee;" readonly>
+                            </div>
+                            <button class="btn-dl" onclick="takeLoan()" style="height:45px; padding:0 20px; font-size:15px;">Взять кредит</button>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom:10px;">🚨 Мои штрафы</h3>
+                    <div class="table-wrap">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Номер</th><th>Причина</th><th>Сумма</th><th>Статус</th><th>Действие</th></tr></thead>
+                                <tbody id="bank-fines-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3 style="margin:20px 0 10px;">💳 Мои кредиты</h3>
+                    <div class="table-wrap">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Договор</th><th>Сумма / Остаток</th><th>Статус</th><th>Погашение</th></tr></thead>
+                                <tbody id="bank-credits-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3 style="margin:20px 0 10px;">📜 История операций</h3>
+                    <div class="table-wrap">
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Дата</th><th>Описание</th><th>Сумма</th></tr></thead>
+                                <tbody id="bank-history-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -868,7 +936,7 @@
     <div id="toast"></div>
 
 <script>
-    const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
+    const SUPABASE_URL = 'https://omnrekfdjurrfwzzn.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -893,7 +961,13 @@
         allPage: 1,
         allPerPage: 10,
         unreadCount: 0,
-        trRecords: []
+        trRecords: [],
+        
+        // БАНК
+        bankBalance: 0,
+        bankFines: [],
+        bankCredits: [],
+        bankHistory: []
     };
 
     let globalCurrentDay = 1;
@@ -994,6 +1068,7 @@
             await loadGlobalDay();
             await loadMyDocs(session.user.id);
             await loadTrRecords(session.user.id);
+            await loadBankData(session.user.id);
         } else {
             document.getElementById('auth-screen').style.display = 'flex';
             document.getElementById('dashboard-screen').style.display = 'none';
@@ -1012,16 +1087,17 @@
             document.querySelectorAll(`.menu-item[onclick*="${tabId}"]`).forEach(el => el.classList.add('active'));
         }
 
-        ['home', 'docs', 'all_docs', 'tr_book', 'profile'].forEach(t => {
+        ['home', 'bank', 'docs', 'all_docs', 'tr_book', 'profile'].forEach(t => {
             document.getElementById(`tab-${t}`).style.display = 'none';
         });
         document.getElementById(`tab-${tabId}`).style.display = 'block';
 
-        const titles = { home: 'Главная', docs: 'Мои документы', all_docs: 'Все документы', tr_book: 'Трудовая книжка', profile: 'Профиль' };
+        const titles = { home: 'Главная', bank: 'Мой банк', docs: 'Мои документы', all_docs: 'Все документы', tr_book: 'Трудовая книжка', profile: 'Профиль' };
         document.getElementById('topbar-title').textContent = titles[tabId] || '';
 
         if (tabId === 'docs') resetDocsNav();
         if (tabId === 'all_docs') renderAllDocs();
+        if (tabId === 'bank') renderBankTab();
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1159,6 +1235,231 @@
         });
         const row=rows.find(r=>/принят|трудоустроен|зачислен/i.test(r.record_text||''))||rows[0];
         return row?.real_date||null;
+    }
+
+    // ============================================================
+    // БАНК
+    // ============================================================
+    async function loadBankData(userId) {
+        try {
+            const { data: acc } = await supabaseClient.from('bank_accounts').select('balance').eq('user_id', userId).maybeSingle();
+            state.bankBalance = acc ? Number(acc.balance) : 0;
+
+            const { data: fines } = await supabaseClient.from('bank_fines').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            state.bankFines = fines || [];
+
+            const { data: credits } = await supabaseClient.from('bank_credits').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            state.bankCredits = credits || [];
+
+            const { data: txs } = await supabaseClient.from('bank_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(30);
+            state.bankHistory = txs || [];
+
+            if (state.currentTab === 'bank') {
+                renderBankTab();
+            }
+        } catch (e) {
+            console.error("Ошибка загрузки банка:", e);
+        }
+    }
+
+    function renderBankTab() {
+        document.getElementById('bank-balance').textContent = `${state.bankBalance.toLocaleString()} 💵`;
+        
+        const activeFines = state.bankFines.filter(f => f.status === 'unpaid');
+        const totalFines = activeFines.reduce((sum, f) => sum + Number(f.amount), 0);
+        document.getElementById('bank-fines-total').textContent = `${totalFines.toLocaleString()} 💵`;
+
+        const activeCredits = state.bankCredits.filter(c => c.status === 'active');
+        const totalCredits = activeCredits.reduce((sum, c) => sum + Number(c.remaining_amount), 0);
+        document.getElementById('bank-credits-total').textContent = `${totalCredits.toLocaleString()} 💵`;
+
+        // Fines Table
+        const finesBody = document.getElementById('bank-fines-body');
+        if (!state.bankFines.length) {
+            finesBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Штрафов нет</td></tr>';
+        } else {
+            finesBody.innerHTML = state.bankFines.map(f => {
+                const isUnpaid = f.status === 'unpaid';
+                const statusStr = isUnpaid ? '<span class="status-badge status-revoked">Не оплачен</span>' : '<span class="status-badge status-active">Оплачен</span>';
+                const btn = isUnpaid ? `<button class="btn-dl" onclick="payFine('${f.id}')">Оплатить</button>` : '';
+                return `<tr>
+                    <td><b>${f.doc_number}</b></td>
+                    <td>${f.reason}</td>
+                    <td style="font-weight:bold;">${f.amount} 💵</td>
+                    <td>${statusStr}</td>
+                    <td>${btn}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Credits Table
+        const creditsBody = document.getElementById('bank-credits-body');
+        if (!state.bankCredits.length) {
+            creditsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Кредитов нет</td></tr>';
+        } else {
+            creditsBody.innerHTML = state.bankCredits.map(c => {
+                const isActive = c.status === 'active';
+                const statusStr = isActive ? '<span class="status-badge status-expired">Активен</span>' : '<span class="status-badge status-active">Погашен</span>';
+                
+                let repayHtml = '';
+                if (isActive) {
+                    repayHtml = `
+                        <div style="display:flex; gap:5px;">
+                            <input type="number" id="repay-amt-${c.id}" placeholder="Сумма" style="width:80px; padding:5px; border-radius:4px; border:1px solid #ccc;">
+                            <button class="btn-dl" style="padding:5px 10px;" onclick="repayCredit('${c.id}')">Погасить</button>
+                        </div>
+                    `;
+                }
+
+                return `<tr>
+                    <td><b>${c.doc_number}</b></td>
+                    <td>${c.amount} / <b>${c.remaining_amount}</b> 💵</td>
+                    <td>${statusStr}</td>
+                    <td>${repayHtml}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // History Table
+        const histBody = document.getElementById('bank-history-body');
+        if (!state.bankHistory.length) {
+            histBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">История пуста</td></tr>';
+        } else {
+            histBody.innerHTML = state.bankHistory.map(t => {
+                const color = t.amount > 0 ? 'var(--primary)' : (t.amount < 0 ? 'var(--danger)' : 'var(--text)');
+                const prefix = t.amount > 0 ? '+' : '';
+                return `<tr>
+                    <td>${new Date(t.created_at).toLocaleDateString('ru-RU')}</td>
+                    <td>${t.description}</td>
+                    <td style="font-weight:bold; color:${color};">${prefix}${t.amount} 💵</td>
+                </tr>`;
+            }).join('');
+        }
+        
+        // Проверка на наличие активного кредита для блокировки кнопки "Взять кредит"
+        const hasActiveCredit = state.bankCredits.some(c => c.status === 'active');
+        const loanBtn = document.querySelector('button[onclick="takeLoan()"]');
+        if (loanBtn) {
+            loanBtn.disabled = hasActiveCredit;
+            loanBtn.textContent = hasActiveCredit ? 'У вас уже есть кредит' : 'Взять кредит';
+            loanBtn.style.opacity = hasActiveCredit ? '0.5' : '1';
+        }
+    }
+
+    function calcLoan() {
+        const amt = parseFloat(document.getElementById('loan-amount').value) || 0;
+        let rate = 15;
+        if (amt > 10000 && amt <= 20000) rate = 25;
+        else if (amt > 20000) rate = 35;
+        
+        const total = amt + (amt * (rate / 100));
+        document.getElementById('loan-total').value = amt > 0 ? `${Math.round(total)} 💵 (под ${rate}%)` : '';
+    }
+
+    async function takeLoan() {
+        const amount = parseFloat(document.getElementById('loan-amount').value);
+        if (!amount || amount <= 0) return showToast('Введите сумму кредита');
+        
+        const hasActiveCredit = state.bankCredits.some(c => c.status === 'active');
+        if (hasActiveCredit) return showToast('У вас уже есть активный кредит!');
+
+        let rate = 15;
+        if (amount > 10000 && amount <= 20000) rate = 25;
+        else if (amount > 20000) rate = 35;
+
+        const totalDue = amount + (amount * (rate / 100));
+        const docNum = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        const endDay = globalCurrentDay + 50;
+
+        // Добавляем кредит
+        await supabaseClient.from('bank_credits').insert({
+            user_id: state.currentUser.id,
+            doc_number: docNum,
+            amount: amount,
+            rate: rate,
+            total_due: totalDue,
+            remaining_amount: totalDue,
+            issue_day: globalCurrentDay,
+            end_day: endDay,
+            status: 'active'
+        });
+
+        // Зачисляем деньги на баланс
+        const newBal = state.bankBalance + amount;
+        await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
+
+        // Добавляем в историю
+        await supabaseClient.from('bank_transactions').insert({
+            user_id: state.currentUser.id,
+            amount: amount,
+            type: 'credit_issue',
+            description: `Получение кредита №${docNum} (${rate}%)`,
+            game_day: globalCurrentDay
+        });
+
+        showToast('Кредит успешно оформлен!');
+        document.getElementById('loan-amount').value = '';
+        document.getElementById('loan-total').value = '';
+        
+        await loadBankData(state.currentUser.id);
+    }
+
+    async function payFine(fineId) {
+        const fine = state.bankFines.find(f => f.id === fineId);
+        if (state.bankBalance < fine.amount) return showToast('Недостаточно средств на балансе!');
+
+        const newBal = state.bankBalance - fine.amount;
+        
+        // Списываем баланс
+        await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
+        
+        // Меняем статус штрафа
+        await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
+        
+        // Добавляем транзакцию
+        await supabaseClient.from('bank_transactions').insert({
+            user_id: state.currentUser.id,
+            amount: -fine.amount,
+            type: 'fine_payment',
+            description: `Оплата штрафа №${fine.doc_number}`,
+            game_day: globalCurrentDay
+        });
+
+        showToast(`Штраф №${fine.doc_number} оплачен`);
+        await loadBankData(state.currentUser.id);
+    }
+
+    async function repayCredit(creditId) {
+        const credit = state.bankCredits.find(c => c.id === creditId);
+        const inputVal = document.getElementById(`repay-amt-${creditId}`).value;
+        const payAmt = parseFloat(inputVal);
+        
+        if (!payAmt || payAmt <= 0) return showToast('Введите сумму для погашения');
+        if (state.bankBalance < payAmt) return showToast('Недостаточно средств на балансе!');
+
+        const newBal = state.bankBalance - payAmt;
+        let newRem = credit.remaining_amount - payAmt;
+        if (newRem < 0) newRem = 0;
+        
+        const newStatus = newRem === 0 ? 'paid' : 'active';
+
+        // Списываем баланс
+        await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
+        
+        // Обновляем кредит
+        await supabaseClient.from('bank_credits').update({ remaining_amount: newRem, status: newStatus }).eq('id', creditId);
+        
+        // Добавляем транзакцию
+        await supabaseClient.from('bank_transactions').insert({
+            user_id: state.currentUser.id,
+            amount: -payAmt,
+            type: 'credit_payment',
+            description: `Погашение кредита №${credit.doc_number}`,
+            game_day: globalCurrentDay
+        });
+
+        showToast(newStatus === 'paid' ? 'Кредит полностью погашен!' : 'Платёж принят!');
+        await loadBankData(state.currentUser.id);
     }
 
     // ============================================================
