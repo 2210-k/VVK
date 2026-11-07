@@ -166,10 +166,33 @@
 
     function initDates() {
         const today = new Date();
-        document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
-        document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
-        document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
-        document.getElementById('docNumber').value = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Если перешли из банка, подтягиваем данные
+        if (urlParams.has('user')) {
+            document.getElementById('creditAmount').value = urlParams.get('amount') || '';
+            document.getElementById('creditRate').value = urlParams.get('rate') || '';
+            document.getElementById('docNumber').value = urlParams.get('doc') || '';
+            document.getElementById('dayNumber').value = urlParams.get('start') || '';
+            
+            // Подтягиваем имя пользователя (если нужно)
+            const userId = urlParams.get('user');
+            supabaseClient.from('profiles').select('first_name, patronymic, pass_series, pass_number').eq('id', userId).single().then(({data}) => {
+                if(data) {
+                    document.getElementById('borrowerName').value = `${data.first_name || ''} ${data.patronymic || ''}`.trim();
+                    document.getElementById('passSeries').value = data.pass_series || '';
+                    document.getElementById('passNumber').value = data.pass_number || '';
+                }
+            });
+        } else {
+            // Стандартное заполнение, если открыли просто так
+            document.getElementById('dateDay').value = String(today.getDate()).padStart(2, '0');
+            document.getElementById('dateMonth').value = String(today.getMonth() + 1).padStart(2, '0');
+            document.getElementById('dateYear').value = String(today.getFullYear()).slice(-2);
+            document.getElementById('docNumber').value = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
+        }
+        
+        calcCredit();
     }
 
     async function createQrImage(text) {
