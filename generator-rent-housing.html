@@ -141,25 +141,36 @@
     const supabaseClient = supabase.createClient('https://omnrekfdjurrfzrwfzzn.supabase.co', 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg');
     
     // =====================================================================
-    // ⚠️ ТВОИ КООРДИНАТЫ (ОТКАЛИБРУЙ ПОД СВОЙ БЛАНК)
+    // ✅ ТОЧНЫЕ КООРДИНАТЫ ИЗ АРЕНДЫ ТС (как ты и просил!)
     // =====================================================================
     const COORDS = {
-        docNumber: { xStart: 410, xEnd: 540, y: 760 }, // Верхний правый угол
-        renterName: { x: 100, y: 690 },
-        passportData: { x: 160, y: 690 }, // Сразу после имени
-        housingType: { x: 80, y: 665 },
-        address: { x: 60, y: 640 },
+        docNumber: { xStart: 142, xEnd: 174, y: 197 },
+        renterName: { x: 38, y: 174 },
         
+        // Паспорт в одну линию (в аренде ТС он разбит, тут просто сдвигаем x)
+        passportData: { x: 139, y: 174 }, 
+        
+        // Тип жилья (аналог vehicleName)
+        housingType: { x: 57, y: 166 },
+        
+        // Адрес (поставил чуть ниже типа жилья)
+        address: { x: 57, y: 158 }, 
+        
+        // Дата выдачи
         issueDate: { 
-            day: { xStart: 150, xEnd: 165, y: 100 }, 
-            month: { xStart: 175, xEnd: 190, y: 100 }, 
-            year: { xStart: 200, xEnd: 220, y: 100 } 
+            day: { xStart: 45, xEnd: 53, y: 41 }, 
+            month: { xStart: 55, xEnd: 63, y: 41 }, 
+            year: { xStart: 72, xEnd: 80, y: 41 } 
         },
-        issueDayNumber: { xStart: 260, xEnd: 290, y: 100 },
         
-        validUntil: { xStart: 180, xEnd: 240, y: 70 }, // Строка "Действителен до:"
+        // Номер дня
+        dayNumber: { xStart: 88, xEnd: 100, y: 41 },
         
-        qrCode: { x: 400, y: 100, width: 80, height: 80 } // В правом нижнем углу
+        // Действителен до (аналог validDays)
+        validUntil: { xStart: 7, xEnd: 95, y: 12 },
+        
+        // QR-код
+        qrCode: { x: 130, y: 6, width: 45, height: 45 }
     };
 
     // База жилья
