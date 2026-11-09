@@ -6,9 +6,7 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <title>Личный кабинет | Единый Портал Государственных Услуг</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- PDF.js для просмотра -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <!-- PDF-lib для генерации PDF -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -52,7 +50,6 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        /* === ВХОД === */
         #auth-screen {
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh;
@@ -82,10 +79,8 @@
             padding: 10px; border-radius: 6px;
         }
 
-        /* === КАБИНЕТ === */
         #dashboard-screen { display: none; min-height: 100vh; }
 
-        /* === SIDEBAR === */
         .sidebar {
             width: 260px; background: var(--bg-card);
             border-right: 1px solid var(--border);
@@ -117,10 +112,8 @@
         }
         .btn-logout:hover { background: rgba(220,38,38,0.25); }
 
-        /* === MAIN CONTENT === */
         .main-content { margin-left: 260px; padding: 0; }
 
-        /* === TOPBAR === */
         .topbar {
             position: sticky; top: 0;
             background: var(--bg-card); border-bottom: 1px solid var(--border);
@@ -157,7 +150,6 @@
             border: 2px solid var(--bg-card);
         }
 
-        /* === КОНТЕНТ === */
         .content-area { padding: 25px 30px; }
 
         .welcome-banner {
@@ -169,7 +161,6 @@
         .welcome-banner h1 { margin: 0 0 10px 0; font-size: 24px; }
         .welcome-banner p { margin: 0; opacity: 0.9; font-size: 15px; }
 
-        /* === СТАТИСТИКА === */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -207,7 +198,6 @@
             font-size: 20px; margin: 0 0 20px 0; color: var(--text);
         }
 
-        /* === ПЛИТКИ === */
         .tiles-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -229,7 +219,6 @@
         .tile h3 { margin: 0; font-size: 17px; color: var(--text); }
         .tile p { margin: 5px 0 0 0; font-size: 13px; color: var(--text-muted); }
 
-        /* === BREADCRUMB === */
         .breadcrumb {
             display: flex; align-items: center; gap: 10px;
             margin-bottom: 20px; font-size: 14px; color: var(--text-muted);
@@ -242,7 +231,6 @@
         }
         .btn-back:hover { background: var(--border); }
 
-        /* === ПОИСК === */
         .search-bar {
             width: 100%; padding: 12px 15px;
             margin-bottom: 15px; border: 1px solid var(--border);
@@ -255,7 +243,6 @@
             box-shadow: 0 0 0 3px var(--primary-soft);
         }
 
-        /* === ЧИПЫ === */
         .chips-row {
             display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px;
         }
@@ -272,7 +259,6 @@
         }
         .chip.chip-revoked.active { background: var(--danger); border-color: var(--danger); }
 
-        /* === ТАБЛИЦА === */
         .table-wrap {
             background: var(--bg-card); border-radius: 12px;
             box-shadow: var(--shadow); overflow: hidden;
@@ -307,6 +293,7 @@
         .status-active { background: rgba(16,185,129,0.15); color: var(--primary); }
         .status-revoked { background: rgba(220,38,38,0.15); color: var(--danger); }
         .status-expired { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .status-paid { background: rgba(3,105,161,0.15); color: #0284c7; }
 
         .doc-num-cell {
             display: flex; align-items: center; gap: 6px;
@@ -329,7 +316,6 @@
         .btn-dl { background: var(--primary); color: white; }
         .btn-dl:hover { background: var(--primary-dark); }
 
-        /* === ПАГИНАЦИЯ === */
         .pagination {
             display: flex; justify-content: center; align-items: center;
             gap: 8px; flex-wrap: wrap; padding: 15px 0;
@@ -350,7 +336,6 @@
             color: var(--text-muted); font-size: 14px; margin: 0 10px;
         }
 
-        /* === ЭКСПОРТ === */
         .actions-bottom {
             display: flex; justify-content: flex-end;
             gap: 10px; margin-top: 10px;
@@ -362,7 +347,6 @@
         }
         .btn-export:hover { border-color: var(--primary); color: var(--primary); }
 
-        /* === ПРОФИЛЬ === */
         .profile-card {
             background: var(--bg-card); padding: 25px;
             border-radius: 12px; box-shadow: var(--shadow);
@@ -381,7 +365,6 @@
             flex: 1; color: var(--text); font-weight: 500;
         }
 
-        /* === ТРУДОВАЯ КНИЖКА (ТАЙМЛАЙН) === */
         .tr-timeline { position: relative; margin-left: 10px; }
         .tr-event { display: grid; grid-template-columns: 24px 1fr; gap: 15px; position: relative; padding-bottom: 20px; }
         .tr-event:before { content: ""; position: absolute; left: 7px; top: 18px; bottom: 0; width: 2px; background: var(--border); }
@@ -390,7 +373,6 @@
         .tr-body { border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--bg-card); }
         .tr-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; gap: 15px; flex-wrap: wrap; }
         .tr-text { font-weight: 500; font-size: 15px; line-height: 1.4; }
-
 
         #tab-tr_book .tr-citizen-tools{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(180px,1fr);gap:12px;margin:0 0 20px;}
         #tab-tr_book .tr-tool-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0;}
@@ -410,7 +392,6 @@
         #tab-tr_book .tr-history-table td{padding:12px;border-top:1px solid var(--border);color:var(--text);font-size:12px;line-height:1.5;vertical-align:top;}
         #tab-tr_book .tr-history-table td:last-child{min-width:260px;}
         @media(max-width:650px){#tab-tr_book .tr-citizen-tools{grid-template-columns:1fr;}}
-        /* === ТРУДОВАЯ КНИЖКА: компактная карточка и читабельная история === */
         #tab-tr_book .tr-book-heading { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
         #tab-tr_book .tr-book-heading .section-title { margin:0; }
         #tab-tr_book .tr-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:22px; max-width:none; }
@@ -428,7 +409,6 @@
             #tab-tr_book .tr-book-heading { align-items:flex-start; }
         }
 
-        /* === ПУСТОЕ СОСТОЯНИЕ === */
         .empty-state {
             text-align: center; padding: 50px 20px;
             background: var(--bg-card); border-radius: 12px;
@@ -436,7 +416,6 @@
             border: 2px dashed var(--border);
         }
 
-        /* === МОДАЛКА ПРОСМОТРА === */
         #preview-modal {
             display: none; position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; background: rgba(0,0,0,0.9);
@@ -462,7 +441,6 @@
             font-weight: bold;
         }
 
-        /* === МОДАЛКА УВЕДОМЛЕНИЙ === */
         #notif-modal {
             display: none; position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; background: rgba(0,0,0,0.7);
@@ -499,7 +477,6 @@
         .btn-mark-read { background: var(--primary); color: white; }
         .btn-close-notif { background: var(--bg-muted); color: var(--text); }
 
-        /* === TOAST === */
         #toast {
             position: fixed; bottom: 90px; left: 50%;
             transform: translateX(-50%) translateY(20px);
@@ -512,7 +489,39 @@
         }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* === МОБИЛЬНОЕ МЕНЮ === */
+        /* Модалка перевода */
+        #transfer-modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.7);
+            z-index: 1500; justify-content: center; align-items: center;
+            padding: 15px;
+        }
+        .transfer-box {
+            background: var(--bg-card); border-radius: 12px;
+            width: 100%; max-width: 480px; padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .transfer-box h3 { margin: 0 0 15px 0; color: var(--text); }
+        .transfer-box label {
+            display: block; font-weight: 600; font-size: 13px;
+            color: var(--text-muted); margin-bottom: 6px; margin-top: 12px;
+        }
+        .transfer-box input, .transfer-box select {
+            width: 100%; padding: 12px; border-radius: 8px;
+            border: 1px solid var(--border); font-size: 15px;
+            background: var(--bg-card); color: var(--text);
+            box-sizing: border-box;
+        }
+        .transfer-box .transfer-actions {
+            display: flex; gap: 10px; margin-top: 20px;
+        }
+        .transfer-box .transfer-actions button {
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-weight: bold; font-size: 14px; cursor: pointer;
+        }
+        .btn-transfer-ok { background: var(--primary); color: white; }
+        .btn-transfer-cancel { background: var(--bg-muted); color: var(--text); }
+
         .mobile-nav { display: none; }
 
         @media (max-width: 768px) {
@@ -609,7 +618,6 @@
 </head>
 <body>
 
-    <!-- ВХОД -->
     <div id="auth-screen">
         <div class="auth-box">
             <h2>Кабинет гражданина</h2>
@@ -624,9 +632,7 @@
         </div>
     </div>
 
-    <!-- КАБИНЕТ -->
     <div id="dashboard-screen">
-        <!-- SIDEBAR -->
         <div class="sidebar">
             <div class="logo-area">
                 <h2>Единый Портал Государственных Услуг</h2>
@@ -645,7 +651,6 @@
             </div>
         </div>
 
-        <!-- МОБИЛЬНОЕ МЕНЮ -->
         <div class="mobile-nav">
             <div class="menu-item active" onclick="switchTab('home', this)"><span>🏠</span>Главная</div>
             <div class="menu-item" onclick="switchTab('bank', this)"><span>🏦</span>Банк</div>
@@ -655,13 +660,10 @@
             <div class="menu-item" onclick="switchTab('profile', this)"><span>👤</span>Профиль</div>
         </div>
 
-        <!-- MAIN -->
         <div class="main-content">
-            <!-- TOPBAR -->
             <header class="topbar">
                 <div class="topbar-title" id="topbar-title">Главная</div>
                 
-                <!-- СЧЕТЧИК ДНЯ -->
                 <div class="global-day-badge">
                     📅 Текущий день: <span id="citizen-current-day">1</span>
                 </div>
@@ -676,7 +678,6 @@
             </header>
 
             <div class="content-area">
-                <!-- ВКЛАДКА: ГЛАВНАЯ -->
                 <div id="tab-home">
                     <div class="welcome-banner">
                         <h1 id="welcome-text">Здравствуйте!</h1>
@@ -708,7 +709,6 @@
                     </div>
                 </div>
 
-                <!-- ВКЛАДКА: МОЙ БАНК -->
                 <div id="tab-bank" style="display:none;">
                     <h2 class="section-title">🏦 Мой банк</h2>
                     
@@ -725,6 +725,12 @@
                             <h3>Задолженность по кредиту</h3>
                             <div class="value" id="bank-credits-total">0 💵</div>
                         </div>
+                    </div>
+
+                    <div style="background: var(--bg-card); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                        <h3 style="margin-top:0; color:var(--primary);">💸 Перевод средств</h3>
+                        <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Переведите деньги другому гражданину.</p>
+                        <button class="btn-dl" onclick="openTransferModal()" style="padding:10px 20px; font-size:15px;">Перевести средства</button>
                     </div>
 
                     <div style="background: var(--bg-card); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow);">
@@ -774,7 +780,6 @@
                     </div>
                 </div>
 
-                <!-- ВКЛАДКА: МОИ ДОКУМЕНТЫ -->
                 <div id="tab-docs" style="display:none;">
                     <div id="docs-breadcrumb" style="display: none;" class="breadcrumb">
                         <button class="btn-back" onclick="navDocsBack()">← Назад</button>
@@ -788,7 +793,6 @@
                     <div id="specific-docs-list" style="display: none;"></div>
                 </div>
 
-                <!-- ВКЛАДКА: ВСЕ ДОКУМЕНТЫ -->
                 <div id="tab-all_docs" style="display:none;">
                     <h2 class="section-title">Все документы</h2>
 
@@ -829,7 +833,6 @@
                     </div>
                 </div>
 
-                <!-- ВКЛАДКА: ТРУДОВАЯ КНИЖКА -->
                 <div id="tab-tr_book" style="display:none;">
                     <div class="tr-book-heading">
                         <div>
@@ -886,7 +889,6 @@
                     </div>
                 </div>
 
-                <!-- ВКЛАДКА: ПРОФИЛЬ -->
                 <div id="tab-profile" style="display:none;">
                     <h2 class="section-title">Мой профиль</h2>
                     <div class="profile-card">
@@ -902,7 +904,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ПРОСМОТРА -->
     <div id="preview-modal">
         <div class="preview-container">
             <div class="preview-header">
@@ -917,7 +918,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА УВЕДОМЛЕНИЙ -->
     <div id="notif-modal">
         <div class="notif-box">
             <div class="notif-header">
@@ -932,7 +932,24 @@
         </div>
     </div>
 
-    <!-- TOAST -->
+    <div id="transfer-modal">
+        <div class="transfer-box">
+            <h3>💸 Перевод средств</h3>
+            <label>Получатель</label>
+            <select id="transfer-recipient">
+                <option value="">-- Загрузка... --</option>
+            </select>
+            <label>Сумма (💵)</label>
+            <input type="number" id="transfer-amount" min="1" placeholder="Например: 1000">
+            <label>Описание</label>
+            <input type="text" id="transfer-desc" value="Перевод средств" maxlength="100">
+            <div class="transfer-actions">
+                <button class="btn-transfer-cancel" onclick="closeTransferModal()">Отмена</button>
+                <button class="btn-transfer-ok" onclick="doTransfer()">Перевести</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast"></div>
 
 <script>
@@ -942,9 +959,6 @@
 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-    // ============================================================
-    // СОСТОЯНИЕ
-    // ============================================================
     const state = {
         theme: localStorage.getItem('theme') || 'light',
         currentTab: 'home',
@@ -963,7 +977,6 @@
         unreadCount: 0,
         trRecords: [],
         
-        // БАНК
         bankBalance: 0,
         bankFines: [],
         bankCredits: [],
@@ -971,6 +984,7 @@
     };
 
     let globalCurrentDay = 1;
+    let transferCitizensCache = [];
 
     async function loadGlobalDay() {
         try {
@@ -985,9 +999,6 @@
         } catch (e) { console.log(e); }
     }
 
-    // ============================================================
-    // ТЕМА
-    // ============================================================
     function applyTheme() {
         document.documentElement.setAttribute('data-theme', state.theme);
         document.getElementById('theme-btn').textContent = state.theme === 'dark' ? '☀️' : '🌙';
@@ -1000,9 +1011,6 @@
     }
     applyTheme();
 
-    // ============================================================
-    // TOAST
-    // ============================================================
     let toastTimer;
     function showToast(msg) {
         const t = document.getElementById('toast');
@@ -1012,9 +1020,6 @@
         toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
     }
 
-    // ============================================================
-    // АВТОРИЗАЦИЯ
-    // ============================================================
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const { error } = await supabaseClient.auth.signInWithPassword({
@@ -1075,9 +1080,6 @@
         }
     });
 
-    // ============================================================
-    // НАВИГАЦИЯ
-    // ============================================================
     function switchTab(tabId, element) {
         state.currentTab = tabId;
 
@@ -1102,9 +1104,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ============================================================
-    // ЗАГРУЗКА ДОКУМЕНТОВ
-    // ============================================================
     async function loadMyDocs(userId) {
         const { data: docs, error } = await supabaseClient
             .from('documents').select('*')
@@ -1131,9 +1130,6 @@
         renderAllDocs();
     }
 
-    // ============================================================
-    // ЗАГРУЗКА ТРУДОВОЙ КНИЖКИ
-    // ============================================================
     async function loadTrRecords(userId) {
         const { data: records } = await supabaseClient
             .from('employment_records')
@@ -1237,9 +1233,6 @@
         return row?.real_date||null;
     }
 
-    // ============================================================
-    // БАНК
-    // ============================================================
     async function loadBankData(userId) {
         try {
             const { data: acc } = await supabaseClient.from('bank_accounts').select('balance').eq('user_id', userId).maybeSingle();
@@ -1273,14 +1266,13 @@
         const totalCredits = activeCredits.reduce((sum, c) => sum + Number(c.remaining_amount), 0);
         document.getElementById('bank-credits-total').textContent = `${totalCredits.toLocaleString()} 💵`;
 
-        // Fines Table
         const finesBody = document.getElementById('bank-fines-body');
         if (!state.bankFines.length) {
             finesBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Штрафов нет</td></tr>';
         } else {
             finesBody.innerHTML = state.bankFines.map(f => {
                 const isUnpaid = f.status === 'unpaid';
-                const statusStr = isUnpaid ? '<span class="status-badge status-revoked">Не оплачен</span>' : '<span class="status-badge status-active">Оплачен</span>';
+                const statusStr = isUnpaid ? '<span class="status-badge status-revoked">Не оплачен</span>' : '<span class="status-badge status-paid">Оплачен</span>';
                 const btn = isUnpaid ? `<button class="btn-dl" onclick="payFine('${f.id}')">Оплатить</button>` : '';
                 return `<tr>
                     <td><b>${f.doc_number}</b></td>
@@ -1292,14 +1284,15 @@
             }).join('');
         }
 
-        // Credits Table
         const creditsBody = document.getElementById('bank-credits-body');
         if (!state.bankCredits.length) {
             creditsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Кредитов нет</td></tr>';
         } else {
             creditsBody.innerHTML = state.bankCredits.map(c => {
                 const isActive = c.status === 'active';
-                const statusStr = isActive ? '<span class="status-badge status-expired">Активен</span>' : '<span class="status-badge status-active">Погашен</span>';
+                const statusStr = isActive 
+                    ? '<span class="status-badge status-expired">Активен</span>' 
+                    : '<span class="status-badge status-paid">Погашен</span>';
                 
                 let repayHtml = '';
                 if (isActive) {
@@ -1320,7 +1313,6 @@
             }).join('');
         }
 
-        // History Table
         const histBody = document.getElementById('bank-history-body');
         if (!state.bankHistory.length) {
             histBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">История пуста</td></tr>';
@@ -1336,7 +1328,6 @@
             }).join('');
         }
         
-        // Проверка на наличие активного кредита для блокировки кнопки "Взять кредит"
         const hasActiveCredit = state.bankCredits.some(c => c.status === 'active');
         const loanBtn = document.querySelector('button[onclick="takeLoan()"]');
         if (loanBtn) {
@@ -1371,8 +1362,7 @@
         const docNum = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
         const endDay = globalCurrentDay + 50;
 
-        // Добавляем кредит
-        await supabaseClient.from('bank_credits').insert({
+        const { error: creditErr } = await supabaseClient.from('bank_credits').insert({
             user_id: state.currentUser.id,
             doc_number: docNum,
             amount: amount,
@@ -1384,11 +1374,11 @@
             status: 'active'
         });
 
-        // Зачисляем деньги на баланс
+        if (creditErr) return showToast('Ошибка: ' + creditErr.message);
+
         const newBal = state.bankBalance + amount;
         await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
 
-        // Добавляем в историю
         await supabaseClient.from('bank_transactions').insert({
             user_id: state.currentUser.id,
             amount: amount,
@@ -1397,7 +1387,7 @@
             game_day: globalCurrentDay
         });
 
-        showToast('Кредит успешно оформлен!');
+        showToast('Кредит успешно оформлен! Договор будет создан администратором.');
         document.getElementById('loan-amount').value = '';
         document.getElementById('loan-total').value = '';
         
@@ -1410,13 +1400,15 @@
 
         const newBal = state.bankBalance - fine.amount;
         
-        // Списываем баланс
         await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
-        
-        // Меняем статус штрафа
         await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
         
-        // Добавляем транзакцию
+        // Обновляем статус связанного Постановления
+        await supabaseClient.from('documents')
+            .update({ status: 'paid' })
+            .eq('doc_number', fine.doc_number)
+            .eq('document_type', 'Постановление об адм. правонарушении');
+        
         await supabaseClient.from('bank_transactions').insert({
             user_id: state.currentUser.id,
             amount: -fine.amount,
@@ -1427,6 +1419,7 @@
 
         showToast(`Штраф №${fine.doc_number} оплачен`);
         await loadBankData(state.currentUser.id);
+        await loadMyDocs(state.currentUser.id);
     }
 
     async function repayCredit(creditId) {
@@ -1443,13 +1436,17 @@
         
         const newStatus = newRem === 0 ? 'paid' : 'active';
 
-        // Списываем баланс
         await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
-        
-        // Обновляем кредит
         await supabaseClient.from('bank_credits').update({ remaining_amount: newRem, status: newStatus }).eq('id', creditId);
         
-        // Добавляем транзакцию
+        // Если полностью погашен - обновляем документ
+        if (newStatus === 'paid') {
+            await supabaseClient.from('documents')
+                .update({ status: 'paid' })
+                .eq('doc_number', credit.doc_number)
+                .eq('document_type', 'Договор кредита');
+        }
+        
         await supabaseClient.from('bank_transactions').insert({
             user_id: state.currentUser.id,
             amount: -payAmt,
@@ -1460,11 +1457,78 @@
 
         showToast(newStatus === 'paid' ? 'Кредит полностью погашен!' : 'Платёж принят!');
         await loadBankData(state.currentUser.id);
+        if (newStatus === 'paid') await loadMyDocs(state.currentUser.id);
     }
 
-    // ============================================================
-    // УВЕДОМЛЕНИЯ
-    // ============================================================
+    // === ПЕРЕВОД СРЕДСТВ ===
+    async function openTransferModal() {
+        const { data: citizens } = await supabaseClient
+            .from('profiles')
+            .select('id, last_name, first_name, patronymic')
+            .eq('role', 'patient')
+            .neq('id', state.currentUser.id)
+            .order('last_name');
+        
+        transferCitizensCache = citizens || [];
+        const sel = document.getElementById('transfer-recipient');
+        sel.innerHTML = '<option value="">-- Выберите получателя --</option>';
+        transferCitizensCache.forEach(c => {
+            sel.add(new Option(`${c.last_name} ${c.first_name} ${c.patronymic || ''}`.trim(), c.id));
+        });
+        document.getElementById('transfer-amount').value = '';
+        document.getElementById('transfer-desc').value = 'Перевод средств';
+        document.getElementById('transfer-modal').style.display = 'flex';
+    }
+
+    function closeTransferModal() {
+        document.getElementById('transfer-modal').style.display = 'none';
+    }
+
+    async function doTransfer() {
+        const recipientId = document.getElementById('transfer-recipient').value;
+        const amount = parseFloat(document.getElementById('transfer-amount').value);
+        const desc = (document.getElementById('transfer-desc').value || '').trim() || 'Перевод средств';
+        
+        if (!recipientId) return showToast('Выберите получателя');
+        if (!amount || amount <= 0) return showToast('Введите корректную сумму');
+        if (amount > state.bankBalance) return showToast('Недостаточно средств на балансе');
+        
+        const recipient = transferCitizensCache.find(c => c.id === recipientId);
+        if (!recipient) return showToast('Получатель не найден');
+        
+        // Списываем у отправителя
+        const newSenderBal = state.bankBalance - amount;
+        await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newSenderBal });
+        
+        // Начисляем получателю
+        const { data: recipientAcc } = await supabaseClient.from('bank_accounts').select('balance').eq('user_id', recipientId).maybeSingle();
+        const recipientBal = recipientAcc ? Number(recipientAcc.balance) : 0;
+        await supabaseClient.from('bank_accounts').upsert({ user_id: recipientId, balance: recipientBal + amount });
+        
+        const senderName = `${state.userProfile.last_name} ${state.userProfile.first_name}`.trim();
+        const recipientName = `${recipient.last_name} ${recipient.first_name}`.trim();
+        
+        await supabaseClient.from('bank_transactions').insert({
+            user_id: state.currentUser.id,
+            amount: -amount,
+            type: 'transfer_out',
+            description: `Перевод для ${recipientName}: ${desc}`,
+            game_day: globalCurrentDay
+        });
+        
+        await supabaseClient.from('bank_transactions').insert({
+            user_id: recipientId,
+            amount: amount,
+            type: 'transfer_in',
+            description: `Перевод от ${senderName}: ${desc}`,
+            game_day: globalCurrentDay
+        });
+        
+        closeTransferModal();
+        showToast(`Переведено ${amount} 💵 для ${recipientName}`);
+        await loadBankData(state.currentUser.id);
+    }
+
     function updateBellBadge() {
         const badge = document.getElementById('bell-badge');
         if (state.unreadCount > 0) {
@@ -1524,9 +1588,6 @@
         showToast('Все уведомления прочитаны');
     }
 
-    // ============================================================
-    // ГЛАВНАЯ — СТАТИСТИКА
-    // ============================================================
     function renderHomeStats() {
         const total = state.allDocs.length;
         const active = state.allDocs.filter(d => d.status === 'active' || !d.status).length;
@@ -1552,6 +1613,18 @@
                 })
                 .join('');
         }
+    }
+
+    function getDocStatusBadge(doc) {
+        const endDay = doc.metadata?.end_day;
+        if (doc.status === 'revoked') return '<span class="status-badge status-revoked">Аннулирован</span>';
+        if (doc.status === 'paid') {
+            const label = doc.document_type === 'Договор кредита' ? 'Погашен' : 'Оплачен';
+            return `<span class="status-badge status-paid">${label}</span>`;
+        }
+        if (doc.status === 'expired') return '<span class="status-badge status-expired">Срок истек</span>';
+        if (endDay && Number(globalCurrentDay) > Number(endDay)) return '<span class="status-badge status-expired">Срок истек</span>';
+        return '<span class="status-badge status-active">Действителен</span>';
     }
 
     function renderHomeRecent() {
@@ -1581,17 +1654,7 @@
             const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
             const orgName = state.orgMap[doc.organization_id] || 'Архив';
             const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            
-            let statusBadge = '<span class="status-badge status-active">Действителен</span>';
-            const endDay = doc.metadata?.end_day;
-            
-            if (doc.status === 'revoked') {
-                statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
-            } else if (doc.status === 'expired') {
-                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
-            } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
-                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
-            }
+            const statusBadge = getDocStatusBadge(doc);
 
             tbody.innerHTML += `
                 <tr>
@@ -1607,9 +1670,6 @@
         });
     }
 
-    // ============================================================
-    // ЧИПЫ ОРГАНИЗАЦИЙ
-    // ============================================================
     function renderOrgChips() {
         const container = document.getElementById('org-chips');
         const usedOrgs = new Set(state.allDocs.map(d => d.organization_id));
@@ -1628,9 +1688,6 @@
         container.innerHTML = html;
     }
 
-    // ============================================================
-    // ВСЕ ДОКУМЕНТЫ
-    // ============================================================
     function onAllDocsSearch() {
         state.allSearch = document.getElementById('search-all').value.toLowerCase();
         state.allPage = 1;
@@ -1737,17 +1794,7 @@
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
                 const orgName = state.orgMap[doc.organization_id] || 'Архив';
                 const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-                
-                let statusBadge = '<span class="status-badge status-active">Действителен</span>';
-                const endDay = doc.metadata?.end_day;
-                
-                if (doc.status === 'revoked') {
-                    statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
-                } else if (doc.status === 'expired') {
-                    statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
-                } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
-                    statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
-                }
+                const statusBadge = getDocStatusBadge(doc);
 
                 tbody.innerHTML += `
                     <tr>
@@ -1822,9 +1869,6 @@
         renderAllDocs();
     }
 
-    // ============================================================
-    // КОПИРОВАНИЕ НОМЕРА
-    // ============================================================
     function copyDocNumber(num) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(num).then(() => {
@@ -1844,9 +1888,6 @@
         document.body.removeChild(ta);
     }
 
-    // ============================================================
-    // ЭКСПОРТ CSV
-    // ============================================================
     function exportToCSV() {
         const filtered = getFilteredDocs();
         if (filtered.length === 0) {
@@ -1862,6 +1903,7 @@
             let statusText = 'Действителен';
             const endDay = doc.metadata?.end_day;
             if (doc.status === 'revoked') statusText = 'Аннулирован';
+            else if (doc.status === 'paid') statusText = doc.document_type === 'Договор кредита' ? 'Погашен' : 'Оплачен';
             else if (doc.status === 'expired') statusText = 'Срок истек';
             else if (endDay && Number(globalCurrentDay) > Number(endDay)) statusText = 'Срок истек';
 
@@ -1887,9 +1929,6 @@
         showToast(`Экспортировано ${filtered.length} документов`);
     }
 
-    // ============================================================
-    // МОИ ДОКУМЕНТЫ (ПЛИТКИ)
-    // ============================================================
     function resetDocsNav() {
         state.docNavState = { level: 1, selectedOrgId: null, selectedOrgName: '', selectedType: '' };
         document.getElementById('docs-breadcrumb').style.display = 'none';
@@ -1961,6 +2000,7 @@
             if (type.includes('Аренда')) icon = '🚗';
             if (type.includes('задержан')) icon = '🚔';
             if (type.includes('досмотр')) icon = '🔍';
+            if (type.includes('кредит')) icon = '💳';
 
             container.innerHTML += `
                 <div class="tile" onclick="navToSpecificDocs('${type.replace(/'/g, "\\'")}')">
@@ -2019,17 +2059,7 @@
         filtered.forEach(doc => {
             const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
             const date = new Date(doc.created_at).toLocaleDateString('ru-RU');
-            
-            let statusBadge = '<span class="status-badge status-active">Действителен</span>';
-            const endDay = doc.metadata?.end_day;
-            
-            if (doc.status === 'revoked') {
-                statusBadge = '<span class="status-badge status-revoked">Аннулирован</span>';
-            } else if (doc.status === 'expired') {
-                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
-            } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
-                statusBadge = '<span class="status-badge status-expired">Срок истек</span>';
-            }
+            const statusBadge = getDocStatusBadge(doc);
 
             tbody.innerHTML += `
                 <tr>
@@ -2050,9 +2080,6 @@
         });
     }
 
-    // ============================================================
-    // ПРОСМОТР PDF (ВЫСОКОЕ КАЧЕСТВО)
-    // ============================================================
     async function previewDoc(url) {
         const isMobile = window.innerWidth <= 768;
         const iframe = document.getElementById('preview-frame');
@@ -2119,9 +2146,11 @@
     document.getElementById('notif-modal').addEventListener('click', e => {
         if (e.target.id === 'notif-modal') closeNotifications();
     });
+    document.getElementById('transfer-modal').addEventListener('click', e => {
+        if (e.target.id === 'transfer-modal') closeTransferModal();
+    });
 </script>
 
-<!-- ПОДКЛЮЧАЕМ ВНЕШНИЙ ФАЙЛ С ГЕНЕРАЦИЕЙ PDF -->
 <script src="citizen-pdf.js"></script>
 
 </body>
