@@ -7,7 +7,6 @@
     <title>Служебный портал ЕПГУ</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <!-- Библиотеки для банка -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -16,7 +15,6 @@
         :root { --primary: #1e3a8a; --bg: #f3f4f6; --text: #333; --danger: #ef4444; --success: #10b981; --gold: #f59e0b; }
         body { margin: 0; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 60px; }
         
-        /* Вход */
         #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; box-sizing: border-box; }
         .auth-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
         .auth-box h2 { margin-top: 0; color: var(--primary); }
@@ -24,11 +22,9 @@
         .btn-login { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; background: var(--primary); color: white; cursor: pointer; font-size: 16px; }
         .error-msg { color: var(--danger); display: none; margin-bottom: 15px; font-size: 14px; background: #fee2e2; padding: 10px; border-radius: 6px; }
 
-        /* Кабинет */
         #dashboard-screen { display: none; min-height: 100vh; }
         .sidebar { width: 260px; background: var(--primary); color: white; position: fixed; height: 100%; overflow-y: auto; z-index: 100; transition: 0.3s; }
         .sidebar h2 { padding: 20px; margin: 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px; }
-        
         .menu-label { padding: 15px 20px 5px 20px; font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
         .menu-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #e2e8f0; }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.1); border-left-color: #60a5fa; color: white; }
@@ -37,12 +33,10 @@
         .workspace-header { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .workspace-title h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); }
         .workspace-title p { margin: 0; color: #64748b; font-size: 14px; }
-        
         .actions-area { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .btn-create { background: var(--success); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .btn-create:hover { background: #059669; transform: translateY(-2px); }
         
-        /* СЧЕТЧИК ДНЯ */
         .global-day-badge { display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid var(--primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .global-day-badge input { width: 60px; border: none; background: #eef5ff; text-align: center; font-weight: bold; color: var(--primary); border-radius: 4px; padding: 4px; font-size: 16px; outline: none; }
 
@@ -51,13 +45,11 @@
         .tab:hover { color: var(--primary); }
         .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* Статистика */
         .stats-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .stat-box { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); flex: 1; min-width: 150px; }
         .stat-box h4 { margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase; }
         .stat-box .num { font-size: 24px; font-weight: bold; color: var(--primary); margin-top: 5px; }
 
-        /* Поиск и Таблицы */
         .search-bar { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
         .search-bar:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1); }
 
@@ -78,12 +70,11 @@
         .btn-revoke { background: #b91c1c; } 
         .btn-back { background: #64748b; padding: 10px 20px; font-size: 14px; margin-bottom: 15px; display: inline-block; border-radius: 6px; color: white; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
 
-        /* Статусы */
         .status-active { color: #166534; font-weight: bold; background: #dcfce7; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
         .status-revoked { color: #991b1b; font-weight: bold; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
         .status-expired { color: #92400e; font-weight: bold; background: #fef3c7; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-paid { color: #075985; font-weight: bold; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
 
-        /* Модалки */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; }
         .modal-content h3 { margin-top: 0; color: var(--primary); }
@@ -105,7 +96,6 @@
         .preview-header h3 { margin: 0; color: #333; }
         .preview-iframe { flex: 1; width: 100%; border: none; }
 
-        /* Аккуратные формы кадрового отдела */
         .hr-modal .modal-content { max-width:560px; padding:26px; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 18px 55px rgba(15,23,42,.22); }
         .hr-modal .modal-content h3 { padding-bottom:14px; margin-bottom:16px; border-bottom:1px solid #edf1f5; font-size:20px; }
         .hr-modal .hr-form-field { margin:0 0 13px; position: relative; }
@@ -119,14 +109,12 @@
         .hr-modal .modal-actions button { border-radius:8px; min-height:42px; transition:filter .15s,transform .15s; }
         .hr-modal .modal-actions button:hover { filter:brightness(.97); transform:translateY(-1px); }
 
-        /* Автокомплит для кадрового отдела */
         .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #d7dee8; border-top: none; border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto; z-index: 300; display: none; box-shadow: 0 8px 20px rgba(15,23,42,.12); }
         .autocomplete-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f2f5; font-size: 13px; color: #1e293b; line-height: 1.4; }
         .autocomplete-item:last-child { border-bottom: none; }
         .autocomplete-item:hover { background-color: #eef5ff; }
         .autocomplete-item b { color: #0056b3; }
 
-        /* КАДРОВЫЙ ОТДЕЛ (Внутренние стили) */
         .hr-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: calc(100vh - 200px); }
         .hr-sidebar { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-y: auto; display: flex; flex-direction: column; }
         .hr-employee { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
@@ -175,7 +163,6 @@
         #hr-employee-details .table-responsive { border:1px solid #e8edf3; border-radius:8px; overflow:auto; }
         #hr-employee-details table { margin:0; }
 
-        /* БАНК (Внутренние стили) */
         .bank-layout { display: grid; grid-template-columns: 280px minmax(0,1fr); height:calc(100vh - 260px); min-height:430px; gap:14px; }
         .bank-sidebar { background: white; border: 1px solid #e5eaf1; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
         .bank-list-heading { position:sticky; top:0; z-index:2; background:#fff; padding:15px 16px 12px; border-bottom:1px solid #e9eef5; }
@@ -190,6 +177,7 @@
         .btn-bank:hover { opacity: 0.85; }
         .bg-green { background: var(--success); } .bg-red { background: var(--danger); }
         .bg-blue { background: var(--primary); } .bg-gold { background: var(--gold); } .bg-purple { background: #8b5cf6; }
+        .bg-darkred { background: #7f1d1d; }
 
         .table-mini { width: 100%; border-collapse: collapse; border: 1px solid #eee; border-radius: 6px; overflow: hidden; margin-top: 10px; }
         .table-mini th, .table-mini td { padding: 10px 12px; font-size: 13px; text-align: left; border-bottom: 1px solid #eee; }
@@ -199,8 +187,8 @@
         .badge-unpaid { background: #fee2e2; color: #991b1b; }
         .badge-paid { background: #dcfce7; color: #166534; }
         .badge-active { background: #e0e7ff; color: #3730a3; }
+        .badge-cancelled { background: #f3f4f6; color: #6b7280; }
 
-        /* 📱 МОБИЛЬНАЯ АДАПТАЦИЯ */
         .mobile-nav { display: none; }
         
         @media (max-width: 900px) {
@@ -239,7 +227,6 @@
 </head>
 <body>
 
-    <!-- ЭКРАН ВХОДА -->
     <div id="auth-screen">
         <div class="auth-box">
             <h2>Служебный портал</h2>
@@ -253,9 +240,7 @@
         </div>
     </div>
 
-    <!-- ОСНОВНОЙ ЭКРАН -->
     <div id="dashboard-screen">
-        <!-- САЙДБАР -->
         <div class="sidebar">
             <h2>Меню</h2>
             
@@ -272,7 +257,6 @@
             <div class="menu-item" id="menu-manage-citizens" onclick="switchView('manage_citizens')">👥 Граждане (Ред.)</div>
         </div>
 
-        <!-- НИЖНЕЕ МЕНЮ (Мобилки) -->
         <div class="mobile-nav">
             <div class="menu-item org-tab" data-org="1" onclick="switchView('org', 1, 'ЕСС', this)"><span>🚑</span>ЕСС</div>
             <div class="menu-item org-tab" data-org="2" onclick="switchView('org', 2, 'МВД', this)"><span>🚓</span>МВД</div>
@@ -284,10 +268,8 @@
             <div class="menu-item" onclick="switchView('manage_citizens')"><span>👥</span>Гражд.</div>
         </div>
 
-        <!-- ОСНОВНОЙ КОНТЕНТ -->
         <div class="main-content">
             
-            <!-- ШАПКА -->
             <div class="workspace-header">
                 <div class="workspace-title">
                     <h1 id="page-title">Единая Служба Спасения</h1>
@@ -305,7 +287,6 @@
                 </div>
             </div>
 
-            <!-- СТАТИСТИКА -->
             <div class="stats-bar" id="stats-bar">
                 <div class="stat-box">
                     <h4 id="stat-docs-title">Всего документов</h4>
@@ -317,7 +298,6 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКИ ОРГАНИЗАЦИИ -->
             <div id="view-org-tabs" style="display: none;">
                 <div class="tabs">
                     <div class="tab active" id="tab-org-docs" onclick="switchOrgTab('docs', this)">📄 Документы организации</div>
@@ -325,7 +305,6 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКИ ВСЕ ДОКУМЕНТЫ -->
             <div id="view-all-tabs" style="display: none;">
                 <div class="tabs">
                     <div class="tab active" id="tab-all-docs" onclick="switchAllTab('docs', this)">📄 Все документы (Глобально)</div>
@@ -333,7 +312,6 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: ДОКУМЕНТЫ -->
             <div id="content-docs" style="display: none;">
                 <input type="text" id="search-docs" class="search-bar" placeholder="🔍 Поиск по номеру или ФИО получателя..." oninput="renderDocs()">
                 <div class="table-responsive">
@@ -353,7 +331,6 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: ГРАЖДАНЕ (ПРОСМОТР) -->
             <div id="content-citizens-view" style="display: none;">
                 <input type="text" id="search-citizens-view" class="search-bar" placeholder="🔍 Поиск по ФИО или паспорту..." oninput="renderCitizensView()">
                 <div class="table-responsive">
@@ -371,7 +348,6 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: УПРАВЛЕНИЕ ГРАЖДАНАМИ -->
             <div id="content-manage-citizens" style="display: none;">
                 <div style="margin-bottom: 15px; text-align: right;">
                     <button class="btn-create" onclick="openAddCitizenModal()">+ Добавить гражданина</button>
@@ -392,7 +368,6 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: ДОКУМЕНТЫ ВЫБРАННОГО ГРАЖДАНИНА -->
             <div id="content-citizen-details" style="display: none;">
                 <button class="btn-back" onclick="goBack()">← Назад</button>
                 <h2 id="citizen-details-name" style="color: var(--primary); margin-bottom: 20px;"></h2>
@@ -415,7 +390,6 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: КАДРОВЫЙ ОТДЕЛ -->
             <div id="content-hr_department" style="display: none;">
                 <div class="hr-dashboard" aria-label="Статистика кадрового отдела">
                     <div class="hr-stat"><div class="hr-stat-label">Всего граждан</div><div class="hr-stat-value" id="hr-stat-total">—</div><div class="hr-stat-note">В кадровой базе</div></div>
@@ -434,7 +408,6 @@
                 </div>
             </div>
 
-            <!-- КОНТЕНТ: БАНК -->
             <div id="content-bank" style="display: none;">
                 <div class="bank-dashboard" style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px;">
                     <div class="hr-stat"><div class="hr-stat-label">Всего клиентов</div><div class="hr-stat-value" id="bank-stat-clients">0</div></div>
@@ -463,7 +436,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКИ -->
     <div id="create-doc-modal" class="modal">
         <div class="modal-content">
             <h3 id="create-doc-title">Выберите документ</h3>
@@ -512,7 +484,6 @@
         </div>
     </div>
 
-    <!-- БАНК: МОДАЛКА ОПЕРАЦИЙ -->
     <div id="bank-action-modal" class="modal">
         <div class="modal-content">
             <h3 id="bank-modal-title" style="margin-top:0; color:var(--primary);">Операция</h3>
@@ -524,7 +495,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ПРОСМОТРА -->
     <div id="preview-modal">
         <div class="preview-container">
             <div class="preview-header">
@@ -560,14 +530,13 @@
         let currentCitizenDocs = []; 
         let docSort = { col: 'created_at', asc: false };
 
-        // --- БАНК ДАННЫЕ ---
         let bankBalances = {};
         let bankFines = [];
         let bankCredits = [];
+        let bankTransactions = [];
         let selectedBankClient = null;
         let currentBankAction = null;
 
-        // --- HR DATA ---
         const HR_DB = {
             works: [
                 { name: "Горнодобывающая организация", pos: ["Шахтер"] },
@@ -614,7 +583,6 @@
             return [y?(y+(y===1?' год':y<5?' года':' лет')):'',rest?rest+' мес.':''].filter(Boolean).join(' ')||'Менее месяца';
         }
 
-        // --- СЧЕТЧИК ДНЯ ---
         async function loadGlobalDay() {
             try {
                 const { data } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
@@ -647,7 +615,6 @@
             if (currentState.view === 'all_docs') loadAllDocs();
         }
 
-        // --- АВТОРИЗАЦИЯ ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.querySelector('.btn-login');
@@ -706,7 +673,6 @@
             }
         });
 
-        // --- НАВИГАЦИЯ ---
         function switchView(viewType, orgId, orgName, element) {
             currentState.view = viewType;
             
@@ -808,7 +774,6 @@
             }
         }
 
-        // --- ДОКУМЕНТЫ ---
         async function fetchDocumentsData(filterOrgId = null) {
             let query = supabaseClient.from('documents').select('*');
             if (filterOrgId) query = query.eq('organization_id', filterOrgId);
@@ -844,6 +809,18 @@
             renderDocs();
         }
 
+        function renderDocStatus(doc) {
+            const endDay = doc.metadata?.end_day;
+            if (doc.status === 'revoked') return '<span class="status-revoked">Аннулирован</span>';
+            if (doc.status === 'paid') {
+                const label = doc.document_type === 'Договор кредита' ? 'Погашен' : 'Оплачен';
+                return `<span class="status-paid">${label}</span>`;
+            }
+            if (doc.status === 'expired') return '<span class="status-expired">Срок истек</span>';
+            if (endDay && Number(globalCurrentDay) > Number(endDay)) return '<span class="status-expired">Срок истек</span>';
+            return '<span class="status-active">Действителен</span>';
+        }
+
         function renderDocs() {
             const tbody = document.getElementById('docs-table-body');
             const query = document.getElementById('search-docs').value.toLowerCase();
@@ -871,17 +848,7 @@
 
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-                
-                let statusHtml = '<span class="status-active">Действителен</span>';
-                const endDay = doc.metadata?.end_day;
-                
-                if (doc.status === 'revoked') {
-                    statusHtml = '<span class="status-revoked">Аннулирован</span>';
-                } else if (doc.status === 'expired') {
-                    statusHtml = '<span class="status-expired">Срок истек</span>';
-                } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
-                    statusHtml = '<span class="status-expired">Срок истек</span>';
-                }
+                const statusHtml = renderDocStatus(doc);
 
                 const btnRevoke = doc.status !== 'revoked' ? `<button class="btn-action btn-revoke" onclick="revokeDoc(${doc.id})">Аннулировать</button>` : '';
                 const btnExpired = doc.status === 'expired' 
@@ -915,30 +882,52 @@
             }
         }
 
+        async function cleanupRelatedForDocument(docId, mode) {
+            // mode = 'revoke' or 'delete'
+            const { data: doc } = await supabaseClient.from('documents').select('*').eq('id', docId).maybeSingle();
+            if (!doc) return;
+
+            // Admin order -> delete related fine
+            if (doc.document_type === 'Постановление об адм. правонарушении') {
+                await supabaseClient.from('bank_fines').delete().eq('doc_number', doc.doc_number);
+            }
+            // Credit agreement -> delete related credit
+            if (doc.document_type === 'Договор кредита') {
+                await supabaseClient.from('bank_credits').delete().eq('doc_number', doc.doc_number);
+            }
+        }
+
         async function revokeDoc(docId) {
-            if (!confirm("Аннулировать документ?")) return;
+            if (!confirm("Аннулировать документ?\n\nСвязанный штраф/кредит будет УДАЛЁН из банка.")) return;
+            
+            await cleanupRelatedForDocument(docId, 'revoke');
             const { error } = await supabaseClient.from('documents').update({ status: 'revoked' }).eq('id', docId);
+            
             if (error) alert("Ошибка: " + error.message);
             else {
                 if (currentState.view === 'org') loadOrgDocs();
                 else loadAllDocs();
                 updateStats();
+                if (currentState.view === 'bank') loadBankData();
             }
         }
 
         async function deleteDoc(docId, filePath) {
-            if (!confirm("Удалить документ навсегда?")) return;
-            await supabaseClient.storage.from('documents').remove([filePath]);
+            if (!confirm("Удалить документ навсегда?\n\nСвязанный штраф/кредит будет УДАЛЁН из банка.")) return;
+            
+            await cleanupRelatedForDocument(docId, 'delete');
+            try { await supabaseClient.storage.from('documents').remove([filePath]); } catch(e){}
             const { error } = await supabaseClient.from('documents').delete().eq('id', docId);
+            
             if (error) alert("Ошибка: " + error.message);
             else {
                 if (currentState.view === 'org') loadOrgDocs();
                 else loadAllDocs();
                 updateStats();
+                if (currentState.view === 'bank') loadBankData();
             }
         }
 
-        // --- ГРАЖДАНЕ ---
         async function fetchCitizensData() {
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
             return error ? [] : data;
@@ -1008,7 +997,6 @@
             });
         }
 
-        // --- ДОКУМЕНТЫ ГРАЖДАНИНА ---
         async function openCitizenDocs(citizenId, citizenName) {
             currentState.originView = currentState.view;
             currentState.originOrgId = currentState.orgId;
@@ -1058,17 +1046,7 @@
 
             filtered.forEach(doc => {
                 const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-                
-                let statusHtml = '<span class="status-active">Действителен</span>';
-                const endDay = doc.metadata?.end_day;
-                
-                if (doc.status === 'revoked') {
-                    statusHtml = '<span class="status-revoked">Аннулирован</span>';
-                } else if (doc.status === 'expired') {
-                    statusHtml = '<span class="status-expired">Срок истек</span>';
-                } else if (endDay && Number(globalCurrentDay) > Number(endDay)) {
-                    statusHtml = '<span class="status-expired">Срок истек</span>';
-                }
+                const statusHtml = renderDocStatus(doc);
 
                 tbody.innerHTML += `
                     <tr>
@@ -1093,7 +1071,6 @@
             }
         }
 
-        // --- СТАТИСТИКА ---
         async function updateStats() {
             const { count: citizensCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'patient');
             document.getElementById('stat-citizens').textContent = citizensCount || 0;
@@ -1112,7 +1089,6 @@
             }
         }
 
-        // --- ВСПОМОГАТЕЛЬНЫЕ ---
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         
         async function previewDoc(url) {
@@ -1281,9 +1257,6 @@
             }
         }
 
-        // ==========================================
-        // 🗂️ КАДРОВЫЙ ОТДЕЛ (ЛОГИКА)
-        // ==========================================
         async function loadHRData() {
             const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
             allCitizens = citizens || [];
@@ -1836,7 +1809,7 @@
         }
 
         // ==========================================
-        // 🏦 БАНК (ЛОГИКА)
+        // 🏦 БАНК
         // ==========================================
         async function loadBankData() {
             try {
@@ -1852,6 +1825,12 @@
 
                 const { data: credits } = await supabaseClient.from('bank_credits').select('*');
                 bankCredits = credits || [];
+
+                if (selectedBankClient) {
+                    const { data: txs } = await supabaseClient.from('bank_transactions')
+                        .select('*').eq('user_id', selectedBankClient.id).order('created_at', { ascending: false }).limit(50);
+                    bankTransactions = txs || [];
+                }
 
                 renderBankStats();
                 renderBankClients();
@@ -1933,37 +1912,228 @@
                     <button class="btn-bank bg-blue" onclick="openBankAction('credit')">💳 Кредит</button>
                     <button class="btn-bank bg-blue" onclick="openBankAction('salary')">💼 ЗП</button>
                     <button class="btn-bank bg-purple" onclick="openBankAction('prize')">🎁 Премия</button>
+                    <button class="btn-bank bg-darkred" onclick="resetClient('${userId}')" title="Полный сброс всех банковских данных">⚠️ СБРОСИТЬ</button>
                 </div>
             `;
 
+            // === ШТРАФЫ ===
             html += `<div class="details-section"><h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px;">🚨 Штрафы (${fines.filter(f=>f.status==='unpaid').length} активных)</h3>`;
             if (!fines.length) {
                 html += `<p style="color:#888; font-size:13px;">Нет штрафов</p>`;
             } else {
-                html += `<table class="table-mini"><thead><tr><th>Номер</th><th>Причина</th><th>Сумма</th><th>Статус</th><th>Действие</th></tr></thead><tbody>`;
+                html += `<table class="table-mini"><thead><tr><th>Номер</th><th>Причина</th><th>Сумма</th><th>Статус</th><th>Действия</th></tr></thead><tbody>`;
                 fines.forEach(f => {
-                    const badge = f.status === 'paid' ? '<span class="badge badge-paid">Оплачен</span>' : (f.status === 'cancelled' ? '<span class="badge" style="background:#eee;">Отменен</span>' : '<span class="badge badge-unpaid">Не оплачен</span>');
-                    const btn = f.status === 'unpaid' ? `<button class="btn-action bg-green" style="padding:5px 8px; font-size:11px;" onclick="payBankFine('${f.id}')">Оплатить</button>` : '';
-                    html += `<tr><td><b>${f.doc_number}</b></td><td>${f.reason}</td><td style="color:var(--danger); font-weight:bold;">${f.amount} 💵</td><td>${badge}</td><td>${btn}</td></tr>`;
+                    const badge = f.status === 'paid' ? '<span class="badge badge-paid">Оплачен</span>' : (f.status === 'cancelled' ? '<span class="badge badge-cancelled">Отменен</span>' : '<span class="badge badge-unpaid">Не оплачен</span>');
+                    const payBtn = f.status === 'unpaid' ? `<button class="btn-action bg-green" style="padding:5px 8px; font-size:11px;" onclick="payBankFine('${f.id}')">Оплатить</button>` : '';
+                    html += `<tr>
+                        <td><b>${f.doc_number}</b></td>
+                        <td>${f.reason}</td>
+                        <td style="color:var(--danger); font-weight:bold;">${f.amount} 💵</td>
+                        <td>${badge}</td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-action btn-view" style="padding:5px 8px; font-size:11px;" onclick="findAndPreviewDocument('${f.doc_number}')" title="Открыть документ">📄</button>
+                            ${payBtn}
+                            <button class="btn-action btn-delete" style="padding:5px 8px; font-size:11px;" onclick="deleteBankFine('${f.id}')" title="Удалить штраф">🗑️</button>
+                        </td>
+                    </tr>`;
                 });
                 html += `</tbody></table>`;
             }
             html += `</div>`;
 
+            // === КРЕДИТЫ ===
             html += `<div class="details-section"><h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px;">💳 Кредиты</h3>`;
             if (!credits.length) {
                 html += `<p style="color:#888; font-size:13px;">Нет кредитов</p>`;
             } else {
-                html += `<table class="table-mini"><thead><tr><th>Договор</th><th>Сумма / Остаток</th><th>До дня</th><th>Статус</th></tr></thead><tbody>`;
+                html += `<table class="table-mini"><thead><tr><th>Договор</th><th>Сумма / Остаток</th><th>До дня</th><th>Статус</th><th>Действия</th></tr></thead><tbody>`;
                 credits.forEach(c => {
-                    const badge = c.status === 'paid' ? '<span class="badge badge-paid">Погашен</span>' : (c.status === 'cancelled' ? '<span class="badge" style="background:#eee;">Отменен</span>' : '<span class="badge badge-active">Активен</span>');
-                    html += `<tr><td><b>${c.doc_number}</b></td><td>${c.amount} / <b>${c.remaining_amount}</b> 💵</td><td>${c.end_day}</td><td>${badge}</td></tr>`;
+                    const badge = c.status === 'paid' ? '<span class="badge badge-paid">Погашен</span>' : (c.status === 'cancelled' ? '<span class="badge badge-cancelled">Отменен</span>' : '<span class="badge badge-active">Активен</span>');
+                    html += `<tr>
+                        <td><b>${c.doc_number}</b></td>
+                        <td>${c.amount} / <b>${c.remaining_amount}</b> 💵</td>
+                        <td>${c.end_day}</td>
+                        <td>${badge}</td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-action btn-view" style="padding:5px 8px; font-size:11px;" onclick="findAndPreviewDocument('${c.doc_number}')" title="Открыть договор">📄</button>
+                            <button class="btn-action btn-delete" style="padding:5px 8px; font-size:11px;" onclick="deleteBankCredit('${c.id}')" title="Удалить кредит">🗑️</button>
+                        </td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+            html += `</div>`;
+
+            // === ИСТОРИЯ ОПЕРАЦИЙ ===
+            html += `<div class="details-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom:10px;">
+                    <h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px; margin:0;">📜 История операций</h3>
+                    <button class="btn-action btn-delete" style="font-size:12px;" onclick="clearTransactions('${userId}')">Очистить всё</button>
+                </div>`;
+            if (!bankTransactions.length) {
+                html += `<p style="color:#888; font-size:13px;">История пуста</p>`;
+            } else {
+                html += `<table class="table-mini"><thead><tr><th>Дата</th><th>Тип</th><th>Описание</th><th>Сумма</th><th>Действия</th></tr></thead><tbody>`;
+                bankTransactions.forEach(t => {
+                    const color = t.amount > 0 ? 'var(--success)' : (t.amount < 0 ? 'var(--danger)' : 'var(--text)');
+                    const prefix = t.amount > 0 ? '+' : '';
+                    const typeLabels = {
+                        'deposit': 'Пополнение', 'withdraw': 'Снятие', 'fine': 'Штраф',
+                        'credit_issue': 'Кредит выдан', 'credit_payment': 'Платёж по кредиту',
+                        'fine_payment': 'Оплата штрафа', 'salary': 'Зарплата', 'bonus': 'Премия', 'prize': 'Приз',
+                        'transfer_out': 'Перевод (исх.)', 'transfer_in': 'Перевод (вх.)'
+                    };
+                    const typeLabel = typeLabels[t.type] || t.type;
+                    html += `<tr>
+                        <td>${new Date(t.created_at).toLocaleDateString('ru-RU')}</td>
+                        <td>${typeLabel}</td>
+                        <td>${t.description || ''}</td>
+                        <td style="font-weight:bold; color:${color};">${prefix}${t.amount} 💵</td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-action btn-edit" style="padding:5px 8px; font-size:11px;" onclick="cancelTransaction('${t.id}')" title="Отменить транзакцию (вернуть баланс)">↩️ Отменить</button>
+                            <button class="btn-action btn-delete" style="padding:5px 8px; font-size:11px;" onclick="deleteTransaction('${t.id}')" title="Удалить запись без возврата баланса">🗑️</button>
+                        </td>
+                    </tr>`;
                 });
                 html += `</tbody></table>`;
             }
             html += `</div>`;
 
             mainBox.innerHTML = html;
+        }
+
+        // === Ссылка на документ ===
+        async function findAndPreviewDocument(docNumber) {
+            const { data: doc } = await supabaseClient
+                .from('documents')
+                .select('file_path')
+                .eq('doc_number', docNumber)
+                .maybeSingle();
+            if (!doc) return alert('Документ с номером ' + docNumber + ' не найден');
+            const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
+            previewDoc(publicUrl);
+        }
+
+        // === Удаление штрафа ===
+        async function deleteBankFine(fineId) {
+            if (!confirm('Удалить этот штраф?')) return;
+            await supabaseClient.from('bank_fines').delete().eq('id', fineId);
+            await loadBankData();
+        }
+
+        // === Удаление кредита ===
+        async function deleteBankCredit(creditId) {
+            if (!confirm('Удалить этот кредит?')) return;
+            await supabaseClient.from('bank_credits').delete().eq('id', creditId);
+            await loadBankData();
+        }
+
+        // === Отмена транзакции (возврат баланса) ===
+        async function cancelTransaction(txId) {
+            if (!confirm('Отменить транзакцию?\n\nБаланс будет скорректирован, связанные штрафы/кредиты восстановлены.')) return;
+            
+            const { data: tx } = await supabaseClient.from('bank_transactions').select('*').eq('id', txId).maybeSingle();
+            if (!tx) return alert('Транзакция не найдена');
+
+            // Reverse balance
+            const currentBal = bankBalances[tx.user_id] || 0;
+            const newBal = currentBal - Number(tx.amount);
+            await supabaseClient.from('bank_accounts').upsert({ user_id: tx.user_id, balance: newBal });
+
+            // Undo fine payment
+            if (tx.type === 'fine_payment') {
+                const match = (tx.description || '').match(/№(\w+)/);
+                if (match) {
+                    await supabaseClient.from('bank_fines')
+                        .update({ status: 'unpaid' })
+                        .eq('user_id', tx.user_id)
+                        .eq('doc_number', match[1]);
+                    // Also revert document status
+                    await supabaseClient.from('documents')
+                        .update({ status: 'active' })
+                        .eq('doc_number', match[1])
+                        .eq('document_type', 'Постановление об адм. правонарушении');
+                }
+            }
+
+            // Undo credit payment
+            if (tx.type === 'credit_payment') {
+                const match = (tx.description || '').match(/№(\w+)/);
+                if (match) {
+                    const { data: credit } = await supabaseClient.from('bank_credits')
+                        .select('id, remaining_amount').eq('user_id', tx.user_id).eq('doc_number', match[1]).maybeSingle();
+                    if (credit) {
+                        const newRem = Number(credit.remaining_amount) + Math.abs(Number(tx.amount));
+                        await supabaseClient.from('bank_credits')
+                            .update({ remaining_amount: newRem, status: 'active' }).eq('id', credit.id);
+                        // Revert document status
+                        await supabaseClient.from('documents')
+                            .update({ status: 'active' })
+                            .eq('doc_number', match[1])
+                            .eq('document_type', 'Договор кредита');
+                    }
+                }
+            }
+
+            // Delete transaction
+            await supabaseClient.from('bank_transactions').delete().eq('id', txId);
+            await loadBankData();
+        }
+
+        // === Удалить запись транзакции (без возврата баланса) ===
+        async function deleteTransaction(txId) {
+            if (!confirm('Удалить запись из истории? Баланс НЕ изменится.')) return;
+            await supabaseClient.from('bank_transactions').delete().eq('id', txId);
+            await loadBankData();
+        }
+
+        // === Очистить все транзакции ===
+        async function clearTransactions(userId) {
+            if (!confirm('Очистить ВСЮ историю операций?\n\nБаланс НЕ изменится.')) return;
+            await supabaseClient.from('bank_transactions').delete().eq('user_id', userId);
+            await loadBankData();
+        }
+
+        // === ПОЛНЫЙ СБРОС клиента ===
+        async function resetClient(userId) {
+            if (!confirm('⚠️ СБРОСИТЬ ВСЁ для этого клиента?\n\nУдалятся:\n• Все транзакции\n• Все штрафы\n• Все кредиты\n• Связанные документы\n• Баланс обнулится\n\nДЕЙСТВИЕ НЕОБРАТИМО!')) return;
+            if (!confirm('Вы АБСОЛЮТНО уверены? Данные будут удалены навсегда.')) return;
+
+            const fines = bankFines.filter(f => f.user_id === userId);
+            const credits = bankCredits.filter(c => c.user_id === userId);
+            const docNumbers = [
+                ...fines.map(f => f.doc_number),
+                ...credits.map(c => c.doc_number)
+            ].filter(Boolean);
+
+            await supabaseClient.from('bank_transactions').delete().eq('user_id', userId);
+            await supabaseClient.from('bank_fines').delete().eq('user_id', userId);
+            await supabaseClient.from('bank_credits').delete().eq('user_id', userId);
+            await supabaseClient.from('bank_accounts').upsert({ user_id: userId, balance: 0 });
+
+            if (docNumbers.length > 0) {
+                const { data: docs } = await supabaseClient.from('documents')
+                    .select('id, file_path')
+                    .in('doc_number', docNumbers)
+                    .in('document_type', ['Постановление об адм. правонарушении', 'Договор кредита']);
+                if (docs && docs.length > 0) {
+                    for (const d of docs) {
+                        try { await supabaseClient.storage.from('documents').remove([d.file_path]); } catch(e){}
+                    }
+                    await supabaseClient.from('documents').delete().in('id', docs.map(d => d.id));
+                }
+            }
+
+            alert('Данные клиента сброшены');
+            selectedBankClient = null;
+            bankTransactions = [];
+            await loadBankData();
+            document.getElementById('bank-client-details').innerHTML = `
+                <div style="text-align:center; padding: 50px 20px; color:#888;">
+                    <h2>Выберите клиента</h2>
+                    <p>Слева появится список граждан.</p>
+                </div>
+            `;
         }
 
         function openBankAction(type) {
@@ -1975,6 +2145,7 @@
             
             body.innerHTML = '';
             btn.onclick = null;
+            btn.style.display = 'block';
 
             if (type === 'deposit') {
                 title.textContent = 'Пополнение баланса';
@@ -2053,24 +2224,58 @@
             if (!amt || amt <= 0 || isNaN(rate)) return alert('Введите корректные данные');
             
             const existing = bankCredits.filter(c => c.user_id === selectedBankClient.id && c.status === 'active');
-            if (existing.length > 0) return alert('У клиента уже есть кредит!');
+            if (existing.length > 0) return alert('У клиента уже есть активный кредит!');
 
             const totalDue = amt + (amt * (rate / 100));
             const docNum = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
             const endDay = globalCurrentDay + 50;
 
-            await supabaseClient.from('bank_credits').insert({ user_id: selectedBankClient.id, doc_number: docNum, amount: amt, rate: rate, total_due: totalDue, remaining_amount: totalDue, issue_day: globalCurrentDay, end_day: endDay, status: 'active' });
-            await processBankTx(selectedBankClient.id, amt, 'credit_issue', `Кредит №${docNum}`);
-            
-            // Генерация PDF
+            // 1) Создаём кредит
+            const { data: creditData, error: creditErr } = await supabaseClient.from('bank_credits').insert({
+                user_id: selectedBankClient.id,
+                doc_number: docNum,
+                amount: amt,
+                rate: rate,
+                total_due: totalDue,
+                remaining_amount: totalDue,
+                issue_day: globalCurrentDay,
+                end_day: endDay,
+                status: 'active'
+            }).select().single();
+
+            if (creditErr) return alert('Ошибка создания кредита: ' + creditErr.message);
+
+            // 2) Начисляем деньги + транзакция
+            const newBal = (bankBalances[selectedBankClient.id] || 0) + amt;
+            await supabaseClient.from('bank_accounts').upsert({ user_id: selectedBankClient.id, balance: newBal });
+            await supabaseClient.from('bank_transactions').insert({
+                user_id: selectedBankClient.id,
+                amount: amt,
+                type: 'credit_issue',
+                description: `Получение кредита №${docNum} (${rate}%)`,
+                game_day: globalCurrentDay
+            });
+
+            // 3) Генерируем и сохраняем документ
             try {
                 const COORDS = {
-                    date: { day: { xStart: 100, xEnd: 125, y: 755 }, month: { xStart: 130, xEnd: 190, y: 755 }, year: { xStart: 200, xEnd: 225, y: 755 } },
-                    dayNum: { xStart: 240, xEnd: 280, y: 755 }, docNum: { xStart: 500, xEnd: 550, y: 755 },
-                    borrowerName: { x: 100, y: 700 }, passSeries: { xStart: 330, xEnd: 370, y: 675 }, passNumber: { xStart: 430, xEnd: 490, y: 675 },
-                    amount: { xStart: 150, xEnd: 250, y: 640 }, rate: { xStart: 150, xEnd: 250, y: 620 }, totalReturn: { xStart: 150, xEnd: 250, y: 600 },
-                    issueDay: { xStart: 150, xEnd: 250, y: 575 }, endDay: { xStart: 250, xEnd: 350, y: 555 },
-                    qrCode: { x: 42, y: 740, width: 70, height: 70 }, barcode: { x: 479, y: 770, width: 70, height: 40 }
+                    date: { 
+                        day:   { xStart: 49, xEnd: 63, y: 667 }, 
+                        month: { xStart: 72, xEnd: 133, y: 667 }, 
+                        year:  { xStart: 148, xEnd: 162, y: 667 } 
+                    },
+                    dayNum: { xStart: 177, xEnd: 194, y: 667 },
+                    docNum: { xStart: 506, xEnd: 550, y: 667 },
+                    borrowerName: { x: 93, y: 597 },
+                    passSeries: { xStart: 405, xEnd: 439, y: 597 },
+                    passNumber: { xStart: 456, xEnd: 548, y: 597 },
+                    amount: { xStart: 126, xEnd: 184, y: 556 },
+                    rate: { xStart: 149, xEnd: 184, y: 542 },
+                    totalReturn: { xStart: 189, xEnd: 290, y: 526 },
+                    issueDay: { xStart: 160, xEnd: 198, y: 504 },
+                    endDay: { xStart: 350, xEnd: 470, y: 475 },
+                    qrCode: { x: 42, y: 740, width: 70, height: 70 },
+                    barcode: { x: 479, y: 770, width: 70, height: 40 }
                 };
                 const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
                 
@@ -2081,7 +2286,8 @@
                 const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
                 const customFont = await pdfDoc.embedFont(fontBytes);
                 const page = pdfDoc.getPages()[0];
-                const opt = { size: 10, font: customFont, color: PDFLib.rgb(0,0,0) };
+                const opt10 = { size: 10, font: customFont, color: PDFLib.rgb(0,0,0) };
+                const opt12 = { size: 12, font: customFont, color: PDFLib.rgb(0,0,0) };
                 
                 const drawCentered = (txt, xS, xE, y, o) => {
                     if(!txt) return;
@@ -2090,23 +2296,25 @@
                 };
 
                 const d = new Date();
-                drawCentered(String(d.getDate()), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt);
-                drawCentered(MONTHS[d.getMonth()], COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt);
-                drawCentered(String(d.getFullYear()).slice(-2), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt);
-                drawCentered(String(globalCurrentDay), COORDS.dayNum.xStart, COORDS.dayNum.xEnd, COORDS.dayNum.y, opt);
-                drawCentered(docNum, COORDS.docNum.xStart, COORDS.docNum.xEnd, COORDS.docNum.y, opt);
+                drawCentered(String(d.getDate()).padStart(2,'0'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt10);
+                drawCentered(MONTHS[d.getMonth()], COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt10);
+                drawCentered(String(d.getFullYear()).slice(-2), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt10);
+                drawCentered(String(globalCurrentDay), COORDS.dayNum.xStart, COORDS.dayNum.xEnd, COORDS.dayNum.y, opt10);
+                drawCentered(docNum, COORDS.docNum.xStart, COORDS.docNum.xEnd, COORDS.docNum.y, opt10);
 
-                page.drawText(`${selectedBankClient.first_name} ${selectedBankClient.patronymic || ''}`, { x: COORDS.borrowerName.x, y: COORDS.borrowerName.y, ...opt });
-                drawCentered(selectedBankClient.pass_series || '—', COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt);
-                drawCentered(selectedBankClient.pass_number || '—', COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt);
+                const borrowerName = `${selectedBankClient.first_name || ''} ${selectedBankClient.patronymic || ''}`.trim();
+                page.drawText(borrowerName, { x: COORDS.borrowerName.x, y: COORDS.borrowerName.y, ...opt10 });
+                drawCentered(selectedBankClient.pass_series || '—', COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt10);
+                drawCentered(selectedBankClient.pass_number || '—', COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt10);
 
-                drawCentered(String(amt), COORDS.amount.xStart, COORDS.amount.xEnd, COORDS.amount.y, opt);
-                drawCentered(String(rate), COORDS.rate.xStart, COORDS.rate.xEnd, COORDS.rate.y, opt);
-                drawCentered(String(totalDue), COORDS.totalReturn.xStart, COORDS.totalReturn.xEnd, COORDS.totalReturn.y, opt);
-                drawCentered(String(globalCurrentDay), COORDS.issueDay.xStart, COORDS.issueDay.xEnd, COORDS.issueDay.y, opt);
-                drawCentered(String(endDay), COORDS.endDay.xStart, COORDS.endDay.xEnd, COORDS.endDay.y, opt);
+                drawCentered(String(amt), COORDS.amount.xStart, COORDS.amount.xEnd, COORDS.amount.y, opt12);
+                drawCentered(String(rate), COORDS.rate.xStart, COORDS.rate.xEnd, COORDS.rate.y, opt12);
+                drawCentered(String(totalDue), COORDS.totalReturn.xStart, COORDS.totalReturn.xEnd, COORDS.totalReturn.y, opt12);
+                drawCentered(String(globalCurrentDay), COORDS.issueDay.xStart, COORDS.issueDay.xEnd, COORDS.issueDay.y, opt10);
+                drawCentered(String(endDay), COORDS.endDay.xStart, COORDS.endDay.xEnd, COORDS.endDay.y, opt10);
 
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`КРЕДИТ\n№${docNum}\n${selectedBankClient.last_name}`)}`;
+                const qrText = `ДОГОВОР КРЕДИТА\n№ ${docNum}\nЗаемщик: ${borrowerName}\nСумма: ${amt}\nСтавка: ${rate}%\nК возврату: ${totalDue}\nВыдан: ${globalCurrentDay} день\nПогасить до: ${endDay} дня`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`;
                 const qrBytes = await fetch(qrUrl).then(r => r.arrayBuffer());
                 const qrImg = await pdfDoc.embedPng(qrBytes);
                 page.drawImage(qrImg, { x: COORDS.qrCode.x, y: COORDS.qrCode.y, width: COORDS.qrCode.width, height: COORDS.qrCode.height });
@@ -2119,25 +2327,42 @@
 
                 const finalPdf = await pdfDoc.save();
                 const blob = new Blob([finalPdf], { type: 'application/pdf' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `Credit_${docNum}.pdf`;
-                link.click();
-                alert('PDF кредита скачан!');
+                const fileName = `${Date.now()}_CREDIT_${docNum}.pdf`;
+
+                await supabaseClient.storage.from('documents').upload(fileName, blob, { contentType: 'application/pdf' });
+                await supabaseClient.from('documents').insert({
+                    patient_id: selectedBankClient.id,
+                    organization_id: 3,
+                    doc_number: docNum,
+                    document_type: 'Договор кредита',
+                    file_path: fileName,
+                    status: 'active',
+                    metadata: { credit_id: creditData.id, end_day: endDay }
+                });
             } catch(e) {
-                alert('Ошибка генерации PDF (проверьте credit_template.pdf): ' + e.message);
+                console.error('Ошибка генерации PDF:', e);
+                alert('Кредит создан, но PDF не сгенерирован: ' + e.message + '\n\nПроверьте, что файл credit_template.pdf лежит в корне.');
             }
-            
+
+            await loadBankData();
             closeModal('bank-action-modal');
         }
 
         async function payBankFine(fineId) {
             const fine = bankFines.find(f => f.id === fineId);
+            if (!fine) return;
             const bal = bankBalances[fine.user_id] || 0;
             if (bal < fine.amount) return alert('У клиента недостаточно средств для оплаты!');
             
             await processBankTx(fine.user_id, -fine.amount, 'fine_payment', `Оплата штрафа №${fine.doc_number}`);
             await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
+            
+            // Обновляем статус связанного Постановления
+            await supabaseClient.from('documents')
+                .update({ status: 'paid' })
+                .eq('doc_number', fine.doc_number)
+                .eq('document_type', 'Постановление об адм. правонарушении');
+            
             await loadBankData();
         }
 
