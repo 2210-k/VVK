@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
@@ -489,7 +490,6 @@
         }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Модалка перевода */
         #transfer-modal {
             display: none; position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; background: rgba(0,0,0,0.7);
@@ -745,7 +745,7 @@
                                 <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">К возврату</label>
                                 <input type="text" id="loan-total" class="search-bar" style="margin:0; background:#eee;" readonly>
                             </div>
-                            <button class="btn-dl" onclick="takeLoan()" style="height:45px; padding:0 20px; font-size:15px;">Взять кредит</button>
+                            <button class="btn-dl" onclick="takeLoan()" id="take-loan-btn" style="height:45px; padding:0 20px; font-size:15px;">Взять кредит</button>
                         </div>
                     </div>
 
@@ -1329,7 +1329,7 @@
         }
         
         const hasActiveCredit = state.bankCredits.some(c => c.status === 'active');
-        const loanBtn = document.querySelector('button[onclick="takeLoan()"]');
+        const loanBtn = document.getElementById('take-loan-btn');
         if (loanBtn) {
             loanBtn.disabled = hasActiveCredit;
             loanBtn.textContent = hasActiveCredit ? 'У вас уже есть кредит' : 'Взять кредит';
@@ -1347,12 +1347,20 @@
         document.getElementById('loan-total').value = amt > 0 ? `${Math.round(total)} 💵 (под ${rate}%)` : '';
     }
 
+    // ==========================================
+    // ВЗЯТИЕ КРЕДИТА ГРАЖДАНИНОМ (с генерацией PDF)
+    // ==========================================
     async function takeLoan() {
         const amount = parseFloat(document.getElementById('loan-amount').value);
         if (!amount || amount <= 0) return showToast('Введите сумму кредита');
         
         const hasActiveCredit = state.bankCredits.some(c => c.status === 'active');
         if (hasActiveCredit) return showToast('У вас уже есть активный кредит!');
+
+        const btn = document.getElementById('take-loan-btn');
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'Оформление...';
 
         let rate = 15;
         if (amount > 10000 && amount <= 20000) rate = 25;
@@ -1362,36 +1370,144 @@
         const docNum = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
         const endDay = globalCurrentDay + 50;
 
-        const { error: creditErr } = await supabaseClient.from('bank_credits').insert({
-            user_id: state.currentUser.id,
-            doc_number: docNum,
-            amount: amount,
-            rate: rate,
-            total_due: totalDue,
-            remaining_amount: totalDue,
-            issue_day: globalCurrentDay,
-            end_day: endDay,
-            status: 'active'
-        });
+        try {
+            // 1) Создаём запись кредита
+            const { data: creditData, error: creditErr } = await supabaseClient.from('bank_credits').insert({
+                user_id: state.currentUser.id,
+                doc_number: docNum,
+                amount: amount,
+                rate: rate,
+                total_due: totalDue,
+                remaining_amount: totalDue,
+                issue_day: globalCurrentDay,
+                end_day: endDay,
+                status: 'active'
+            }).select().single();
 
-        if (creditErr) return showToast('Ошибка: ' + creditErr.message);
+            if (creditErr) throw new Error('Ошибка создания кредита: ' + creditErr.message);
 
-        const newBal = state.bankBalance + amount;
-        await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
+            // 2) Начисляем деньги на баланс
+            const newBal = state.bankBalance + amount;
+            await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
 
-        await supabaseClient.from('bank_transactions').insert({
-            user_id: state.currentUser.id,
-            amount: amount,
-            type: 'credit_issue',
-            description: `Получение кредита №${docNum} (${rate}%)`,
-            game_day: globalCurrentDay
-        });
+            // 3) Транзакция
+            await supabaseClient.from('bank_transactions').insert({
+                user_id: state.currentUser.id,
+                amount: amount,
+                type: 'credit_issue',
+                description: `Получение кредита №${docNum} (${rate}%)`,
+                game_day: globalCurrentDay
+            });
 
-        showToast('Кредит успешно оформлен! Договор будет создан администратором.');
-        document.getElementById('loan-amount').value = '';
-        document.getElementById('loan-total').value = '';
-        
-        await loadBankData(state.currentUser.id);
+            // 4) Генерируем PDF
+            const COORDS = {
+                date: { 
+                    day:   { xStart: 49, xEnd: 63, y: 667 }, 
+                    month: { xStart: 72, xEnd: 133, y: 667 }, 
+                    year:  { xStart: 148, xEnd: 162, y: 667 } 
+                },
+                dayNum: { xStart: 177, xEnd: 194, y: 667 },
+                docNum: { xStart: 506, xEnd: 550, y: 667 },
+                borrowerName: { x: 93, y: 597 },
+                passSeries: { xStart: 405, xEnd: 439, y: 597 },
+                passNumber: { xStart: 456, xEnd: 548, y: 597 },
+                amount: { xStart: 126, xEnd: 184, y: 556 },
+                rate: { xStart: 149, xEnd: 184, y: 542 },
+                totalReturn: { xStart: 189, xEnd: 290, y: 526 },
+                issueDay: { xStart: 160, xEnd: 198, y: 504 },
+                endDay: { xStart: 351, xEnd: 388, y: 475 },
+                qrCode: { x: 42, y: 740, width: 70, height: 70 },
+                barcode: { x: 479, y: 770, width: 70, height: 40 }
+            };
+            const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+            
+            const pdfBytes = await fetch('./credit_template.pdf').then(r => {
+                if (!r.ok) throw new Error('credit_template.pdf не найден');
+                return r.arrayBuffer();
+            });
+            const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytes);
+            const page = pdfDoc.getPages()[0];
+            const opt10 = { size: 10, font: customFont, color: PDFLib.rgb(0,0,0) };
+            const opt12 = { size: 12, font: customFont, color: PDFLib.rgb(0,0,0) };
+            
+            const drawCentered = (txt, xS, xE, y, o) => {
+                if(!txt) return;
+                const w = o.font.widthOfTextAtSize(txt, o.size);
+                page.drawText(txt, { ...o, x: xS + ((xE - xS) - w) / 2, y });
+            };
+
+            const d = new Date();
+            drawCentered(String(d.getDate()).padStart(2,'0'), COORDS.date.day.xStart, COORDS.date.day.xEnd, COORDS.date.day.y, opt10);
+            drawCentered(MONTHS[d.getMonth()], COORDS.date.month.xStart, COORDS.date.month.xEnd, COORDS.date.month.y, opt10);
+            drawCentered(String(d.getFullYear()).slice(-2), COORDS.date.year.xStart, COORDS.date.year.xEnd, COORDS.date.year.y, opt10);
+            drawCentered(String(globalCurrentDay), COORDS.dayNum.xStart, COORDS.dayNum.xEnd, COORDS.dayNum.y, opt10);
+            drawCentered(docNum, COORDS.docNum.xStart, COORDS.docNum.xEnd, COORDS.docNum.y, opt10);
+
+            const p = state.userProfile;
+            const borrowerName = `${p.first_name || ''} ${p.patronymic || ''}`.trim();
+            page.drawText(borrowerName, { x: COORDS.borrowerName.x, y: COORDS.borrowerName.y, ...opt10 });
+            drawCentered(p.pass_series || '—', COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt10);
+            drawCentered(p.pass_number || '—', COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt10);
+
+            drawCentered(String(amount), COORDS.amount.xStart, COORDS.amount.xEnd, COORDS.amount.y, opt12);
+            drawCentered(String(rate), COORDS.rate.xStart, COORDS.rate.xEnd, COORDS.rate.y, opt12);
+            drawCentered(String(Math.round(totalDue)), COORDS.totalReturn.xStart, COORDS.totalReturn.xEnd, COORDS.totalReturn.y, opt12);
+            drawCentered(String(globalCurrentDay), COORDS.issueDay.xStart, COORDS.issueDay.xEnd, COORDS.issueDay.y, opt10);
+            drawCentered(String(endDay), COORDS.endDay.xStart, COORDS.endDay.xEnd, COORDS.endDay.y, opt10);
+
+            const qrText = `ДОГОВОР КРЕДИТА\n№ ${docNum}\nЗаемщик: ${borrowerName}\nСумма: ${amount} 💵\nСтавка: ${rate}%\nК возврату: ${Math.round(totalDue)} 💵\nВыдан: ${globalCurrentDay} день\nПогасить до: ${endDay} дня`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`;
+            const qrBytes = await fetch(qrUrl).then(r => r.arrayBuffer());
+            const qrImg = await pdfDoc.embedPng(qrBytes);
+            page.drawImage(qrImg, { x: COORDS.qrCode.x, y: COORDS.qrCode.y, width: COORDS.qrCode.width, height: COORDS.qrCode.height });
+
+            const bcCanvas = document.createElement('canvas');
+            JsBarcode(bcCanvas, docNum, { format: "CODE128", width: 2, height: 60, displayValue: false, margin: 0 });
+            const bcBytes = await fetch(bcCanvas.toDataURL("image/png")).then(r => r.arrayBuffer());
+            const bcImg = await pdfDoc.embedPng(bcBytes);
+            page.drawImage(bcImg, { x: COORDS.barcode.x, y: COORDS.barcode.y, width: COORDS.barcode.width, height: COORDS.barcode.height });
+
+            const finalPdf = await pdfDoc.save();
+            const blob = new Blob([finalPdf], { type: 'application/pdf' });
+            const fileName = `${Date.now()}_CREDIT_${docNum}.pdf`;
+
+            // 5) Сохраняем в Storage
+            const { error: upErr } = await supabaseClient.storage.from('documents').upload(fileName, blob, { contentType: 'application/pdf' });
+            if (upErr) throw new Error('Ошибка загрузки PDF: ' + upErr.message);
+
+            // 6) Создаём документ в БД
+            await supabaseClient.from('documents').insert({
+                patient_id: state.currentUser.id,
+                organization_id: 3,
+                doc_number: docNum,
+                document_type: 'Договор кредита',
+                file_path: fileName,
+                status: 'active',
+                is_read: false,
+                metadata: { credit_id: creditData.id, end_day: endDay }
+            });
+
+            showToast(`Кредит №${docNum} успешно оформлен! Договор добавлен в документы.`);
+            document.getElementById('loan-amount').value = '';
+            document.getElementById('loan-total').value = '';
+            
+            await loadBankData(state.currentUser.id);
+            await loadMyDocs(state.currentUser.id);
+        } catch (err) {
+            console.error(err);
+            showToast('Ошибка: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = originalText;
+            return;
+        }
+
+        btn.disabled = false;
+        btn.textContent = originalText;
+        renderBankTab();
     }
 
     async function payFine(fineId) {
@@ -1403,7 +1519,6 @@
         await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
         await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
         
-        // Обновляем статус связанного Постановления
         await supabaseClient.from('documents')
             .update({ status: 'paid' })
             .eq('doc_number', fine.doc_number)
@@ -1439,7 +1554,6 @@
         await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newBal });
         await supabaseClient.from('bank_credits').update({ remaining_amount: newRem, status: newStatus }).eq('id', creditId);
         
-        // Если полностью погашен - обновляем документ
         if (newStatus === 'paid') {
             await supabaseClient.from('documents')
                 .update({ status: 'paid' })
@@ -1460,7 +1574,6 @@
         if (newStatus === 'paid') await loadMyDocs(state.currentUser.id);
     }
 
-    // === ПЕРЕВОД СРЕДСТВ ===
     async function openTransferModal() {
         const { data: citizens } = await supabaseClient
             .from('profiles')
@@ -1496,11 +1609,9 @@
         const recipient = transferCitizensCache.find(c => c.id === recipientId);
         if (!recipient) return showToast('Получатель не найден');
         
-        // Списываем у отправителя
         const newSenderBal = state.bankBalance - amount;
         await supabaseClient.from('bank_accounts').upsert({ user_id: state.currentUser.id, balance: newSenderBal });
         
-        // Начисляем получателю
         const { data: recipientAcc } = await supabaseClient.from('bank_accounts').select('balance').eq('user_id', recipientId).maybeSingle();
         const recipientBal = recipientAcc ? Number(recipientAcc.balance) : 0;
         await supabaseClient.from('bank_accounts').upsert({ user_id: recipientId, balance: recipientBal + amount });
