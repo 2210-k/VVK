@@ -883,22 +883,40 @@
         }
 
         async function cleanupRelatedForDocument(docId, mode) {
-            // mode = 'revoke' or 'delete'
             const { data: doc } = await supabaseClient.from('documents').select('*').eq('id', docId).maybeSingle();
             if (!doc) return;
 
-            // Admin order -> delete related fine
+            // Постановление → удаляем штраф
             if (doc.document_type === 'Постановление об адм. правонарушении') {
                 await supabaseClient.from('bank_fines').delete().eq('doc_number', doc.doc_number);
             }
-            // Credit agreement -> delete related credit
+            // Кредит → списываем выданные деньги + удаляем запись кредита
             if (doc.document_type === 'Договор кредита') {
-                await supabaseClient.from('bank_credits').delete().eq('doc_number', doc.doc_number);
+                const { data: credit } = await supabaseClient.from('bank_credits')
+                    .select('*').eq('doc_number', doc.doc_number).maybeSingle();
+                if (credit) {
+                    const { data: acc } = await supabaseClient.from('bank_accounts')
+                        .select('balance').eq('user_id', credit.user_id).maybeSingle();
+                    const currentBal = acc ? Number(acc.balance) : 0;
+                    const amountIssued = Number(credit.amount);
+                    await supabaseClient.from('bank_accounts').upsert({
+                        user_id: credit.user_id,
+                        balance: currentBal - amountIssued
+                    });
+                    await supabaseClient.from('bank_transactions').insert({
+                        user_id: credit.user_id,
+                        amount: -amountIssued,
+                        type: 'credit_cancel',
+                        description: `Аннулирование кредита №${credit.doc_number} — возврат выданной суммы`,
+                        game_day: globalCurrentDay
+                    });
+                    await supabaseClient.from('bank_credits').delete().eq('id', credit.id);
+                }
             }
         }
 
         async function revokeDoc(docId) {
-            if (!confirm("Аннулировать документ?\n\nСвязанный штраф/кредит будет УДАЛЁН из банка.")) return;
+            if (!confirm("Аннулировать документ?\n\nСвязанный штраф/кредит будет УДАЛЁН из банка.\nПри аннулировании кредита выданная сумма спишется с баланса.")) return;
             
             await cleanupRelatedForDocument(docId, 'revoke');
             const { error } = await supabaseClient.from('documents').update({ status: 'revoked' }).eq('id', docId);
@@ -913,7 +931,7 @@
         }
 
         async function deleteDoc(docId, filePath) {
-            if (!confirm("Удалить документ навсегда?\n\nСвязанный штраф/кредит будет УДАЛЁН из банка.")) return;
+            if (!confirm("Удалить документ навсегда?\n\nСвязанный штраф/кредит будет УДАЛЁН из банка.\nПри удалении кредита выданная сумма спишется с баланса.")) return;
             
             await cleanupRelatedForDocument(docId, 'delete');
             try { await supabaseClient.storage.from('documents').remove([filePath]); } catch(e){}
@@ -1916,7 +1934,6 @@
                 </div>
             `;
 
-            // === ШТРАФЫ ===
             html += `<div class="details-section"><h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px;">🚨 Штрафы (${fines.filter(f=>f.status==='unpaid').length} активных)</h3>`;
             if (!fines.length) {
                 html += `<p style="color:#888; font-size:13px;">Нет штрафов</p>`;
@@ -1941,7 +1958,6 @@
             }
             html += `</div>`;
 
-            // === КРЕДИТЫ ===
             html += `<div class="details-section"><h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px;">💳 Кредиты</h3>`;
             if (!credits.length) {
                 html += `<p style="color:#888; font-size:13px;">Нет кредитов</p>`;
@@ -1964,7 +1980,6 @@
             }
             html += `</div>`;
 
-            // === ИСТОРИЯ ОПЕРАЦИЙ ===
             html += `<div class="details-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom:10px;">
                     <h3 style="border-left:4px solid var(--primary); padding-left:10px; font-size:16px; margin:0;">📜 История операций</h3>
@@ -1981,7 +1996,8 @@
                         'deposit': 'Пополнение', 'withdraw': 'Снятие', 'fine': 'Штраф',
                         'credit_issue': 'Кредит выдан', 'credit_payment': 'Платёж по кредиту',
                         'fine_payment': 'Оплата штрафа', 'salary': 'Зарплата', 'bonus': 'Премия', 'prize': 'Приз',
-                        'transfer_out': 'Перевод (исх.)', 'transfer_in': 'Перевод (вх.)'
+                        'transfer_out': 'Перевод (исх.)', 'transfer_in': 'Перевод (вх.)',
+                        'credit_cancel': 'Аннулирование кредита'
                     };
                     const typeLabel = typeLabels[t.type] || t.type;
                     html += `<tr>
@@ -2002,7 +2018,6 @@
             mainBox.innerHTML = html;
         }
 
-        // === Ссылка на документ ===
         async function findAndPreviewDocument(docNumber) {
             const { data: doc } = await supabaseClient
                 .from('documents')
@@ -2014,33 +2029,28 @@
             previewDoc(publicUrl);
         }
 
-        // === Удаление штрафа ===
         async function deleteBankFine(fineId) {
             if (!confirm('Удалить этот штраф?')) return;
             await supabaseClient.from('bank_fines').delete().eq('id', fineId);
             await loadBankData();
         }
 
-        // === Удаление кредита ===
         async function deleteBankCredit(creditId) {
             if (!confirm('Удалить этот кредит?')) return;
             await supabaseClient.from('bank_credits').delete().eq('id', creditId);
             await loadBankData();
         }
 
-        // === Отмена транзакции (возврат баланса) ===
         async function cancelTransaction(txId) {
             if (!confirm('Отменить транзакцию?\n\nБаланс будет скорректирован, связанные штрафы/кредиты восстановлены.')) return;
             
             const { data: tx } = await supabaseClient.from('bank_transactions').select('*').eq('id', txId).maybeSingle();
             if (!tx) return alert('Транзакция не найдена');
 
-            // Reverse balance
             const currentBal = bankBalances[tx.user_id] || 0;
             const newBal = currentBal - Number(tx.amount);
             await supabaseClient.from('bank_accounts').upsert({ user_id: tx.user_id, balance: newBal });
 
-            // Undo fine payment
             if (tx.type === 'fine_payment') {
                 const match = (tx.description || '').match(/№(\w+)/);
                 if (match) {
@@ -2048,7 +2058,6 @@
                         .update({ status: 'unpaid' })
                         .eq('user_id', tx.user_id)
                         .eq('doc_number', match[1]);
-                    // Also revert document status
                     await supabaseClient.from('documents')
                         .update({ status: 'active' })
                         .eq('doc_number', match[1])
@@ -2056,7 +2065,6 @@
                 }
             }
 
-            // Undo credit payment
             if (tx.type === 'credit_payment') {
                 const match = (tx.description || '').match(/№(\w+)/);
                 if (match) {
@@ -2066,7 +2074,6 @@
                         const newRem = Number(credit.remaining_amount) + Math.abs(Number(tx.amount));
                         await supabaseClient.from('bank_credits')
                             .update({ remaining_amount: newRem, status: 'active' }).eq('id', credit.id);
-                        // Revert document status
                         await supabaseClient.from('documents')
                             .update({ status: 'active' })
                             .eq('doc_number', match[1])
@@ -2075,26 +2082,22 @@
                 }
             }
 
-            // Delete transaction
             await supabaseClient.from('bank_transactions').delete().eq('id', txId);
             await loadBankData();
         }
 
-        // === Удалить запись транзакции (без возврата баланса) ===
         async function deleteTransaction(txId) {
             if (!confirm('Удалить запись из истории? Баланс НЕ изменится.')) return;
             await supabaseClient.from('bank_transactions').delete().eq('id', txId);
             await loadBankData();
         }
 
-        // === Очистить все транзакции ===
         async function clearTransactions(userId) {
             if (!confirm('Очистить ВСЮ историю операций?\n\nБаланс НЕ изменится.')) return;
             await supabaseClient.from('bank_transactions').delete().eq('user_id', userId);
             await loadBankData();
         }
 
-        // === ПОЛНЫЙ СБРОС клиента ===
         async function resetClient(userId) {
             if (!confirm('⚠️ СБРОСИТЬ ВСЁ для этого клиента?\n\nУдалятся:\n• Все транзакции\n• Все штрафы\n• Все кредиты\n• Связанные документы\n• Баланс обнулится\n\nДЕЙСТВИЕ НЕОБРАТИМО!')) return;
             if (!confirm('Вы АБСОЛЮТНО уверены? Данные будут удалены навсегда.')) return;
@@ -2161,7 +2164,7 @@
                 btn.onclick = () => doBankFine();
             } else if (type === 'credit') {
                 title.textContent = 'Выдача кредита';
-                body.innerHTML = `<div class="form-group"><label>Сумма кредита (💵)</label><input type="number" id="bank-op-amount" min="100"></div><div class="form-group"><label>Процент (%)</label><input type="number" id="bank-op-rate" min="0" value="15"></div>`;
+                body.innerHTML = `<div class="form-group"><label>Сумма кредита (💵)</label><input type="number" id="bank-op-amount" min="100"></div><div class="form-group"><label>Процент (%)</label><input type="number" id="bank-op-rate" min="0" step="0.1" value="15"></div>`;
                 btn.onclick = () => doBankCredit();
             } else if (type === 'prize') {
                 title.textContent = 'Приз / Премия';
@@ -2230,34 +2233,38 @@
             const docNum = `0753${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`;
             const endDay = globalCurrentDay + 50;
 
-            // 1) Создаём кредит
-            const { data: creditData, error: creditErr } = await supabaseClient.from('bank_credits').insert({
-                user_id: selectedBankClient.id,
-                doc_number: docNum,
-                amount: amt,
-                rate: rate,
-                total_due: totalDue,
-                remaining_amount: totalDue,
-                issue_day: globalCurrentDay,
-                end_day: endDay,
-                status: 'active'
-            }).select().single();
+            const btn = document.getElementById('bank-modal-submit');
+            btn.disabled = true;
+            btn.textContent = 'Создание...';
 
-            if (creditErr) return alert('Ошибка создания кредита: ' + creditErr.message);
-
-            // 2) Начисляем деньги + транзакция
-            const newBal = (bankBalances[selectedBankClient.id] || 0) + amt;
-            await supabaseClient.from('bank_accounts').upsert({ user_id: selectedBankClient.id, balance: newBal });
-            await supabaseClient.from('bank_transactions').insert({
-                user_id: selectedBankClient.id,
-                amount: amt,
-                type: 'credit_issue',
-                description: `Получение кредита №${docNum} (${rate}%)`,
-                game_day: globalCurrentDay
-            });
-
-            // 3) Генерируем и сохраняем документ
             try {
+                // 1) Создаём кредит
+                const { data: creditData, error: creditErr } = await supabaseClient.from('bank_credits').insert({
+                    user_id: selectedBankClient.id,
+                    doc_number: docNum,
+                    amount: amt,
+                    rate: rate,
+                    total_due: totalDue,
+                    remaining_amount: totalDue,
+                    issue_day: globalCurrentDay,
+                    end_day: endDay,
+                    status: 'active'
+                }).select().single();
+
+                if (creditErr) throw new Error('Ошибка создания кредита: ' + creditErr.message);
+
+                // 2) Начисляем деньги + транзакция
+                const newBal = (bankBalances[selectedBankClient.id] || 0) + amt;
+                await supabaseClient.from('bank_accounts').upsert({ user_id: selectedBankClient.id, balance: newBal });
+                await supabaseClient.from('bank_transactions').insert({
+                    user_id: selectedBankClient.id,
+                    amount: amt,
+                    type: 'credit_issue',
+                    description: `Получение кредита №${docNum} (${rate}%)`,
+                    game_day: globalCurrentDay
+                });
+
+                // 3) Генерируем PDF
                 const COORDS = {
                     date: { 
                         day:   { xStart: 49, xEnd: 63, y: 667 }, 
@@ -2273,13 +2280,16 @@
                     rate: { xStart: 149, xEnd: 184, y: 542 },
                     totalReturn: { xStart: 189, xEnd: 290, y: 526 },
                     issueDay: { xStart: 160, xEnd: 198, y: 504 },
-                    endDay: { xStart: 350, xEnd: 470, y: 475 },
+                    endDay: { xStart: 351, xEnd: 388, y: 475 },
                     qrCode: { x: 42, y: 740, width: 70, height: 70 },
                     barcode: { x: 479, y: 770, width: 70, height: 40 }
                 };
                 const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
                 
-                const pdfBytes = await fetch('./credit_template.pdf').then(r => r.arrayBuffer());
+                const pdfBytes = await fetch('./credit_template.pdf').then(r => {
+                    if (!r.ok) throw new Error('credit_template.pdf не найден');
+                    return r.arrayBuffer();
+                });
                 const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
                 pdfDoc.registerFontkit(fontkit);
                 const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
@@ -2309,11 +2319,11 @@
 
                 drawCentered(String(amt), COORDS.amount.xStart, COORDS.amount.xEnd, COORDS.amount.y, opt12);
                 drawCentered(String(rate), COORDS.rate.xStart, COORDS.rate.xEnd, COORDS.rate.y, opt12);
-                drawCentered(String(totalDue), COORDS.totalReturn.xStart, COORDS.totalReturn.xEnd, COORDS.totalReturn.y, opt12);
+                drawCentered(String(Math.round(totalDue)), COORDS.totalReturn.xStart, COORDS.totalReturn.xEnd, COORDS.totalReturn.y, opt12);
                 drawCentered(String(globalCurrentDay), COORDS.issueDay.xStart, COORDS.issueDay.xEnd, COORDS.issueDay.y, opt10);
                 drawCentered(String(endDay), COORDS.endDay.xStart, COORDS.endDay.xEnd, COORDS.endDay.y, opt10);
 
-                const qrText = `ДОГОВОР КРЕДИТА\n№ ${docNum}\nЗаемщик: ${borrowerName}\nСумма: ${amt}\nСтавка: ${rate}%\nК возврату: ${totalDue}\nВыдан: ${globalCurrentDay} день\nПогасить до: ${endDay} дня`;
+                const qrText = `ДОГОВОР КРЕДИТА\n№ ${docNum}\nЗаемщик: ${borrowerName}\nСумма: ${amt} 💵\nСтавка: ${rate}%\nК возврату: ${Math.round(totalDue)} 💵\nВыдан: ${globalCurrentDay} день\nПогасить до: ${endDay} дня`;
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`;
                 const qrBytes = await fetch(qrUrl).then(r => r.arrayBuffer());
                 const qrImg = await pdfDoc.embedPng(qrBytes);
@@ -2329,7 +2339,10 @@
                 const blob = new Blob([finalPdf], { type: 'application/pdf' });
                 const fileName = `${Date.now()}_CREDIT_${docNum}.pdf`;
 
-                await supabaseClient.storage.from('documents').upload(fileName, blob, { contentType: 'application/pdf' });
+                // 4) Сохраняем в Storage + документ
+                const { error: upErr } = await supabaseClient.storage.from('documents').upload(fileName, blob, { contentType: 'application/pdf' });
+                if (upErr) throw new Error('Ошибка загрузки PDF: ' + upErr.message);
+
                 await supabaseClient.from('documents').insert({
                     patient_id: selectedBankClient.id,
                     organization_id: 3,
@@ -2337,15 +2350,19 @@
                     document_type: 'Договор кредита',
                     file_path: fileName,
                     status: 'active',
+                    is_read: false,
                     metadata: { credit_id: creditData.id, end_day: endDay }
                 });
-            } catch(e) {
-                console.error('Ошибка генерации PDF:', e);
-                alert('Кредит создан, но PDF не сгенерирован: ' + e.message + '\n\nПроверьте, что файл credit_template.pdf лежит в корне.');
-            }
 
-            await loadBankData();
-            closeModal('bank-action-modal');
+                await loadBankData();
+                closeModal('bank-action-modal');
+            } catch (e) {
+                console.error('Ошибка генерации кредита:', e);
+                alert('Ошибка: ' + e.message + '\n\nПроверьте, что credit_template.pdf лежит в корне.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Подтвердить';
+            }
         }
 
         async function payBankFine(fineId) {
@@ -2357,7 +2374,6 @@
             await processBankTx(fine.user_id, -fine.amount, 'fine_payment', `Оплата штрафа №${fine.doc_number}`);
             await supabaseClient.from('bank_fines').update({ status: 'paid' }).eq('id', fineId);
             
-            // Обновляем статус связанного Постановления
             await supabaseClient.from('documents')
                 .update({ status: 'paid' })
                 .eq('doc_number', fine.doc_number)
