@@ -4,87 +4,94 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>МВД | Ведомость остановок ТС</title>
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- PDF-lib для генерации -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <!-- JsBarcode -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- PDF.js для просмотра -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <style>
         :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --card-hover: #334155;
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --primary: #3b82f6;
+            --bg: #f3f4f6;          /* Светлый фон */
+            --card: #ffffff;        /* Белые карточки */
+            --card-hover: #f8fafc;
+            --text: #1f2937;        /* Темный текст */
+            --muted: #6b7280;       /* Серый текст */
+            --primary: #1e3a8a;     /* Синий МВД */
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --border: rgba(255,255,255,0.1);
+            --border: #e2e8f0;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-        .title h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .title h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; color: var(--primary); }
         .title h1 i { color: var(--primary); }
         .actions { display: flex; gap: 10px; }
         
         .btn { padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 14px; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: #2563eb; }
+        .btn-primary:hover { background: #152d6e; }
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
-        .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #f9fafb; }
         .btn-sm { padding: 6px 12px; font-size: 12px; }
         
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         .tab { padding: 10px 20px; cursor: pointer; font-weight: 600; color: var(--muted); border-radius: 8px 8px 0 0; transition: 0.2s; }
-        .tab.active { color: var(--primary); background: rgba(59,130,246,0.1); border-bottom: 2px solid var(--primary); }
+        .tab.active { color: var(--primary); background: rgba(30,58,138,0.05); border-bottom: 2px solid var(--primary); }
         
-        .table-wrap { background: var(--card); border-radius: 12px; overflow-x: auto; border: 1px solid var(--border); }
+        .table-wrap { background: var(--card); border-radius: 12px; overflow-x: auto; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th, td { padding: 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
-        th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+        th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; background: #f8fafc; }
         tbody tr { cursor: pointer; transition: 0.2s; }
         tbody tr:hover { background: var(--card-hover); }
         
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .badge-open { background: rgba(16,185,129,0.15); color: var(--success); }
-        .badge-closed { background: rgba(239,68,68,0.15); color: var(--danger); }
+        .badge-open { background: rgba(16,185,129,0.15); color: #047857; }
+        .badge-closed { background: rgba(239,68,68,0.15); color: #b91c1c; }
         
         /* Modals */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(4px); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
-        .modal-content { background: var(--card); border-radius: 16px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card); z-index: 10; }
-        .modal-header h2 { font-size: 18px; }
+        .modal-content { background: var(--card); border-radius: 16px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card); z-index: 10; border-radius: 16px 16px 0 0; }
+        .modal-header h2 { font-size: 18px; color: var(--primary); }
         .modal-close { background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; }
         .modal-body { padding: 20px; }
         
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
-        .form-control { width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
-        .form-control:focus { border-color: var(--primary); }
+        .form-control { width: 100%; padding: 12px; background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
+        .form-control:focus { border-color: var(--primary); background: white; }
         .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
         /* Stop Card Details */
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        .info-item label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
-        .info-item div { font-size: 14px; font-weight: 500; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .info-item label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+        .info-item div { font-size: 14px; font-weight: 500; color: var(--text); }
         
         .action-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .action-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .action-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         .action-card:hover { border-color: var(--primary); }
-        .action-info h4 { font-size: 14px; margin-bottom: 4px; }
+        .action-info h4 { font-size: 14px; margin-bottom: 4px; color: var(--primary); }
         .action-info p { font-size: 12px; color: var(--muted); }
         
         .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
         .empty { text-align: center; padding: 40px; color: var(--muted); }
         
-        .toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; background: var(--success); color: white; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 2000; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; background: var(--success); color: white; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { background: var(--danger); }
     </style>
@@ -230,6 +237,21 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА: ПРОСМОТР PDF -->
+    <div class="modal" id="preview-modal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 95%; width: 95%; height: 95%; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2>Просмотр документа</h2>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <a id="preview-download-btn" href="#" class="btn btn-primary" download>Скачать</a>
+                    <button class="modal-close" onclick="closeModal('preview-modal')" style="margin-top:-5px;">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" id="pdf-container" style="flex:1; overflow-y:auto; background:#555; padding:10px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast">Успешно</div>
 
 <script>
@@ -237,16 +259,22 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Инициализация PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
     let allCitizens = [];
     let allVehicles = [];
     let allStops = [];
     let currentDay = 1;
+    let currentStopId = null;
 
     const REASON_MAP = {
         '0.1': 'Проверка документов', '0.2': 'Нарушение ПДД', '0.3': 'Ориентировка',
         '0.4': 'Спец. мероприятия', '0.5': 'Тех. состояние', '0.6': 'ДТП / Свидетель',
         '0.7': 'Подозрение в преступлении', '0.8': 'В розыске', '0.9': 'Иная причина'
     };
+
+    const MONTHS_GENITIVE = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
     function showToast(msg, isError = false) {
         const t = document.getElementById('toast');
@@ -258,12 +286,21 @@
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    async function init() {
-        // Загрузка текущего дня
-        const { data: settings } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
-        if (settings) currentDay = settings.current_day;
+    // ИСПРАВЛЕННАЯ ФУНКЦИЯ
+    function openStopModal() {
+        document.getElementById('create-stop-form').reset();
         document.getElementById('stop-game-day').value = currentDay;
         document.getElementById('stop-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('stop-vehicle-doc').innerHTML = '<option value="">-- Сначала выберите водителя --</option>';
+        document.getElementById('stop-vehicle-doc-num').value = '';
+        document.getElementById('stop-plate').value = '';
+        document.getElementById('stop-color').value = '';
+        openModal('create-stop-modal');
+    }
+
+    async function init() {
+        const { data: settings } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
+        if (settings) currentDay = settings.current_day;
 
         await loadCitizens();
         await loadVehicles();
@@ -274,6 +311,7 @@
         const { data } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
         allCitizens = data || [];
         const select = document.getElementById('stop-patient');
+        select.innerHTML = '<option value="">-- Выберите гражданина --</option>';
         allCitizens.forEach(c => {
             select.add(new Option(`${c.last_name} ${c.first_name} ${c.patronymic || ''}`.trim(), c.id));
         });
@@ -313,6 +351,13 @@
         if (error) return showToast(error.message, true);
         
         allStops = data || [];
+        
+        // Подсчет действий для каждой остановки (для таблицы)
+        const { data: docs } = await supabaseClient.from('documents').select('stop_id').not('stop_id', 'is', null);
+        const actionCounts = {};
+        if (docs) docs.forEach(d => { actionCounts[d.stop_id] = (actionCounts[d.stop_id] || 0) + 1; });
+
+        allStops.forEach(s => s.actions_count = actionCounts[s.id] || 0);
         renderStops();
     }
 
@@ -345,14 +390,13 @@
                         <div>${s.reason_code}</div>
                         <div style="font-size:11px; color:var(--muted);">${REASON_MAP[s.reason_code] || '—'}</div>
                     </td>
-                    <td><span style="color:var(--primary); font-weight:bold;">${s.actions_count || 0}</span></td>
+                    <td><span style="color:var(--primary); font-weight:bold;">${s.actions_count}</span></td>
                     <td>${statusBadge}</td>
                 </tr>
             `;
         });
     }
 
-    // --- ЛОГИКА СОЗДАНИЯ ОСТАНОВКИ ---
     function onPatientSelect() {
         const pid = document.getElementById('stop-patient').value;
         const vehicleSelect = document.getElementById('stop-vehicle-doc');
@@ -408,12 +452,8 @@
         
         showToast('Остановка зафиксирована');
         closeModal('create-stop-modal');
-        document.getElementById('create-stop-form').reset();
         loadStops();
     });
-
-    // --- КАРТОЧКА ОСТАНОВКИ ---
-    let currentStopId = null;
 
     async function openStopDetails(id) {
         currentStopId = id;
@@ -423,7 +463,6 @@
         const p = stop.profiles || {};
         const fio = `${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`.trim();
         
-        // Загружаем привязанные документы (действия)
         const { data: actions } = await supabaseClient.from('documents')
             .select('*')
             .eq('stop_id', id)
@@ -461,7 +500,7 @@
             `;
         }
 
-        html += `<h3 style="margin-bottom:10px; font-size:16px;">Процессуальные действия (${actions ? actions.length : 0})</h3>`;
+        html += `<h3 style="margin-bottom:10px; font-size:16px; margin-top:20px;">Процессуальные действия (${actions ? actions.length : 0})</h3>`;
         
         if (!actions || !actions.length) {
             html += `<div class="empty">Нет прикрепленных действий</div>`;
@@ -489,15 +528,12 @@
         openModal('detail-stop-modal');
     }
 
-    // Переход в генераторы
     function addAction(url) {
         const stop = allStops.find(s => s.id === currentStopId);
         if (!stop) return;
-        // Передаем в генератор ID остановки, чтобы документ привязался к ней
         window.open(`${url}?org=2&stop_id=${stop.id}&patient_id=${stop.patient_id}&t=${Date.now()}`, '_blank');
     }
 
-    // --- ЗАКРЫТИЕ ОСТАНОВКИ И ПРОТОКОЛ ---
     async function closeStop(id) {
         if (!confirm('Закрыть остановку? Редактирование будет заблокировано, а протокол сгенерируется автоматически.')) return;
         
@@ -508,7 +544,20 @@
             const stop = allStops.find(s => s.id === id);
             const p = stop.profiles || {};
             
-            // 1. Генерация PDF (Протокол об остановке)
+            // Получаем связанные документы для протокола
+            const { data: relatedDocs } = await supabaseClient.from('documents').select('*').eq('stop_id', id);
+            const actions = relatedDocs || [];
+            
+            // Форматируем строки для протокола
+            let docsList = [];
+            actions.forEach(doc => {
+                const d = new Date(doc.created_at);
+                const dateStr = String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getFullYear()).slice(-2);
+                // Формат: НАЗВАНИЕ ДОКУМЕНТА ПОЛНОЕ, №... от ДД.ММ.ГГ(ННН (Номер дня))
+                docsList.push(`${doc.document_type.toUpperCase()}, №${doc.doc_number} от ${dateStr}(${doc.metadata?.game_day || stop.game_day})`);
+            });
+
+            // Генерация PDF
             const pdfBytes = await fetch('./stop_protocol_template.pdf').then(r => {
                 if(!r.ok) throw new Error('Файл stop_protocol_template.pdf не найден в корне!');
                 return r.arrayBuffer();
@@ -520,25 +569,138 @@
             const customFont = await pdfDoc.embedFont(fontBytes);
             const page = pdfDoc.getPages()[0];
 
-            // ⚠️ КООРДИНАТЫ ДЛЯ ПРОТОКОЛА (ЗАМЕНИ НА СВОИ)
+            // ⚠️ КООРДИНАТЫ ДЛЯ ПРОТОКОЛА (ОСТАВИЛ ПЛЕЙСХОЛДЕРЫ, ЗАМЕНИ НА СВОИ X И Y)
             const COORDS = {
                 docNum: { xStart: 450, xEnd: 550, y: 700 },
-                fio: { x: 150, y: 650 },
-                vehicle: { x: 150, y: 620 },
-                plate: { x: 400, y: 620 },
-                reason: { x: 150, y: 580 },
+                dateTop: { 
+                    day:   { xStart: 100, xEnd: 120, y: 680 }, 
+                    month: { xStart: 130, xEnd: 180, y: 680 }, 
+                    year:  { xStart: 190, xEnd: 210, y: 680 } 
+                },
+                dayNum: { xStart: 220, xEnd: 240, y: 680 },
+                ya: { x: 100, y: 650 },
+                vehicle: { x: 100, y: 620 },
+                firstName: { x: 100, y: 590 },
+                dob: { 
+                    day:   { xStart: 100, xEnd: 120, y: 570 }, 
+                    month: { xStart: 130, xEnd: 180, y: 570 }, 
+                    year:  { xStart: 190, xEnd: 210, y: 570 } 
+                },
+                passSeries: { xStart: 220, xEnd: 260, y: 570 },
+                passNumber: { xStart: 270, xEnd: 310, y: 570 },
+                license: { xStart: 320, xEnd: 380, y: 570 },
+                vehicleDoc: { xStart: 390, xEnd: 450, y: 570 },
+                regAddress: { x: 100, y: 540 },
+                actualAddress: { x: 100, y: 510 },
+                eventDate: { 
+                    day:   { xStart: 100, xEnd: 120, y: 480 }, 
+                    month: { xStart: 130, xEnd: 180, y: 480 }, 
+                    year:  { xStart: 190, xEnd: 210, y: 480 } 
+                },
+                eventDayNum: { xStart: 220, xEnd: 240, y: 480 },
+                eventTime: {
+                    h: { xStart: 250, xEnd: 270, y: 480 },
+                    m: { xStart: 280, xEnd: 300, y: 480 }
+                },
+                stopAddress: { x: 100, y: 450 },
+                reason: { x: 100, y: 420 },
+                result: { x: 100, y: 390, maxWidth: 400, lineHeight: 12 },
+                official: { x: 100, y: 340 },
+                relatedDocs: [
+                    { x: 100, y: 300 }, { x: 100, y: 280 }, { x: 100, y: 260 }, { x: 100, y: 240 }, { x: 100, y: 220 }
+                ],
                 barcode: { x: 450, y: 750, width: 80, height: 40 },
                 qrCode: { x: 50, y: 750, width: 70, height: 70 }
             };
 
             const opt = { size: 10, font: customFont, color: PDFLib.rgb(0,0,0) };
             
-            // Отрисовка данных
-            page.drawText(stop.doc_number, { x: COORDS.docNum.xStart, y: COORDS.docNum.y, ...opt });
-            page.drawText(`${p.last_name} ${p.first_name} ${p.patronymic || ''}`, { x: COORDS.fio.x, y: COORDS.fio.y, ...opt });
-            page.drawText(`${stop.vehicle_model} / ${stop.vehicle_color}`, { x: COORDS.vehicle.x, y: COORDS.vehicle.y, ...opt });
-            page.drawText(stop.vehicle_plate, { x: COORDS.plate.x, y: COORDS.plate.y, ...opt });
-            page.drawText(`${stop.reason_code} - ${REASON_MAP[stop.reason_code]}`, { x: COORDS.reason.x, y: COORDS.reason.y, ...opt });
+            const drawCentered = (txt, xS, xE, y, o) => {
+                if(!txt) return;
+                const w = o.font.widthOfTextAtSize(txt, o.size);
+                page.drawText(txt, { ...o, x: xS + ((xE - xS) - w) / 2, y });
+            };
+
+            // 1. Номер документа и Дата (верхняя)
+            const now = new Date();
+            const dayStr = String(now.getDate()).padStart(2, '0');
+            const monthStr = MONTHS_GENITIVE[now.getMonth()];
+            const yearStr = String(now.getFullYear()).slice(-2);
+
+            drawCentered(stop.doc_number, COORDS.docNum.xStart, COORDS.docNum.xEnd, COORDS.docNum.y, opt);
+            drawCentered(dayStr, COORDS.dateTop.day.xStart, COORDS.dateTop.day.xEnd, COORDS.dateTop.day.y, opt);
+            drawCentered(monthStr, COORDS.dateTop.month.xStart, COORDS.dateTop.month.xEnd, COORDS.dateTop.month.y, opt);
+            drawCentered(yearStr, COORDS.dateTop.year.xStart, COORDS.dateTop.year.xEnd, COORDS.dateTop.year.y, opt);
+            drawCentered(String(stop.game_day), COORDS.dayNum.xStart, COORDS.dayNum.xEnd, COORDS.dayNum.y, opt);
+
+            // 2. Я... (Должность, звание)
+            const official = "Инспектор ДПС, лейтенант полиции";
+            page.drawText(official, { x: COORDS.ya.x, y: COORDS.ya.y, ...opt });
+
+            // 3. ТС
+            const vehicleStr = `${stop.vehicle_model}, ${stop.vehicle_color}, ${stop.vehicle_plate}`;
+            page.drawText(vehicleStr, { x: COORDS.vehicle.x, y: COORDS.vehicle.y, ...opt });
+
+            // 4. Имя Отчество
+            const firstNameStr = `${p.first_name || ''} ${p.patronymic || ''}`.trim();
+            page.drawText(firstNameStr, { x: COORDS.firstName.x, y: COORDS.firstName.y, ...opt });
+
+            // 5. Дата рождения
+            if (p.dob) {
+                const dobD = new Date(p.dob);
+                drawCentered(String(dobD.getDate()).padStart(2, '0'), COORDS.dob.day.xStart, COORDS.dob.day.xEnd, COORDS.dob.day.y, opt);
+                drawCentered(MONTHS_GENITIVE[dobD.getMonth()], COORDS.dob.month.xStart, COORDS.dob.month.xEnd, COORDS.dob.month.y, opt);
+                drawCentered(String(dobD.getFullYear()).slice(-2), COORDS.dob.year.xStart, COORDS.dob.year.xEnd, COORDS.dob.year.y, opt);
+            }
+
+            // 6. Паспорт, ВУ, Документ на ТС
+            drawCentered(p.pass_series || '—', COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt);
+            drawCentered(p.pass_number || '—', COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt);
+            drawCentered(p.driver_license || '—', COORDS.license.xStart, COORDS.license.xEnd, COORDS.license.y, opt);
+            drawCentered(stop.vehicle_doc_number || '—', COORDS.vehicleDoc.xStart, COORDS.vehicleDoc.xEnd, COORDS.vehicleDoc.y, opt);
+
+            // 7. Адреса
+            page.drawText(p.address || '—', { x: COORDS.regAddress.x, y: COORDS.regAddress.y, ...opt });
+            page.drawText(p.address || '—', { x: COORDS.actualAddress.x, y: COORDS.actualAddress.y, ...opt }); // Тут же, если совпадает
+
+            // 8. Дата события и время
+            if (stop.real_date) {
+                const evD = new Date(stop.real_date);
+                drawCentered(String(evD.getDate()).padStart(2, '0'), COORDS.eventDate.day.xStart, COORDS.eventDate.day.xEnd, COORDS.eventDate.day.y, opt);
+                drawCentered(MONTHS_GENITIVE[evD.getMonth()], COORDS.eventDate.month.xStart, COORDS.eventDate.month.xEnd, COORDS.eventDate.month.y, opt);
+                drawCentered(String(evD.getFullYear()).slice(-2), COORDS.eventDate.year.xStart, COORDS.eventDate.year.xEnd, COORDS.eventDate.year.y, opt);
+            }
+            drawCentered(String(stop.game_day), COORDS.eventDayNum.xStart, COORDS.eventDayNum.xEnd, COORDS.eventDayNum.y, opt);
+            
+            // Время (ЧЧ ММ) - берем текущее, так как в базе времени нет
+            const timeH = String(new Date().getHours()).padStart(2, '0');
+            const timeM = String(new Date().getMinutes()).padStart(2, '0');
+            drawCentered(timeH, COORDS.eventTime.h.xStart, COORDS.eventTime.h.xEnd, COORDS.eventTime.h.y, opt);
+            drawCentered(timeM, COORDS.eventTime.m.xStart, COORDS.eventTime.m.xEnd, COORDS.eventTime.m.y, opt);
+
+            // 9. Адрес остановки
+            page.drawText("г. Соль-Илецк, ул. Васильковая, д. 40/1", { x: COORDS.stopAddress.x, y: COORDS.stopAddress.y, ...opt });
+
+            // 10. Причина
+            page.drawText(`${stop.reason_code} — ${REASON_MAP[stop.reason_code]}`, { x: COORDS.reason.x, y: COORDS.reason.y, ...opt });
+
+            // 11. Результат остановки
+            const resultText = stop.note || 'Проверен, нарушений не выявлено.';
+            // Простейший перенос строк (можно использовать drawParagraph из других генераторов)
+            page.drawText(resultText.substring(0, 80), { x: COORDS.result.x, y: COORDS.result.y, ...opt });
+            if (resultText.length > 80) {
+                page.drawText(resultText.substring(80, 160), { x: COORDS.result.x, y: COORDS.result.y - 12, ...opt });
+            }
+
+            // 12. Должностное лицо
+            page.drawText("лейтенант полиции", { x: COORDS.official.x, y: COORDS.official.y, ...opt });
+
+            // 13. Связанные документы (до 5 штук)
+            docsList.slice(0, 5).forEach((docStr, idx) => {
+                if (idx < 5) {
+                    page.drawText(`${idx + 1}. ${docStr}`, { x: COORDS.relatedDocs[idx].x, y: COORDS.relatedDocs[idx].y, ...opt });
+                }
+            });
 
             // Штрих-код
             const bcCanvas = document.createElement('canvas');
@@ -558,10 +720,10 @@
             const blob = new Blob([finalPdf], { type: 'application/pdf' });
             const fileName = `${Date.now()}_STOP_PROTOCOL_${stop.doc_number}.pdf`;
 
-            // 2. Загрузка в Storage
+            // Загрузка в Storage
             await supabaseClient.storage.from('documents').upload(fileName, blob, { contentType: 'application/pdf' });
 
-            // 3. Запись в базу documents (общая база МВД)
+            // Запись в базу
             await supabaseClient.from('documents').insert({
                 patient_id: stop.patient_id,
                 organization_id: 2,
@@ -573,7 +735,7 @@
                 metadata: { game_day: stop.game_day }
             });
 
-            // 4. Обновление статуса остановки
+            // Обновление статуса
             await supabaseClient.from('mvd_stops').update({ status: 'closed' }).eq('id', stop.id);
 
             showToast('Остановка закрыта, протокол сгенерирован!');
@@ -587,24 +749,56 @@
         }
     }
 
-    // --- АННУЛИРОВАНИЕ ДЕЙСТВИЯ ---
     async function revokeAction(docId) {
         if (!confirm('Аннулировать этот документ? Он также будет аннулирован в общей базе.')) return;
         await supabaseClient.from('documents').update({ status: 'revoked' }).eq('id', docId);
-        openStopDetails(currentStopId); // Перерисовываем карточку
+        openStopDetails(currentStopId);
     }
 
-    // --- ВСПОМОГАТЕЛЬНЫЕ ---
+    // --- ПРОСМОТР ДОКУМЕНТОВ НА САЙТЕ (PDF.JS) ---
+    async function previewDoc(url) {
+        document.getElementById('preview-download-btn').href = url;
+        const container = document.getElementById('pdf-container');
+        container.innerHTML = '<p style="color:white;">Загрузка документа...</p>';
+        openModal('preview-modal');
+
+        try {
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+            container.innerHTML = '';
+            
+            const containerWidth = container.clientWidth;
+            const pixelRatio = window.devicePixelRatio || 1;
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1 });
+                const scale = (containerWidth / viewport.width) * pixelRatio * 1.2;
+                const scaledViewport = page.getViewport({ scale: scale });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = scaledViewport.height;
+                canvas.width = scaledViewport.width;
+                canvas.style.width = '100%';
+                canvas.style.height = 'auto';
+                canvas.style.marginBottom = '10px';
+                canvas.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+
+                container.appendChild(canvas);
+                await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+            }
+        } catch (err) {
+            container.innerHTML = '<p style="color:white;">Ошибка загрузки PDF: ' + err.message + '</p>';
+        }
+    }
+
     async function findAndPreviewDoc(docNumber) {
         const { data } = await supabaseClient.from('documents').select('file_path').eq('doc_number', docNumber).maybeSingle();
         if (data) {
             const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(data.file_path);
             previewDoc(publicUrl);
         }
-    }
-
-    function previewDoc(url) {
-        window.open(url, '_blank');
     }
 
     function switchTab(tab, el) {
