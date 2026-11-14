@@ -860,13 +860,18 @@
             const fileName = `${Date.now()}_ADMIN_${docNumber}.pdf`;
 
             await supabaseClient.storage.from('documents').upload(fileName, currentPdfBlob, { contentType: 'application/pdf' });
+            // Получаем stop_id из ссылки
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlStopId = urlParams.get('stop_id');
+
             await supabaseClient.from('documents').insert({
                 patient_id: actualCitizenId,
                 organization_id: currentOrgId,
                 doc_number: docNumber,
-                document_type: 'Постановление об адм. правонарушении',
+                document_type: '...', // Оставь как было в твоем файле!
                 file_path: fileName,
-                status: 'active'
+                status: 'active',
+                stop_id: urlStopId ? parseInt(urlStopId) : null // <--- ДОБАВИТЬ ВОТ ЭТУ СТРОКУ
             });
 
             // === ДОБАВЛЕНИЕ ШТРАФА В БАНК ===
