@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Протокол об остановке ТС</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f3f4f6; --card: #fff; --text: #1f2937; --muted: #6b7280; --primary: #1e3a8a; --success: #10b981; --danger: #ef4444; --border: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .header h1 { font-size: 22px; color: var(--primary); }
+        .header .actions { display: flex; gap: 10px; }
+        .btn { padding: 10px 18px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #e2e8f0; color: #333; }
+        .btn-success { background: var(--success); color: white; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .section-title { font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin: 20px 0 10px; border-bottom: 2px solid var(--primary); padding-bottom: 6px; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+        .form-control { width: 100%; padding: 10px; background: #f9fafb; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
+        .form-control:focus { border-color: var(--primary); background: white; }
+        textarea.form-control { resize: vertical; min-height: 60px; }
+        .hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; background: var(--success); color: white; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 2000; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: var(--danger); }
+        .preview-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; flex-direction: column; padding: 20px; }
+        .preview-modal.active { display: flex; }
+        .preview-header { display: flex; justify-content: space-between; align-items: center; color: white; margin-bottom: 10px; }
+        .preview-body { flex: 1; background: #555; overflow: auto; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Протокол об остановке ТС</h1>
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="window.location.href='mvd-vedomost.html'">← В ведомость</button>
+            <button class="btn btn-primary" id="submitBtn" onclick="generatePDF()">Сгенерировать PDF</button>
+        </div>
+    </div>
+
+    <!-- ДАННЫЕ ОСТАНОВКИ -->
+    <div class="section-title">1. Данные остановки</div>
+    <div class="row">
+        <div class="form-group">
+            <label>№ документа (0154ННН)</label>
+            <input type="text" class="form-control" id="doc-number">
+        </div>
+        <div class="form-group">
+            <label>Номер дня (игровой)</label>
+            <input type="number" class="form-control" id="game-day">
+        </div>
+    </div>
+
+    <!-- ДАТА ПРОТОКОЛА -->
+    <div class="section-title">2. Дата составления протокола</div>
+    <div class="row-3">
+        <div class="form-group"><label>День</label><input type="text" class="form-control" id="date-day" maxlength="2"></div>
+        <div class="form-group"><label>Месяц</label><select class="form-control" id="date-month"></select></div>
+        <div class="form-group"><label>Год (2 цифры)</label><input type="text" class="form-control" id="date-year" maxlength="2"></div>
+    </div>
+
+    <!-- СОТРУДНИК -->
+    <div class="section-title">3. Сотрудник, составивший протокол</div>
+    <div class="form-group">
+        <label>Должность, специальное звание</label>
+        <input type="text" class="form-control" id="inspector-pos">
+    </div>
+    <div class="form-group">
+        <label>ФИО сотрудника</label>
+        <input type="text" class="form-control" id="inspector-name">
+    </div>
+
+    <!-- ВОДИТЕЛЬ -->
+    <div class="section-title">4. Сведения о водителе</div>
+    <div class="row">
+        <div class="form-group"><label>Имя</label><input type="text" class="form-control" id="driver-first"></div>
+        <div class="form-group"><label>Отчество</label><input type="text" class="form-control" id="driver-patr"></div>
+    </div>
+    <div class="row-3">
+        <div class="form-group"><label>ДР: День</label><input type="text" class="form-control" id="dob-day" maxlength="2"></div>
+        <div class="form-group"><label>ДР: Месяц</label><select class="form-control" id="dob-month"></select></div>
+        <div class="form-group"><label>ДР: Год</label><input type="text" class="form-control" id="dob-year" maxlength="2"></div>
+    </div>
+    <div class="row">
+        <div class="form-group"><label>Паспорт: серия</label><input type="text" class="form-control" id="pass-series"></div>
+        <div class="form-group"><label>Паспорт: номер</label><input type="text" class="form-control" id="pass-number"></div>
+    </div>
+    <div class="row">
+        <div class="form-group"><label>№ В/У</label><input type="text" class="form-control" id="driver-license"></div>
+        <div class="form-group"><label>№ документа на ТС</label><input type="text" class="form-control" id="vehicle-doc"></div>
+    </div>
+    <div class="form-group"><label>Адрес регистрации</label><input type="text" class="form-control" id="reg-address"></div>
+    <div class="form-group"><label>Фактический адрес проживания</label><input type="text" class="form-control" id="actual-address"></div>
+
+    <!-- ТС -->
+    <div class="section-title">5. Транспортное средство</div>
+    <div class="row-3">
+        <div class="form-group"><label>Марка / модель</label><input type="text" class="form-control" id="vehicle-model"></div>
+        <div class="form-group"><label>Цвет</label><input type="text" class="form-control" id="vehicle-color"></div>
+        <div class="form-group"><label>Госномер</label><input type="text" class="form-control" id="vehicle-plate"></div>
+    </div>
+
+    <!-- ОБСТОЯТЕЛЬСТВА -->
+    <div class="section-title">6. Обстоятельства остановки</div>
+    <div class="row-3">
+        <div class="form-group"><label>Дата: День</label><input type="text" class="form-control" id="ev-day" maxlength="2"></div>
+        <div class="form-group"><label>Дата: Месяц</label><select class="form-control" id="ev-month"></select></div>
+        <div class="form-group"><label>Дата: Год</label><input type="text" class="form-control" id="ev-year" maxlength="2"></div>
+    </div>
+    <div class="row-3">
+        <div class="form-group"><label>Номер дня</label><input type="number" class="form-control" id="ev-day-num"></div>
+        <div class="form-group"><label>Время: ЧЧ</label><input type="text" class="form-control" id="ev-h" maxlength="2"></div>
+        <div class="form-group"><label>Время: ММ</label><input type="text" class="form-control" id="ev-m" maxlength="2"></div>
+    </div>
+    <div class="form-group"><label>Адрес остановки (место)</label><input type="text" class="form-control" id="stop-address"></div>
+    <div class="form-group">
+        <label>Причина остановки (код, расшифровка)</label>
+        <input type="text" class="form-control" id="stop-reason">
+    </div>
+    <div class="form-group">
+        <label>Результат остановки</label>
+        <textarea class="form-control" id="stop-result"></textarea>
+    </div>
+
+    <!-- ДОЛЖНОСТНОЕ ЛИЦО -->
+    <div class="section-title">7. Должностное лицо (подпись)</div>
+    <div class="form-group">
+        <label>Специальное звание</label>
+        <input type="text" class="form-control" id="official-rank">
+        <div class="hint">В PDF выводится в поле "Должностное лицо"</div>
+    </div>
+
+    <!-- СВЯЗАННЫЕ ДОКУМЕНТЫ -->
+    <div class="section-title">8. Связанные документы (до 5)</div>
+    <div class="form-group"><label>1.</label><input type="text" class="form-control" id="doc-1"></div>
+    <div class="form-group"><label>2.</label><input type="text" class="form-control" id="doc-2"></div>
+    <div class="form-group"><label>3.</label><input type="text" class="form-control" id="doc-3"></div>
+    <div class="form-group"><label>4.</label><input type="text" class="form-control" id="doc-4"></div>
+    <div class="form-group"><label>5.</label><input type="text" class="form-control" id="doc-5"></div>
+    <div class="hint">Формат: НАЗВАНИЕ ДОКУМЕНТА, №... от ДД.ММ.ГГ(Номер дня). Поля можно редактировать.</div>
+
+    <div style="display:flex; gap:10px; margin-top:20px;">
+        <button class="btn btn-success" style="flex:1;" onclick="generatePDF()" id="submitBtn2">Сгенерировать PDF и закрыть остановку</button>
+    </div>
+</div>
+
+<div class="toast" id="toast">Успешно</div>
+
+<div class="preview-modal" id="preview-modal">
+    <div class="preview-header">
+        <h3>Предпросмотр протокола</h3>
+        <div style="display:flex; gap:10px;">
+            <a id="preview-download" href="#" class="btn btn-primary" download>Скачать</a>
+            <button class="btn btn-secondary" onclick="closePreview()">Закрыть</button>
+        </div>
+    </div>
+    <div class="preview-body" id="preview-body"></div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const stopId = urlParams.get('stop_id');
+
+    const MONTHS = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+    const MONTHS_NUM = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+
+    const REASON_MAP = {
+        '0.1': 'Проверка документов на право пользования и управления ТС',
+        '0.2': 'Нарушение Правил дорожного движения (ДК РФ)',
+        '0.3': 'Наличие ориентировки (розыск ТС или водителя)',
+        '0.4': 'Проведение специальных мероприятий (рейд, перекрытие)',
+        '0.5': 'Проверка технического состояния ТС (неисправность)',
+        '0.6': 'Участие водителя в ДТП или как свидетеля',
+        '0.7': 'Подозрение на совершение преступления',
+        '0.8': 'Нахождение лица в розыске',
+        '0.9': 'Иная причина, требующая вмешательства полиции'
+    };
+
+    let currentStop = null;
+    let currentProfile = null;
+
+    function showToast(msg, isError = false) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + (isError ? 'error' : '');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function initMonths() {
+        const selects = document.querySelectorAll('select.form-control');
+        selects.forEach(sel => {
+            if (sel.id === 'date-month' || sel.id === 'dob-month' || sel.id === 'ev-month') {
+                sel.innerHTML = '';
+                MONTHS.forEach((m, i) => sel.add(new Option(m, MONTHS_NUM[i])));
+            }
+        });
+    }
+
+    async function loadData() {
+        if (!stopId) {
+            alert('Не передан stop_id. Откройте через кнопку "Закрыть остановку" в ведомости.');
+            window.location.href = 'mvd-vedomost.html';
+            return;
+        }
+
+        const { data: stop, error } = await supabaseClient.from('mvd_stops').select('*').eq('id', stopId).single();
+        if (error || !stop) {
+            alert('Остановка не найдена');
+            window.location.href = 'mvd-vedomost.html';
+            return;
+        }
+        currentStop = stop;
+
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', stop.patient_id).single();
+        currentProfile = profile || {};
+
+        const { data: relatedDocs } = await supabaseClient.from('documents').select('*').eq('stop_id', stopId).order('created_at', { ascending: true });
+
+        // Заполняем поля
+        const now = new Date();
+        document.getElementById('doc-number').value = stop.doc_number || '';
+        document.getElementById('game-day').value = stop.game_day || 1;
+        document.getElementById('date-day').value = String(now.getDate()).padStart(2, '0');
+        document.getElementById('date-month').value = MONTHS_NUM[now.getMonth()];
+        document.getElementById('date-year').value = String(now.getFullYear()).slice(-2);
+
+        document.getElementById('inspector-pos').value = stop.inspector_position || '';
+        document.getElementById('inspector-name').value = stop.inspector_name || '';
+        document.getElementById('driver-first').value = currentProfile.first_name || '';
+        document.getElementById('driver-patr').value = currentProfile.patronymic || '';
+
+        if (currentProfile.dob) {
+            const d = new Date(currentProfile.dob);
+            document.getElementById('dob-day').value = String(d.getDate()).padStart(2, '0');
+            document.getElementById('dob-month').value = MONTHS_NUM[d.getMonth()];
+            document.getElementById('dob-year').value = String(d.getFullYear()).slice(-2);
+        }
+
+        document.getElementById('pass-series').value = currentProfile.pass_series || '';
+        document.getElementById('pass-number').value = currentProfile.pass_number || '';
+        document.getElementById('driver-license').value = currentProfile.driver_license || '';
+        document.getElementById('vehicle-doc').value = stop.vehicle_doc_number || '';
+        document.getElementById('reg-address').value = currentProfile.address || '';
+        document.getElementById('actual-address').value = stop.actual_address || currentProfile.address || '';
+
+        document.getElementById('vehicle-model').value = stop.vehicle_model || '';
+        document.getElementById('vehicle-color').value = stop.vehicle_color || '';
+        document.getElementById('vehicle-plate').value = stop.vehicle_plate || '';
+
+        const evD = stop.real_date ? new Date(stop.real_date) : now;
+        document.getElementById('ev-day').value = String(evD.getDate()).padStart(2, '0');
+        document.getElementById('ev-month').value = MONTHS_NUM[evD.getMonth()];
+        document.getElementById('ev-year').value = String(evD.getFullYear()).slice(-2);
+        document.getElementById('ev-day-num').value = stop.game_day || 1;
+        document.getElementById('ev-h').value = String(now.getHours()).padStart(2, '0');
+        document.getElementById('ev-m').value = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('stop-address').value = 'г. Соль-Илецк, ул. Васильковая, д. 40/1';
+        document.getElementById('stop-reason').value = `${stop.reason_code} — ${REASON_MAP[stop.reason_code] || ''}`;
+        document.getElementById('stop-result').value = stop.result || 'Проверен, нарушений не выявлено.';
+        document.getElementById('official-rank').value = stop.inspector_position || '';
+
+        // Связанные документы
+        if (relatedDocs && relatedDocs.length) {
+            relatedDocs.slice(0, 5).forEach((doc, i) => {
+                const d = new Date(doc.created_at);
+                const dateStr = String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getFullYear()).slice(-2);
+                const formatted = `${doc.document_type}, №${doc.doc_number} от ${dateStr}(${doc.metadata?.game_day || stop.game_day})`;
+                document.getElementById(`doc-${i + 1}`).value = formatted;
+            });
+        }
+    }
+
+    // ⚠️ ТВОИ КООРДИНАТЫ ДЛЯ PDF
+    const COORDS = {
+        docNum: { xStart: 450, xEnd: 550, y: 700 },
+        dateTop: {
+            day:   { xStart: 100, xEnd: 120, y: 680 },
+            month: { xStart: 130, xEnd: 180, y: 680 },
+            year:  { xStart: 190, xEnd: 210, y: 680 }
+        },
+        dayNum: { xStart: 220, xEnd: 240, y: 680 },
+        ya: { x: 100, y: 650 },
+        vehicle: { x: 100, y: 620 },
+        firstName: { x: 100, y: 590 },
+        dob: {
+            day:   { xStart: 100, xEnd: 120, y: 570 },
+            month: { xStart: 130, xEnd: 180, y: 570 },
+            year:  { xStart: 190, xEnd: 210, y: 570 }
+        },
+        passSeries: { xStart: 220, xEnd: 260, y: 570 },
+        passNumber: { xStart: 270, xEnd: 310, y: 570 },
+        license: { xStart: 320, xEnd: 380, y: 570 },
+        vehicleDoc: { xStart: 390, xEnd: 450, y: 570 },
+        regAddress: { x: 100, y: 540 },
+        actualAddress: { x: 100, y: 510 },
+        eventDate: {
+            day:   { xStart: 100, xEnd: 120, y: 480 },
+            month: { xStart: 130, xEnd: 180, y: 480 },
+            year:  { xStart: 190, xEnd: 210, y: 480 }
+        },
+        eventDayNum: { xStart: 220, xEnd: 240, y: 480 },
+        eventTime: {
+            h: { xStart: 250, xEnd: 270, y: 480 },
+            m: { xStart: 280, xEnd: 300, y: 480 }
+        },
+        stopAddress: { x: 100, y: 450 },
+        reason: { x: 100, y: 420 },
+        result: { x: 100, y: 390, maxWidth: 400, lineHeight: 12 },
+        official: { x: 100, y: 340 },
+        relatedDocs: [
+            { x: 100, y: 300 }, { x: 100, y: 280 }, { x: 100, y: 260 }, { x: 100, y: 240 }, { x: 100, y: 220 }
+        ],
+        barcode: { x: 450, y: 750, width: 80, height: 40 },
+        qrCode: { x: 50, y: 750, width: 70, height: 70 }
+    };
+
+    async function generatePDF() {
+        const btn1 = document.getElementById('submitBtn');
+        const btn2 = document.getElementById('submitBtn2');
+        btn1.disabled = true; btn2.disabled = true;
+        btn1.textContent = 'Генерация...'; btn2.textContent = 'Генерация...';
+
+        try {
+            const getVal = id => document.getElementById(id).value;
+
+            // Параметры для PDF
+            const docNumber = getVal('doc-number');
+            const gameDay = parseInt(getVal('game-day'));
+
+            const dateDay = getVal('date-day');
+            const dateMonthNum = getVal('date-month');
+            const dateMonth = MONTHS[MONTHS_NUM.indexOf(dateMonthNum)];
+            const dateYear = getVal('date-year');
+
+            const dobDay = getVal('dob-day');
+            const dobMonthNum = getVal('dob-month');
+            const dobMonth = MONTHS[MONTHS_NUM.indexOf(dobMonthNum)];
+            const dobYear = getVal('dob-year');
+
+            const evDay = getVal('ev-day');
+            const evMonthNum = getVal('ev-month');
+            const evMonth = MONTHS[MONTHS_NUM.indexOf(evMonthNum)];
+            const evYear = getVal('ev-year');
+            const evDayNum = getVal('ev-day-num');
+            const evH = getVal('ev-h');
+            const evM = getVal('ev-m');
+
+            // Загрузка шаблона
+            const pdfBytes = await fetch('./stop_protocol_template.pdf').then(r => {
+                if (!r.ok) throw new Error('Файл stop_protocol_template.pdf не найден в корне!');
+                return r.arrayBuffer();
+            });
+            const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+            pdfDoc.registerFontkit(fontkit);
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+            const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
+            const customFont = await pdfDoc.embedFont(fontBytes);
+            const page = pdfDoc.getPages()[0];
+            const opt = { size: 10, font: customFont, color: PDFLib.rgb(0,0,0) };
+
+            const drawCentered = (txt, xS, xE, y, o) => {
+                if (!txt) return;
+                const w = o.font.widthOfTextAtSize(txt, o.size);
+                page.drawText(txt, { ...o, x: xS + ((xE - xS) - w) / 2, y });
+            };
+            const drawParagraph = (txt, x, y, maxW, lh) => {
+                if (!txt) return;
+                const words = txt.split(' ');
+                let lines = [], cur = '';
+                for (const w of words) {
+                    const test = cur === '' ? w : cur + ' ' + w;
+                    if (customFont.widthOfTextAtSize(test, opt.size) <= maxW) cur = test;
+                    else { lines.push(cur); cur = w; }
+                }
+                if (cur) lines.push(cur);
+                let cy = y;
+                for (const ln of lines) {
+                    page.drawText(ln, { x, y: cy, ...opt });
+                    cy -= lh;
+                }
+            };
+
+            // 1. № и дата
+            drawCentered(docNumber, COORDS.docNum.xStart, COORDS.docNum.xEnd, COORDS.docNum.y, opt);
+            drawCentered(dateDay, COORDS.dateTop.day.xStart, COORDS.dateTop.day.xEnd, COORDS.dateTop.day.y, opt);
+            drawCentered(dateMonth, COORDS.dateTop.month.xStart, COORDS.dateTop.month.xEnd, COORDS.dateTop.month.y, opt);
+            drawCentered(dateYear, COORDS.dateTop.year.xStart, COORDS.dateTop.year.xEnd, COORDS.dateTop.year.y, opt);
+            drawCentered(String(gameDay), COORDS.dayNum.xStart, COORDS.dayNum.xEnd, COORDS.dayNum.y, opt);
+
+            // 2. Инспектор (Я...)
+            page.drawText(`${getVal('inspector-pos')}, ${getVal('inspector-name')}`, { x: COORDS.ya.x, y: COORDS.ya.y, ...opt });
+
+            // 3. ТС
+            page.drawText(`${getVal('vehicle-model')}, ${getVal('vehicle-color')}, ${getVal('vehicle-plate')}`, { x: COORDS.vehicle.x, y: COORDS.vehicle.y, ...opt });
+
+            // 4. Имя Отчество
+            page.drawText(`${getVal('driver-first')} ${getVal('driver-patr')}`.trim(), { x: COORDS.firstName.x, y: COORDS.firstName.y, ...opt });
+
+            // 5. ДР
+            drawCentered(dobDay, COORDS.dob.day.xStart, COORDS.dob.day.xEnd, COORDS.dob.day.y, opt);
+            drawCentered(dobMonth, COORDS.dob.month.xStart, COORDS.dob.month.xEnd, COORDS.dob.month.y, opt);
+            drawCentered(dobYear, COORDS.dob.year.xStart, COORDS.dob.year.xEnd, COORDS.dob.year.y, opt);
+
+            // 6. Документы
+            drawCentered(getVal('pass-series'), COORDS.passSeries.xStart, COORDS.passSeries.xEnd, COORDS.passSeries.y, opt);
+            drawCentered(getVal('pass-number'), COORDS.passNumber.xStart, COORDS.passNumber.xEnd, COORDS.passNumber.y, opt);
+            drawCentered(getVal('driver-license'), COORDS.license.xStart, COORDS.license.xEnd, COORDS.license.y, opt);
+            drawCentered(getVal('vehicle-doc'), COORDS.vehicleDoc.xStart, COORDS.vehicleDoc.xEnd, COORDS.vehicleDoc.y, opt);
+
+            // 7. Адреса
+            page.drawText(getVal('reg-address'), { x: COORDS.regAddress.x, y: COORDS.regAddress.y, ...opt });
+            page.drawText(getVal('actual-address'), { x: COORDS.actualAddress.x, y: COORDS.actualAddress.y, ...opt });
+
+            // 8. Дата события
+            drawCentered(evDay, COORDS.eventDate.day.xStart, COORDS.eventDate.day.xEnd, COORDS.eventDate.day.y, opt);
+            drawCentered(evMonth, COORDS.eventDate.month.xStart, COORDS.eventDate.month.xEnd, COORDS.eventDate.month.y, opt);
+            drawCentered(evYear, COORDS.eventDate.year.xStart, COORDS.eventDate.year.xEnd, COORDS.eventDate.year.y, opt);
+            drawCentered(String(evDayNum), COORDS.eventDayNum.xStart, COORDS.eventDayNum.xEnd, COORDS.eventDayNum.y, opt);
+            drawCentered(evH, COORDS.eventTime.h.xStart, COORDS.eventTime.h.xEnd, COORDS.eventTime.h.y, opt);
+            drawCentered(evM, COORDS.eventTime.m.xStart, COORDS.eventTime.m.xEnd, COORDS.eventTime.m.y, opt);
+
+            // 9. Адрес остановки, причина, результат
+            page.drawText(getVal('stop-address'), { x: COORDS.stopAddress.x, y: COORDS.stopAddress.y, ...opt });
+            page.drawText(getVal('stop-reason'), { x: COORDS.reason.x, y: COORDS.reason.y, ...opt });
+            drawParagraph(getVal('stop-result'), COORDS.result.x, COORDS.result.y, COORDS.result.maxWidth, COORDS.result.lineHeight);
+
+            // 10. Должностное лицо
+            page.drawText(getVal('official-rank'), { x: COORDS.official.x, y: COORDS.official.y, ...opt });
+
+            // 11. Связанные документы
+            for (let i = 1; i <= 5; i++) {
+                const val = getVal(`doc-${i}`);
+                if (val && COORDS.relatedDocs[i-1]) {
+                    page.drawText(`${i}. ${val}`, { x: COORDS.relatedDocs[i-1].x, y: COORDS.relatedDocs[i-1].y, ...opt });
+                }
+            }
+
+            // Штрих-код
+            const bcCanvas = document.createElement('canvas');
+            JsBarcode(bcCanvas, docNumber, { format: "CODE128", width: 2, height: 60, displayValue: false, margin: 0 });
+            const bcBytes = await fetch(bcCanvas.toDataURL("image/png")).then(r => r.arrayBuffer());
+            const bcImg = await pdfDoc.embedPng(bcBytes);
+            page.drawImage(bcImg, { x: COORDS.barcode.x, y: COORDS.barcode.y, width: COORDS.barcode.width, height: COORDS.barcode.height });
+
+            // QR
+            const qrText = `ПРОТОКОЛ ОСТАНОВКИ\n№ ${docNumber}\n${getVal('driver-first')} ${getVal('driver-patr')}\nТС: ${getVal('vehicle-plate')}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`;
+            const qrBytes = await fetch(qrUrl).then(r => r.arrayBuffer());
+            const qrImg = await pdfDoc.embedPng(qrBytes);
+            page.drawImage(qrImg, { x: COORDS.qrCode.x, y: COORDS.qrCode.y, width: COORDS.qrCode.width, height: COORDS.qrCode.height });
+
+            const finalPdf = await pdfDoc.save();
+            const blob = new Blob([finalPdf], { type: 'application/pdf' });
+            const fileName = `${Date.now()}_STOP_PROTOCOL_${docNumber}.pdf`;
+
+            // Сохранение в Storage
+            await supabaseClient.storage.from('documents').upload(fileName, blob, { contentType: 'application/pdf' });
+
+            // Запись документа
+            await supabaseClient.from('documents').insert({
+                patient_id: currentStop.patient_id,
+                organization_id: 2,
+                doc_number: docNumber,
+                document_type: 'Протокол об остановке ТС',
+                file_path: fileName,
+                status: 'active',
+                stop_id: currentStop.id,
+                metadata: { game_day: gameDay }
+            });
+
+            // Закрытие остановки
+            await supabaseClient.from('mvd_stops').update({ status: 'closed' }).eq('id', currentStop.id);
+
+            // Скачивание + предпросмотр
+            const fileUrl = URL.createObjectURL(blob);
+            document.getElementById('preview-download').href = fileUrl;
+            document.getElementById('preview-download').download = `Протокол_остановки_${docNumber}.pdf`;
+            document.getElementById('preview-body').innerHTML = `<iframe src="${fileUrl}" style="width:100%; height:100%; border:none; border-radius:8px; background:white;" title="PDF"></iframe>`;
+            document.getElementById('preview-modal').classList.add('active');
+
+            showToast('Протокол сгенерирован, остановка закрыта');
+            btn1.disabled = false; btn2.disabled = false;
+            btn1.textContent = 'Сгенерировать PDF'; btn2.textContent = 'Сгенерировать PDF и закрыть остановку';
+
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка: ' + err.message);
+            btn1.disabled = false; btn2.disabled = false;
+            btn1.textContent = 'Сгенерировать PDF'; btn2.textContent = 'Сгенерировать PDF и закрыть остановку';
+        }
+    }
+
+    function closePreview() {
+        document.getElementById('preview-modal').classList.remove('active');
+        document.getElementById('preview-body').innerHTML = '';
+        // Возврат в ведомость
+        window.location.href = 'mvd-vedomost.html';
+    }
+
+    initMonths();
+    loadData();
+</script>
+</body>
+</html>
