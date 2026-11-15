@@ -270,9 +270,16 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
         updateStats();
     }
 
+    function resetStopFilters() {
+        document.getElementById('stop-search').value = '';
+        document.getElementById('filter-reason').value = '';
+        document.getElementById('filter-status').value = '';
+        renderStops('');
+    }
     function renderStops(searchQuery = '') {
         const tbody = document.getElementById('stops-table-body');
         const reasonFilter = document.getElementById('filter-reason').value;
+        const statusFilter = document.getElementById('filter-status').value;
         
         let filtered = allStops.filter(s => {
             const p = s.profiles || {};
@@ -280,9 +287,11 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
             const q = searchQuery.toLowerCase();
             const matchSearch = fio.includes(q) || s.vehicle_plate.toLowerCase().includes(q) || s.doc_number.toLowerCase().includes(q);
             const matchReason = reasonFilter ? s.reason_code === reasonFilter : true;
-            return matchSearch && matchReason;
+            const matchStatus = statusFilter ? s.status === statusFilter : true;
+            return matchSearch && matchReason && matchStatus;
         });
 
+        document.getElementById('result-count') && (document.getElementById('result-count').textContent = filtered.length + ' из ' + allStops.length + ' записей');
         tbody.innerHTML = '';
         if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Нет записей</td></tr>'; return; }
 
@@ -312,6 +321,9 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
 
     function updateStats() {
         document.getElementById('stat-stops').textContent = allStops.length;
+        document.getElementById('stat-open').textContent = allStops.filter(x => x.status === 'open').length;
+        document.getElementById('stat-closed').textContent = allStops.filter(x => x.status !== 'open').length;
+        document.getElementById('last-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
         let f = 0;
         allDocs.forEach(d => { if (d.document_type.includes('Постановление')) f++; });
         document.getElementById('stat-actions').textContent = allDocs.filter(d => d.document_type !== 'Протокол об остановке ТС').length;
