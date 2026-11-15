@@ -452,27 +452,24 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
         const protocol = docs.find(d => d.document_type === 'Протокол об остановке ТС');
 
         let html = `
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <div>
-                    <h3 style="font-size:20px;">Остановка № ${s.doc_number}</h3>
-                    <p style="color:var(--muted); font-size:13px;">Дата: ${new Date(s.created_at).toLocaleString()}</p>
-                </div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    ${s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>'}
-                    <button class="btn-icon danger" onclick="deleteStop(${s.id})" title="Удалить остановку"><i class="fa-solid fa-trash"></i></button>
+            <div class="detail-hero">
+                <div><small>Ведомость МВД · карточка материала</small><h3>Остановка № ${s.doc_number}</h3><p><i class="fa-regular fa-calendar"></i> ${new Date(s.created_at).toLocaleString('ru-RU')} · Игровой день: ${s.game_day ?? '—'}</p></div>
+                <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;">
+                    ${s.status === 'open' ? '<span class="stop-status open">● На контроле</span>' : '<span class="stop-status closed">✓ Завершена</span>'}
+                    <button class="btn-icon" style="color:#fff;background:#ffffff20" onclick="deleteStop(${s.id})" title="Удалить остановку"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
 
             <div class="info-grid">
                 <div class="info-block">
-                    <h4><i class="fa-solid fa-user"></i> Водитель</h4>
+                    <h4><i class="fa-solid fa-user"></i> ДАННЫЕ ГРАЖДАНИНА</h4>
                     <p><b>ФИО:</b> ${p.last_name} ${p.first_name} ${p.patronymic || ''}</p>
                     <p><b>ДР:</b> ${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</p>
                     <p><b>Паспорт:</b> ${p.pass_series || ''} ${p.pass_number || ''}</p>
                     <p><b>ВУ:</b> ${p.driver_license || '—'}</p>
                 </div>
                 <div class="info-block">
-                    <h4><i class="fa-solid fa-car"></i> Транспорт</h4>
+                    <h4><i class="fa-solid fa-car"></i> ТРАНСПОРТНОЕ СРЕДСТВО</h4>
                     <p><b>Модель:</b> ${s.vehicle_model}</p>
                     <p><b>Цвет:</b> ${s.vehicle_color}</p>
                     <p><b>Госномер:</b> ${s.vehicle_plate}</p>
@@ -480,15 +477,13 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
                 </div>
             </div>
 
-            <div class="info-block" style="margin-bottom:20px;">
-                <h4>Примечание к остановке</h4>
-                <p>${s.note || '—'}</p>
-            </div>
+            <div class="detail-section-title"><i class="fa-solid fa-clipboard-list"></i> Основание и служебная информация</div>
+            <div class="detail-note"><b>Причина остановки:</b> ${s.reason_code || '—'}<br><b>Примечание:</b> ${s.note || 'Не указано'}<br><b>Место:</b> ${s.actual_address || 'Не указано'}</div>
         `;
 
         if (s.status === 'open') {
             html += `
-                <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                <div class="action-toolbar">
                     <button class="btn btn-gold" onclick="addAction('generator-admin-order.html')"><i class="fa-solid fa-file-contract"></i> Постановление</button>
                     <button class="btn btn-gold" onclick="addAction('generator-detention.html')"><i class="fa-solid fa-handcuffs"></i> Задержание</button>
                     <button class="btn btn-gold" onclick="addAction('generator-protocol-search.html')"><i class="fa-solid fa-magnifying-glass"></i> Обыск</button>
@@ -497,33 +492,27 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
             `;
         }
 
-        html += `<h3 style="font-size:16px; margin-bottom:10px;">Процессуальные действия (${actions.length})</h3>`;
+        html += `<div class="detail-section-title"><i class="fa-solid fa-scale-balanced"></i> Процессуальные действия <span class="badge" style="background:#eef2f7;color:#536176">${actions.length}</span></div>`;
         if (!actions.length) {
-            html += `<p style="color:var(--muted); margin-bottom:20px;">Нет действий</p>`;
+            html += `<p style="color:var(--muted); margin-bottom:20px;">По этой остановке ещё не оформлены документы</p>`;
         } else {
+            html += '<div class="action-list">';
             actions.forEach(a => {
+                const cancelled = a.status !== 'active';
                 html += `
                     <div class="action-card" onclick="openActionDetail(${a.id})">
-                        <div>
-                            <b style="color:var(--primary-dark);">${a.document_type} № ${a.doc_number}</b>
-                            <div style="font-size:12px; color:var(--muted);">Статус: ${a.status === 'active' ? 'Действителен' : 'Аннулирован'}</div>
-                        </div>
-                        <i class="fa-solid fa-eye" style="color:var(--muted);"></i>
-                    </div>
-                `;
+                        <div class="action-icon"><i class="fa-solid fa-file-lines"></i></div>
+                        <div class="action-main"><b>${a.document_type || 'Процессуальный документ'}</b><small>Документ № ${a.doc_number || '—'} · ${new Date(a.created_at).toLocaleDateString('ru-RU')}</small></div>
+                        <span class="action-state ${cancelled?'cancelled':''}">${cancelled?'Аннулирован':'Действует'}</span>
+                    </div>`;
             });
+            html += '</div>';
         }
 
         if (protocol) {
             html += `
-                <h3 style="font-size:16px; margin-top:20px; margin-bottom:10px;">Протокол об остановке</h3>
-                <div class="action-card" onclick="openActionDetail(${protocol.id})" style="border-color:var(--success);">
-                    <div>
-                        <b style="color:var(--success);">${protocol.document_type} № ${protocol.doc_number}</b>
-                        <div style="font-size:12px; color:var(--muted);">Создан при закрытии</div>
-                    </div>
-                    <i class="fa-solid fa-file-pdf" style="color:var(--success); font-size:18px;"></i>
-                </div>
+                <div class="detail-section-title"><i class="fa-solid fa-file-circle-check"></i> Итоговый протокол</div>
+                <div class="action-card" onclick="openActionDetail(${protocol.id})"><div class="action-icon" style="background:#e6f7ee;color:#138052"><i class="fa-solid fa-file-pdf"></i></div><div class="action-main"><b>${protocol.document_type} № ${protocol.doc_number}</b><small>Сформирован при завершении остановки</small></div><span class="action-state">Готов</span></div>
             `;
         }
 
