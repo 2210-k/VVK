@@ -32,14 +32,12 @@
         .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); }
         .btn-secondary:hover { background: #e2e8f0; }
         
-        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
         .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
         .stat-info h3 { font-size: 20px; font-weight: 800; }
         .stat-info p { font-size: 11px; color: var(--muted); font-weight: 600; }
         
-        /* Table */
         .panel { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .panel-title { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
@@ -54,15 +52,15 @@
         tbody tr:hover { background: #f8fafc; }
         .plate { background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px; }
         
-        /* Badges */
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
         .badge-open { background: #dcfce7; color: #166534; }
         .badge-closed { background: #fee2e2; color: #991b1b; }
-        .badge-fine { background: #fee2e2; color: #991b1b; }
-        .badge-warn { background: #fef3c7; color: #92400e; }
-        .badge-arrest { background: #e0e7ff; color: #3730a3; }
 
-        /* Modals */
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; transition: 0.2s; border-radius: 4px; }
+        .btn-icon:hover { background: #f1f5f9; }
+        .btn-icon.danger { color: var(--danger); }
+        .btn-icon.danger:hover { background: #fee2e2; }
+
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 15px; }
         .modal.active { display: flex; }
         .modal-content { background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
@@ -71,14 +69,12 @@
         .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
         .modal-body { padding: 20px; }
         
-        /* Forms */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
         .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; }
         .form-control:focus { border-color: var(--primary); }
         .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
-        /* Details */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .info-block { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
         .info-block h4 { font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
@@ -111,16 +107,12 @@
         </div>
     </div>
 
-    <!-- СТАТИСТИКА -->
-    <div class="stats-grid" id="stats-grid">
+    <div class="stats-grid">
         <div class="stat-card"><div class="stat-icon" style="background:#fef3c7; color:#d97706;"><i class="fa-solid fa-car"></i></div><div class="stat-info"><h3 id="stat-stops">0</h3><p>Остановок</p></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-gavel"></i></div><div class="stat-info"><h3 id="stat-actions">0</h3><p>Всего действий</p></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-ruble-sign"></i></div><div class="stat-info"><h3 id="stat-fines">0</h3><p>Штрафов</p></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#fef9c3; color:#ca8a04;"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-info"><h3 id="stat-warnings">0</h3><p>Предупреждений</p></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#e0e7ff; color:#4338ca;"><i class="fa-solid fa-lock"></i></div><div class="stat-info"><h3 id="stat-arrests">0</h3><p>Задержаний</p></div></div>
     </div>
 
-    <!-- ЖУРНАЛ -->
     <div class="panel">
         <div class="panel-header">
             <div class="panel-title"><i class="fa-solid fa-list-ul"></i> Журнал остановок</div>
@@ -139,17 +131,11 @@
                 <option value="0.8">0.8 — В розыске</option>
                 <option value="0.9">0.9 — Иная</option>
             </select>
-            <select id="filter-action" onchange="renderStops()">
-                <option value="">Все действия</option>
-                <option value="Постановление">Штраф (Постановление)</option>
-                <option value="Задержание">Задержание</option>
-                <option value="Обыск">Обыск</option>
-            </select>
-            <button class="btn btn-secondary" onclick="document.getElementById('filter-reason').value=''; document.getElementById('filter-action').value=''; renderStops();">Сбросить</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('filter-reason').value=''; renderStops();">Сбросить</button>
         </div>
         <table>
             <thead><tr>
-                <th>Дата / Номер</th><th>Причина</th><th>Транспорт</th><th>Владелец</th><th>Действия</th><th>Примечание</th><th>Статус</th>
+                <th>Дата / Номер</th><th>Причина</th><th>Транспорт</th><th>Владелец</th><th>Действия</th><th>Примечание</th><th>Статус</th><th></th>
             </tr></thead>
             <tbody id="stops-table-body"></tbody>
         </table>
@@ -257,19 +243,13 @@
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
     async function init() {
-        // Граждане
         const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
         allCitizens = citizens || [];
         const sel = document.getElementById('stop-patient');
         allCitizens.forEach(c => sel.add(new Option(`${c.last_name} ${c.first_name} ${c.patronymic || ''}`.trim(), c.id)));
 
-        // ТС
         const { data: vehicles } = await supabaseClient.from('documents').select('*, profiles(last_name)').in('document_type', ['Договор аренды ТС', 'Паспорт ТС']).eq('status', 'active');
         allVehicles = vehicles || [];
-
-        // Документы (действия)
-        const { data: docs } = await supabaseClient.from('documents').select('*').not('stop_id', 'is', null);
-        allDocs = docs || [];
 
         await loadStops();
         window.addEventListener('focus', () => loadStops());
@@ -278,6 +258,10 @@
     async function loadStops() {
         const { data } = await supabaseClient.from('mvd_stops').select('*, profiles(*)').order('created_at', { ascending: false });
         allStops = data || [];
+        
+        const { data: docs } = await supabaseClient.from('documents').select('*').not('stop_id', 'is', null);
+        allDocs = docs || [];
+
         renderStops();
         updateStats();
     }
@@ -285,7 +269,6 @@
     function renderStops(searchQuery = '') {
         const tbody = document.getElementById('stops-table-body');
         const reasonFilter = document.getElementById('filter-reason').value;
-        const actionFilter = document.getElementById('filter-action').value;
         
         let filtered = allStops.filter(s => {
             const p = s.profiles || {};
@@ -293,17 +276,11 @@
             const q = searchQuery.toLowerCase();
             const matchSearch = fio.includes(q) || s.vehicle_plate.toLowerCase().includes(q) || s.doc_number.toLowerCase().includes(q);
             const matchReason = reasonFilter ? s.reason_code === reasonFilter : true;
-            
-            let matchAction = true;
-            if (actionFilter) {
-                const docs = allDocs.filter(d => d.stop_id === s.id);
-                matchAction = docs.some(d => d.document_type.includes(actionFilter));
-            }
-            return matchSearch && matchReason && matchAction;
+            return matchSearch && matchReason;
         });
 
         tbody.innerHTML = '';
-        if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Нет записей</td></tr>'; return; }
+        if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Нет записей</td></tr>'; return; }
 
         filtered.forEach(s => {
             const p = s.profiles || {};
@@ -320,25 +297,24 @@
                     <td><span style="font-weight:bold; color:var(--primary-dark);">${actionCount}</span></td>
                     <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${s.note || ''}">${s.note || '—'}</td>
                     <td>${s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>'}</td>
+                    <td>
+                        <button class="btn-icon danger" onclick="event.stopPropagation(); deleteStop(${s.id})" title="Удалить остановку">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
                 </tr>`;
         });
     }
 
     function updateStats() {
         document.getElementById('stat-stops').textContent = allStops.length;
-        let f = 0, w = 0, a = 0;
-        allDocs.forEach(d => {
-            if (d.document_type.includes('Постановление')) f++;
-            if (d.document_type.includes('Предупреждение')) w++; // Условно
-            if (d.document_type.includes('Задержание')) a++;
-        });
+        let f = 0;
+        allDocs.forEach(d => { if (d.document_type.includes('Постановление')) f++; });
         document.getElementById('stat-actions').textContent = allDocs.filter(d => d.document_type !== 'Протокол об остановке ТС').length;
         document.getElementById('stat-fines').textContent = f;
-        document.getElementById('stat-warnings').textContent = w;
-        document.getElementById('stat-arrests').textContent = a;
     }
 
-    // --- СОЗДАНИЕ ---
+    // --- СОЗДАНИЕ И УДАЛЕНИЕ ---
     function openStopModal() {
         document.getElementById('create-stop-form').reset();
         document.getElementById('stop-game-day').value = 1;
@@ -375,7 +351,7 @@
             vehicle_color: v.metadata?.color,
             vehicle_doc_number: v.doc_number,
             reason_code: document.getElementById('stop-reason').value,
-            note: document.getElementById('stop-note').value,
+            note: document.getElementById('stop-note').value, // <-- ИСПРАВЛЕНО
             real_date: document.getElementById('stop-date').value,
             game_day: parseInt(document.getElementById('stop-game-day').value),
             status: 'open',
@@ -389,13 +365,26 @@
         loadStops();
     });
 
+    async function deleteStop(id) {
+        if (!confirm('Вы уверены, что хотите удалить эту остановку и ВСЕ связанные с ней документы? Это действие необратимо.')) return;
+        
+        // Удаляем из базы (связанные документы удалятся каскадно, благодаря ON DELETE CASCADE)
+        const { error } = await supabaseClient.from('mvd_stops').delete().eq('id', id);
+        if (error) {
+            alert('Ошибка удаления: ' + error.message);
+        } else {
+            showToast('Остановка удалена');
+            closeModal('detail-stop-modal');
+            loadStops();
+        }
+    }
+
     // --- КАРТОЧКА ОСТАНОВКИ ---
     async function openStopDetails(id) {
         currentStopId = id;
         const s = allStops.find(x => x.id === id);
         const p = s.profiles || {};
         
-        // Обновляем доки на случай изменений
         const { data: docs } = await supabaseClient.from('documents').select('*').eq('stop_id', id);
         const actions = docs.filter(d => d.document_type !== 'Протокол об остановке ТС');
         const protocol = docs.find(d => d.document_type === 'Протокол об остановке ТС');
@@ -406,7 +395,10 @@
                     <h3 style="font-size:20px;">Остановка № ${s.doc_number}</h3>
                     <p style="color:var(--muted); font-size:13px;">Дата: ${new Date(s.created_at).toLocaleString()}</p>
                 </div>
-                <div>${s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>'}</div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    ${s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>'}
+                    <button class="btn-icon danger" onclick="deleteStop(${s.id})" title="Удалить остановку"><i class="fa-solid fa-trash"></i></button>
+                </div>
             </div>
 
             <div class="info-grid">
@@ -466,7 +458,7 @@
                 <div class="action-card" onclick="openActionDetail(${protocol.id})" style="border-color:var(--success);">
                     <div>
                         <b style="color:var(--success);">${protocol.document_type} № ${protocol.doc_number}</b>
-                        <div style="font-size:12px; color:var(--muted);">Создан автоматически при закрытии</div>
+                        <div style="font-size:12px; color:var(--muted);">Создан при закрытии</div>
                     </div>
                     <i class="fa-solid fa-file-pdf" style="color:var(--success); font-size:18px;"></i>
                 </div>
@@ -477,10 +469,8 @@
         openModal('detail-stop-modal');
     }
 
-    // --- ДЕЙСТВИЯ ---
     function addAction(url) {
         const s = allStops.find(x => x.id === currentStopId);
-        // Открываем в этой же вкладке
         window.location.href = `${url}?org=2&stop_id=${s.id}&patient_id=${s.patient_id}`;
     }
 
@@ -511,7 +501,6 @@
         openModal('action-detail-modal');
     }
 
-    // --- PDF VIEWER ---
     async function viewPDF(url) {
         document.getElementById('pdf-dl').href = url;
         closeModal('action-detail-modal');
