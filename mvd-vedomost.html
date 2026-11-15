@@ -81,8 +81,44 @@
         .info-block p { font-size: 13px; margin-bottom: 5px; }
         .info-block p b { color: var(--text); }
         
-        .action-card { border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .action-card:hover { border-color: var(--primary); background: #fffbeb; }
+        /* Новые карточки остановок и процессуальных действий */
+        .stops-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px}
+        .stop-card{position:relative;background:linear-gradient(145deg,#fff 0%,#fbfcff 100%);border:1px solid #e3e9f2;border-radius:17px;padding:18px;box-shadow:0 5px 18px rgba(20,36,60,.045);transition:.2s;cursor:pointer;overflow:hidden}
+        .stop-card:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:#d5a52c}
+        .stop-card.is-open:before{background:#10a36a}.stop-card.is-closed:before{background:#73839a}
+        .stop-card:hover{transform:translateY(-2px);border-color:#d4b65f;box-shadow:0 12px 26px rgba(20,36,60,.09)}
+        .stop-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:15px}
+        .stop-number{font-size:11px;color:#7b8798;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+        .stop-number strong{display:block;color:#17263d;font-size:19px;letter-spacing:0;margin-top:3px}
+        .stop-status{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:30px;font-size:11px;font-weight:800;white-space:nowrap}
+        .stop-status.open{background:#e5f7ed;color:#087849}.stop-status.closed{background:#edf1f6;color:#596779}
+        .stop-person{display:flex;align-items:center;gap:12px;padding:12px;background:#f5f7fb;border-radius:12px;margin-bottom:13px}
+        .stop-avatar{width:39px;height:39px;border-radius:12px;background:#e8edf7;color:#425777;display:grid;place-items:center;font-size:16px;flex:0 0 39px}
+        .stop-person b{display:block;font-size:14px;color:#1b2b43}.stop-person small{display:block;color:#7a8798;font-size:11px;margin-top:3px}
+        .stop-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
+        .stop-fact{background:#fafbfd;border:1px solid #edf0f5;border-radius:10px;padding:10px;min-width:0}
+        .stop-fact span{display:block;font-size:10px;color:#8591a2;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+        .stop-fact b{display:block;color:#273850;font-size:12px;overflow-wrap:anywhere}
+        .stop-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf0f5;padding-top:12px}
+        .stop-card-meta{font-size:11px;color:#8290a2}.stop-card-actions{display:flex;align-items:center;gap:7px}
+        .stop-card-open{border:0;border-radius:9px;background:#172b49;color:#fff;padding:8px 12px;font-size:11px;font-weight:800;cursor:pointer}
+        .stop-card-open:hover{background:#29466f}.stop-card-delete{width:32px;height:32px;border:1px solid #f0dede;background:#fff7f7;color:#c44747;border-radius:9px;cursor:pointer}
+        .empty-state{padding:42px 20px;text-align:center;color:#8995a5}.empty-state i{font-size:27px;margin-bottom:10px;color:#bdc6d3;display:block}
+        .detail-hero{padding:20px;border-radius:16px;background:linear-gradient(120deg,#142844,#243e60);color:#fff;margin-bottom:18px;display:flex;justify-content:space-between;gap:15px;align-items:center}
+        .detail-hero small{color:#bdc9d9;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.detail-hero h3{font-size:23px;margin:5px 0}.detail-hero p{font-size:12px;color:#d0d9e5}
+        .detail-section-title{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;color:#20324b;margin:20px 0 11px}
+        .detail-section-title i{color:#b18a2c}
+        .info-grid{gap:12px}.info-block{background:#f8fafd;border:1px solid #e8edf4;border-radius:13px;padding:16px}.info-block h4{color:#718096;border:0;padding:0;margin-bottom:12px;letter-spacing:.05em}.info-block p{line-height:1.55;color:#536176}
+        .action-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+        .action-card{border:1px solid #e4eaf2;border-radius:13px;padding:14px;margin:0;display:flex;align-items:center;gap:12px;cursor:pointer;background:#fff;transition:.18s;min-width:0}
+        .action-card:hover{border-color:#d6b75e;background:#fffdf7;transform:translateY(-1px)}
+        .action-icon{width:40px;height:40px;border-radius:12px;background:#fff4d8;color:#a97910;display:grid;place-items:center;flex:0 0 40px;font-size:16px}
+        .action-main{min-width:0;flex:1}.action-main b{display:block;color:#243650;font-size:12px;line-height:1.4;overflow-wrap:anywhere}.action-main small{display:block;color:#8491a2;font-size:10px;margin-top:5px}
+        .action-state{font-size:10px;font-weight:800;padding:5px 8px;border-radius:20px;white-space:nowrap;background:#e7f7ee;color:#148052}.action-state.cancelled{background:#fff0ee;color:#c34e42}
+        .action-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 17px}
+        .detail-note{border:1px solid #f0e5c7;background:#fffbef;border-radius:12px;padding:14px;color:#68552d;font-size:13px;line-height:1.55}
+        @media(max-width:760px){.stops-grid{grid-template-columns:1fr;padding:13px}.action-list{grid-template-columns:1fr}.stop-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.detail-hero{align-items:flex-start;flex-direction:column}}
+
         
         #pdf-viewer-modal .modal-content { max-width: 95%; width: 95%; height: 95vh; display: flex; flex-direction: column; }
         #pdf-container { flex: 1; overflow-y: auto; background: #52525b; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -137,11 +173,11 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
             </select>
             <select id="filter-status" onchange="renderStops()"><option value="">Все статусы</option><option value="open">На контроле</option><option value="closed">Завершённые</option></select><button class="btn btn-secondary" onclick="resetStopFilters()">Сбросить фильтры</button><span class="result-count" id="result-count" style="margin-left:auto;">0 записей</span>
         </div>
-        <div class="table-wrap"><table>
+        <div id="stops-table-body" class="stops-grid"></div><div class="table-wrap" style="display:none"><table>
             <thead><tr>
                 <th>Дата / Номер</th><th>Причина</th><th>Транспорт</th><th>Владелец</th><th>Действия</th><th>Примечание</th><th>Статус</th><th></th>
             </tr></thead>
-            <tbody id="stops-table-body"></tbody>
+            <tbody></tbody>
         </table></div>
     </div>
 
@@ -289,46 +325,44 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
         renderStops('');
     }
     function renderStops(searchQuery = (document.getElementById('stop-search') || {}).value || '') {
-        const tbody = document.getElementById('stops-table-body');
+        const container = document.getElementById('stops-table-body');
         const reasonFilter = document.getElementById('filter-reason').value;
         const statusFilter = document.getElementById('filter-status').value;
-        
-        let filtered = allStops.filter(s => {
+        const q = String(searchQuery || '').toLowerCase().trim();
+        const filtered = allStops.filter(s => {
             const p = s.profiles || {};
-            const fio = `${p.last_name || ''} ${p.first_name || ''}`.toLowerCase();
-            const q = searchQuery.toLowerCase();
-            const matchSearch = fio.includes(q) || String(s.vehicle_plate || '').toLowerCase().includes(q) || String(s.doc_number || '').toLowerCase().includes(q);
-            const matchReason = reasonFilter ? s.reason_code === reasonFilter : true;
-            const matchStatus = statusFilter ? s.status === statusFilter : true;
-            return matchSearch && matchReason && matchStatus;
+            const fio = [p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ').toLowerCase();
+            const haystack = [fio,s.vehicle_plate,s.vehicle_model,s.doc_number,s.reason_code,s.note].filter(Boolean).join(' ').toLowerCase();
+            return haystack.includes(q) && (!reasonFilter || s.reason_code === reasonFilter) && (!statusFilter || s.status === statusFilter);
         });
-
-        document.getElementById('result-count') && (document.getElementById('result-count').textContent = filtered.length + ' из ' + allStops.length + ' записей');
-        tbody.innerHTML = '';
-        if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Нет записей</td></tr>'; return; }
-
-        filtered.forEach(s => {
+        document.getElementById('result-count').textContent = filtered.length + ' из ' + allStops.length + ' записей';
+        if (!filtered.length) {
+            container.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="fa-regular fa-folder-open"></i><b>Остановок не найдено</b><p style="font-size:12px;margin-top:5px">Измените параметры поиска или сбросьте фильтры</p></div>';
+            return;
+        }
+        container.innerHTML = filtered.map(s => {
             const p = s.profiles || {};
-            const fio = `${p.last_name || ''} ${p.first_name || ''}`.trim();
-            const stopDocs = allDocs.filter(d => d.stop_id === s.id);
-            const actionCount = stopDocs.filter(d => d.document_type !== 'Протокол об остановке ТС').length;
-            
-            tbody.innerHTML += `
-                <tr onclick="openStopDetails(${s.id})">
-                    <td><b>${s.doc_number}</b><br><small style="color:var(--muted);">${new Date(s.created_at).toLocaleDateString()}</small></td>
-                    <td>${s.reason_code}</td>
-                    <td><b>${s.vehicle_model}</b><br><span class="plate">${s.vehicle_plate}</span></td>
-                    <td>${fio}</td>
-                    <td><span style="font-weight:bold; color:var(--primary-dark);">${actionCount}</span></td>
-                    <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${s.note || ''}">${s.note || '—'}</td>
-                    <td>${s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>'}</td>
-                    <td>
-                        <button class="btn-icon danger" onclick="event.stopPropagation(); deleteStop(${s.id})" title="Удалить остановку">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
-        });
+            const fio = [p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' ') || 'Гражданин не указан';
+            const docs = allDocs.filter(d => String(d.stop_id) === String(s.id));
+            const actions = docs.filter(d => d.document_type !== 'Протокол об остановке ТС').length;
+            const isOpen = s.status === 'open';
+            const date = s.real_date ? new Date(s.real_date + 'T00:00:00').toLocaleDateString('ru-RU') : new Date(s.created_at).toLocaleDateString('ru-RU');
+            const safe = v => String(v ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+            return `
+              <article class="stop-card ${isOpen?'is-open':'is-closed'}" onclick="openStopDetails(${s.id})">
+                <div class="stop-card-top"><div class="stop-number">Материал ведомости<strong>№ ${safe(s.doc_number)}</strong></div><span class="stop-status ${isOpen?'open':'closed'}"><i class="fa-solid ${isOpen?'fa-circle-dot':'fa-circle-check'}"></i>${isOpen?'На контроле':'Завершена'}</span></div>
+                <div class="stop-person"><div class="stop-avatar"><i class="fa-solid fa-user"></i></div><div><b>${safe(fio)}</b><small>Водитель транспортного средства</small></div></div>
+                <div class="stop-facts">
+                  <div class="stop-fact"><span>Госномер</span><b>${safe(s.vehicle_plate)}</b></div>
+                  <div class="stop-fact"><span>Транспорт</span><b>${safe(s.vehicle_model)}</b></div>
+                  <div class="stop-fact"><span>Причина</span><b>${safe(s.reason_code)}</b></div>
+                  <div class="stop-fact"><span>Дата</span><b>${safe(date)}</b></div>
+                  <div class="stop-fact"><span>Действия</span><b>${actions}</b></div>
+                  <div class="stop-fact"><span>Игровой день</span><b>${safe(s.game_day)}</b></div>
+                </div>
+                <div class="stop-card-bottom"><span class="stop-card-meta"><i class="fa-regular fa-clock"></i> ${new Date(s.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})} · ${s.note?'Есть примечание':'Без примечания'}</span><span class="stop-card-actions"><button class="stop-card-open" type="button" onclick="event.stopPropagation();openStopDetails(${s.id})">Открыть карточку <i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="stop-card-delete" type="button" title="Удалить" onclick="event.stopPropagation();deleteStop(${s.id})"><i class="fa-solid fa-trash"></i></button></span></div>
+              </article>`;
+        }).join('');
     }
 
     function updateStats() {
