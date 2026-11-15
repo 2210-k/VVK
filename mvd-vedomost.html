@@ -120,7 +120,7 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
     <div class="panel">
         <div class="panel-header">
             <div class="panel-title"><i class="fa-solid fa-list-ul"></i> Журнал остановок</div>
-            <input type="text" class="form-control" style="width:300px;" id="stop-search" placeholder="Поиск: гражданин, госномер, № дела…" oninput="renderStops(this.value)">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><input type="search" class="form-control" style="width:300px;" id="stop-search" placeholder="Поиск: гражданин, госномер, № дела…" oninput="renderStops(this.value)"><button class="btn btn-secondary" onclick="exportStopsCSV()"><i class="fa-solid fa-file-csv"></i> Экспорт CSV</button></div>
         </div>
         <div class="filters">
             <select id="filter-reason" onchange="renderStops()">
@@ -137,12 +137,12 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
             </select>
             <select id="filter-status" onchange="renderStops()"><option value="">Все статусы</option><option value="open">На контроле</option><option value="closed">Завершённые</option></select><button class="btn btn-secondary" onclick="resetStopFilters()">Сбросить фильтры</button><span class="result-count" id="result-count" style="margin-left:auto;">0 записей</span>
         </div>
-        <table>
+        <div class="table-wrap"><table>
             <thead><tr>
                 <th>Дата / Номер</th><th>Причина</th><th>Транспорт</th><th>Владелец</th><th>Действия</th><th>Примечание</th><th>Статус</th><th></th>
             </tr></thead>
             <tbody id="stops-table-body"></tbody>
-        </table>
+        </table></div>
     </div>
 
     <!-- МОДАЛКА СОЗДАНИЯ -->
@@ -333,9 +333,6 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
 
     function updateStats() {
         document.getElementById('stat-stops').textContent = allStops.length;
-        document.getElementById('stat-open').textContent = allStops.filter(x => x.status === 'open').length;
-        document.getElementById('stat-closed').textContent = allStops.filter(x => x.status !== 'open').length;
-        document.getElementById('last-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
         document.getElementById('stat-open').textContent = allStops.filter(x => x.status === 'open').length;
         document.getElementById('stat-closed').textContent = allStops.filter(x => x.status !== 'open').length;
         document.getElementById('last-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
