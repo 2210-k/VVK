@@ -173,6 +173,192 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
         .form-group label{color:#a8b5c7}
         .toast{background:#e0b84e;color:#1b2636}
         @media(max-width:650px){.header{padding:15px}.panel-header{align-items:flex-start}.stop-card{padding:14px}}
+    
+        /* Единая спокойная палитра ведомости МВД */
+        :root {
+            --bg: #f2f6f7;
+            --card: #ffffff;
+            --text: #203542;
+            --muted: #71838d;
+            --primary: #356b78;
+            --primary-dark: #285663;
+            --danger: #b85f62;
+            --success: #4e8877;
+            --border: #dce6e9;
+        }
+        body {
+            background: linear-gradient(180deg, #edf3f5 0%, #f5f7f8 260px, #f3f6f7 100%);
+            color: #203542;
+        }
+        .header, .panel, .stat-card {
+            background: #fff;
+            color: #203542;
+            border: 1px solid #dce6e9;
+            box-shadow: 0 5px 18px rgba(36, 65, 78, .055);
+        }
+        .header { border-radius: 16px; padding: 17px 22px; }
+        .brand-logo {
+            background: linear-gradient(145deg, #477f89, #2d626f);
+            color: #fff;
+            border-radius: 14px;
+            box-shadow: 0 5px 13px rgba(45, 98, 111, .16);
+        }
+        .brand h1, .dashboard-intro h2, .panel-title, .stat-info h3 { color: #203542; }
+        .brand p, .dashboard-intro p, .result-count, .stat-info p { color: #71838d; }
+        .btn-primary { background: #b85f62; color: #fff; }
+        .btn-primary:hover { background: #a84e52; }
+        .btn-gold {
+            background: #356b78;
+            color: #fff;
+        }
+        .btn-gold:hover { background: #285663; }
+        .btn-secondary {
+            background: #f3f7f8;
+            color: #36515e;
+            border: 1px solid #dce6e9;
+        }
+        .btn-secondary:hover { background: #e8f0f2; }
+        .stats-grid { gap: 13px; }
+        .stat-card { border-radius: 15px; min-height: 90px; }
+        .stat-info h3 { font-size: 24px; }
+        .stat-icon {
+            background: #e8f1f2 !important;
+            color: #356b78 !important;
+            box-shadow: none;
+            border-radius: 12px;
+        }
+        .stat-card:nth-child(2) .stat-icon { background: #e9f3ee !important; color: #4e8877 !important; }
+        .stat-card:nth-child(3) .stat-icon { background: #eef1f5 !important; color: #637b8b !important; }
+        .stat-card:nth-child(4) .stat-icon { background: #edf1f8 !important; color: #61799b !important; }
+        .stat-card:nth-child(5) .stat-icon { background: #f7eeee !important; color: #b85f62 !important; }
+        .panel { border-radius: 16px; }
+        .panel-header { border-color: #e3eaed; }
+        .filters { background: #f8fafb; border-color: #e3eaed; }
+        .filters input, .filters select, .form-control {
+            background: #fff;
+            color: #263d49;
+            border: 1px solid #d7e2e6;
+            border-radius: 9px;
+        }
+        .filters input:focus, .filters select:focus, .form-control:focus {
+            border-color: #6b9aa2;
+            box-shadow: 0 0 0 3px rgba(71, 127, 137, .10);
+        }
+        .filters input::placeholder, .form-control::placeholder { color: #9aaab1; }
+        .quick-filter {
+            background: #fff;
+            color: #607783;
+            border-color: #dce6e9;
+        }
+        .quick-filter.active, .quick-filter:hover {
+            background: #e9f2f3;
+            border-color: #9dbcc1;
+            color: #2d626f;
+        }
+        .stops-grid { background: transparent; }
+        .stop-card {
+            background: #fff;
+            border: 1px solid #dce6e9;
+            border-radius: 15px;
+            box-shadow: 0 4px 14px rgba(36, 65, 78, .045);
+        }
+        .stop-card:before { background: #8caeb2; }
+        .stop-card.is-open:before { background: #5b9a83; }
+        .stop-card.is-closed:before { background: #a7b4bb; }
+        .stop-card:hover {
+            border-color: #9dbcc1;
+            box-shadow: 0 9px 22px rgba(36, 65, 78, .085);
+        }
+        .stop-number { color: #82939b; }
+        .stop-number strong { color: #203542; }
+        .stop-status.open, .badge-open {
+            background: #e8f3ed;
+            color: #39765f;
+        }
+        .stop-status.closed, .badge-closed {
+            background: #eef2f4;
+            color: #647681;
+        }
+        .stop-person { background: #f4f8f8; }
+        .stop-person b { color: #29414d; }
+        .stop-person small { color: #81929a; }
+        .stop-avatar { background: #e6eff0; color: #477b84; }
+        .stop-fact { background: #fafcfc; border-color: #e9eff1; }
+        .stop-fact span { color: #8a9aa1; }
+        .stop-fact b { color: #334b57; }
+        .stop-card-bottom { border-color: #e9eff1; }
+        .stop-card-meta { color: #84949c; }
+        .stop-card-open { background: #356b78; color: #fff; }
+        .stop-card-open:hover { background: #285663; }
+        .stop-card-delete { background: #fff8f8; border-color: #f0dddd; color: #b85f62; }
+        .stop-card-delete:hover { background: #f9eaea; }
+        .empty-state { color: #81929a; }
+        .empty-state i { color: #b4c2c7; }
+        .detail-hero {
+            background: linear-gradient(115deg, #315f6c, #477f89);
+            border: 1px solid #477f89;
+            border-radius: 15px;
+        }
+        .detail-hero small { color: #d4e5e7; }
+        .detail-hero p { color: #e0ecee; }
+        .detail-section-title { color: #29414d; }
+        .detail-section-title i { color: #56838b; }
+        .info-block {
+            background: #f8fafb;
+            border: 1px solid #e3eaed;
+            border-radius: 12px;
+        }
+        .info-block h4 { color: #7b8d96; }
+        .info-block p { color: #5d717c; }
+        .info-block p b { color: #29414d; }
+        .detail-note {
+            background: #f4f8f7;
+            border: 1px solid #dce9e5;
+            color: #526e67;
+        }
+        .action-card {
+            background: #fff;
+            border: 1px solid #dfe8eb;
+            border-radius: 12px;
+        }
+        .action-card:hover {
+            background: #f7fafb;
+            border-color: #a9c5c9;
+        }
+        .action-icon {
+            background: #e9f2f3;
+            color: #477b84;
+        }
+        .action-main b { color: #29414d; }
+        .action-main small { color: #84949c; }
+        .action-state { background: #e8f3ed; color: #39765f; }
+        .action-state.cancelled { background: #f8eded; color: #ad5b5e; }
+        .badge { background: #edf2f4; color: #607783; }
+        .modal {
+            background: rgba(28, 47, 57, .48);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #fff;
+            color: #203542;
+            border: 1px solid #dce6e9;
+            box-shadow: 0 22px 65px rgba(29, 54, 65, .20);
+            border-radius: 15px;
+        }
+        .modal-header { background: #fff; border-color: #e3eaed; }
+        .modal-header h2 { color: #203542; }
+        .modal-close { color: #81929a; }
+        .form-group label { color: #6e818b; }
+        .form-control:focus { border-color: #6b9aa2; }
+        .toast { background: #315f6c; color: #fff; }
+        #pdf-container { background: #e9eef0; }
+        @media (max-width: 760px) {
+            body { padding: 12px; }
+            .header { padding: 14px; }
+            .dashboard-intro { align-items: flex-start; flex-direction: column; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
     </style>
 </head>
 <body>
