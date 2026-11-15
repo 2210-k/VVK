@@ -3,455 +3,474 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>МВД | Ведомость остановок ТС</title>
+    <title>ГИБДД · ДПС — Ведомость инспектора</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         :root {
-            --bg: #f3f4f6; --card: #ffffff; --card-hover: #f8fafc;
-            --text: #1f2937; --muted: #6b7280; --primary: #1e3a8a;
-            --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --border: #e2e8f0;
+            --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --muted: #6b7280;
+            --primary: #eab308; --primary-dark: #ca8a04; --danger: #ef4444;
+            --success: #10b981; --border: #e2e8f0;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-        .title h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; color: var(--primary); }
-        .actions { display: flex; gap: 10px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .brand { display: flex; align-items: center; gap: 15px; }
+        .brand-logo { width: 50px; height: 50px; background: var(--primary); color: #111; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; }
+        .brand h1 { font-size: 22px; font-weight: 800; line-height: 1.1; }
+        .brand p { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+        
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
         .btn { padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 14px; text-decoration: none; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: #152d6e; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: #f9fafb; }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-primary { background: var(--danger); color: white; }
+        .btn-primary:hover { background: #dc2626; }
+        .btn-gold { background: var(--primary); color: #111; }
+        .btn-gold:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #e2e8f0; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .tab { padding: 10px 20px; cursor: pointer; font-weight: 600; color: var(--muted); border-radius: 8px 8px 0 0; transition: 0.2s; }
-        .tab.active { color: var(--primary); background: rgba(30,58,138,0.05); border-bottom: 2px solid var(--primary); }
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .stat-info h3 { font-size: 20px; font-weight: 800; }
+        .stat-info p { font-size: 11px; color: var(--muted); font-weight: 600; }
         
-        .table-wrap { background: var(--card); border-radius: 12px; overflow-x: auto; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th, td { padding: 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
-        th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; background: #f8fafc; }
+        /* Table */
+        .panel { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .panel-title { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        
+        .filters { display: flex; gap: 10px; padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+        .filters input, .filters select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; outline: none; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+        th { background: #f8fafc; color: var(--muted); font-weight: 700; font-size: 11px; text-transform: uppercase; }
         tbody tr { cursor: pointer; transition: 0.2s; }
-        tbody tr:hover { background: var(--card-hover); }
+        tbody tr:hover { background: #f8fafc; }
+        .plate { background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px; }
         
+        /* Badges */
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .badge-open { background: rgba(16,185,129,0.15); color: #047857; }
-        .badge-closed { background: rgba(239,68,68,0.15); color: #b91c1c; }
-        
+        .badge-open { background: #dcfce7; color: #166534; }
+        .badge-closed { background: #fee2e2; color: #991b1b; }
+        .badge-fine { background: #fee2e2; color: #991b1b; }
+        .badge-warn { background: #fef3c7; color: #92400e; }
+        .badge-arrest { background: #e0e7ff; color: #3730a3; }
+
         /* Modals */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(4px); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 15px; }
         .modal.active { display: flex; }
-        .modal-content { background: var(--card); border-radius: 16px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
-        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card); z-index: 10; border-radius: 16px 16px 0 0; }
-        .modal-header h2 { font-size: 18px; color: var(--primary); }
-        .modal-close { background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; }
+        .modal-content { background: white; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 10; }
+        .modal-header h2 { font-size: 18px; font-weight: 800; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
         .modal-body { padding: 20px; }
         
+        /* Forms */
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
-        .form-control { width: 100%; padding: 12px; background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
-        .form-control:focus { border-color: var(--primary); background: white; }
-        .form-control[readonly] { background: #e5e7eb; cursor: not-allowed; }
-        .form-select { width: 100%; padding: 12px; background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; cursor: pointer; font-weight: bold; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; }
+        .form-control:focus { border-color: var(--primary); }
         .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        /* Details */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .info-block { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .info-block h4 { font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .info-block p { font-size: 13px; margin-bottom: 5px; }
+        .info-block p b { color: var(--text); }
         
-        /* Stop Card Details */
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        .info-item label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
-        .info-item div { font-size: 14px; font-weight: 500; color: var(--text); }
+        .action-card { border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .action-card:hover { border-color: var(--primary); background: #fffbeb; }
         
-        .action-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .action-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
-        .action-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(30,58,138,0.1); }
-        .action-info h4 { font-size: 14px; margin-bottom: 4px; color: var(--primary); }
-        .action-info p { font-size: 12px; color: var(--muted); }
-        
-        .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
-        .empty { text-align: center; padding: 40px; color: var(--muted); }
-        
-        /* PDF Viewer */
         #pdf-viewer-modal .modal-content { max-width: 95%; width: 95%; height: 95vh; display: flex; flex-direction: column; }
-        #pdf-container { flex: 1; overflow-y: auto; background: #555; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        #pdf-container { flex: 1; overflow-y: auto; background: #52525b; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         
-        .toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; background: var(--success); color: white; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; background: var(--text); color: white; font-weight: 600; transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 2000; }
         .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { background: var(--danger); }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="title"><h1><i class="fa-solid fa-shield-halved"></i> Ведомость остановок ТС (МВД)</h1></div>
-        <div class="actions">
+        <div class="brand">
+            <div class="brand-logo">ГИ</div>
+            <div>
+                <h1>ГИБДД · ДПС</h1>
+                <p>Ведомость инспектора</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openStopModal()"><i class="fa-solid fa-stop-circle"></i> Остановить ТС</button>
             <button class="btn btn-secondary" onclick="window.location.href='index.html'"><i class="fa-solid fa-arrow-left"></i> В портал</button>
-            <button class="btn btn-primary" onclick="openStopModal()"><i class="fa-solid fa-car"></i> Остановить ТС</button>
         </div>
     </div>
 
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('stops', this)">Журнал остановок</div>
-        <div class="tab" onclick="switchTab('vehicles', this)">Все ТС</div>
+    <!-- СТАТИСТИКА -->
+    <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-icon" style="background:#fef3c7; color:#d97706;"><i class="fa-solid fa-car"></i></div><div class="stat-info"><h3 id="stat-stops">0</h3><p>Остановок</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-gavel"></i></div><div class="stat-info"><h3 id="stat-actions">0</h3><p>Всего действий</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-ruble-sign"></i></div><div class="stat-info"><h3 id="stat-fines">0</h3><p>Штрафов</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fef9c3; color:#ca8a04;"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-info"><h3 id="stat-warnings">0</h3><p>Предупреждений</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#e0e7ff; color:#4338ca;"><i class="fa-solid fa-lock"></i></div><div class="stat-info"><h3 id="stat-arrests">0</h3><p>Задержаний</p></div></div>
     </div>
 
-    <!-- ТАБ: ОСТАНОВКИ -->
-    <div id="tab-stops">
-        <div class="table-wrap">
-            <table>
-                <thead><tr>
-                    <th>Номер / Дата</th><th>Водитель</th><th>ТС / Госномер</th><th>Причина</th><th>Действия</th><th>Статус</th>
-                </tr></thead>
-                <tbody id="stops-table-body"></tbody>
-            </table>
+    <!-- ЖУРНАЛ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-list-ul"></i> Журнал остановок</div>
+            <input type="text" class="form-control" style="width:300px;" placeholder="Поиск по ФИО, паспорту, номеру..." oninput="renderStops(this.value)">
         </div>
-    </div>
-
-    <!-- ТАБ: ВСЕ ТС -->
-    <div id="tab-vehicles" style="display: none;">
-        <div class="table-wrap">
-            <table>
-                <thead><tr>
-                    <th>Номер документа</th><th>Владелец</th><th>ТС</th><th>Госномер</th><th>Цвет</th><th>Действия</th>
-                </tr></thead>
-                <tbody id="vehicles-table-body"></tbody>
-            </table>
+        <div class="filters">
+            <select id="filter-reason" onchange="renderStops()">
+                <option value="">Все причины</option>
+                <option value="0.1">0.1 — Проверка документов</option>
+                <option value="0.2">0.2 — Нарушение ПДД</option>
+                <option value="0.3">0.3 — Ориентировка</option>
+                <option value="0.4">0.4 — Спец. мероприятия</option>
+                <option value="0.5">0.5 — Тех. состояние</option>
+                <option value="0.6">0.6 — ДТП / Свидетель</option>
+                <option value="0.7">0.7 — Подозрение</option>
+                <option value="0.8">0.8 — В розыске</option>
+                <option value="0.9">0.9 — Иная</option>
+            </select>
+            <select id="filter-action" onchange="renderStops()">
+                <option value="">Все действия</option>
+                <option value="Постановление">Штраф (Постановление)</option>
+                <option value="Задержание">Задержание</option>
+                <option value="Обыск">Обыск</option>
+            </select>
+            <button class="btn btn-secondary" onclick="document.getElementById('filter-reason').value=''; document.getElementById('filter-action').value=''; renderStops();">Сбросить</button>
         </div>
+        <table>
+            <thead><tr>
+                <th>Дата / Номер</th><th>Причина</th><th>Транспорт</th><th>Владелец</th><th>Действия</th><th>Примечание</th><th>Статус</th>
+            </tr></thead>
+            <tbody id="stops-table-body"></tbody>
+        </table>
     </div>
 
-    <!-- МОДАЛКА: СОЗДАНИЕ ОСТАНОВКИ -->
+    <!-- МОДАЛКА СОЗДАНИЯ -->
     <div class="modal" id="create-stop-modal">
         <div class="modal-content">
-            <div class="modal-header"><h2>Новая остановка ТС</h2><button class="modal-close" onclick="closeModal('create-stop-modal')">&times;</button></div>
+            <div class="modal-header"><h2>Остановка ТС</h2><button class="modal-close" onclick="closeModal('create-stop-modal')">&times;</button></div>
             <div class="modal-body">
                 <form id="create-stop-form">
-                    <!-- Водитель -->
                     <div class="form-group">
                         <label>Водитель (Гражданин)</label>
-                        <select class="form-select" id="stop-patient" required onchange="onPatientSelect()">
+                        <select class="form-control" id="stop-patient" required onchange="onPatientSelect()">
                             <option value="">-- Выберите гражданина --</option>
                         </select>
                     </div>
-                    <!-- ТС -->
                     <div class="row">
                         <div class="form-group">
-                            <label>Транспортное средство</label>
+                            <label>ТС (Госномер)</label>
                             <select class="form-control" id="stop-vehicle-doc" required onchange="onVehicleSelect()">
                                 <option value="">-- Сначала выберите водителя --</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Документ на ТС</label>
-                            <input type="text" class="form-control" id="stop-vehicle-doc-num" required readonly>
+                            <label>Цвет</label>
+                            <input type="text" class="form-control" id="stop-color" readonly>
                         </div>
                     </div>
                     <div class="row">
                         <div class="form-group">
-                            <label>Госномер</label>
-                            <input type="text" class="form-control" id="stop-plate" required readonly>
+                            <label>Документ на ТС</label>
+                            <input type="text" class="form-control" id="stop-vehicle-doc-num" readonly>
                         </div>
                         <div class="form-group">
-                            <label>Цвет</label>
-                            <input type="text" class="form-control" id="stop-color" required readonly>
+                            <label>Модель ТС</label>
+                            <input type="text" class="form-control" id="stop-vehicle-model" readonly>
                         </div>
                     </div>
-                    <!-- Причина -->
                     <div class="form-group">
                         <label>Причина остановки</label>
-                        <select class="form-select" id="stop-reason" required>
-                            <option value="0.1">0.1 — Проверка документов на право пользования и управления ТС</option>
-                            <option value="0.2">0.2 — Нарушение Правил дорожного движения (ДК РФ)</option>
-                            <option value="0.3">0.3 — Наличие ориентировки (розыск ТС или водителя)</option>
-                            <option value="0.4">0.4 — Проведение специальных мероприятий (рейд, перекрытие)</option>
-                            <option value="0.5">0.5 — Проверка технического состояния ТС (неисправность)</option>
-                            <option value="0.6">0.6 — Участие водителя в ДТП или как свидетеля</option>
-                            <option value="0.7">0.7 — Подозрение на совершение преступления</option>
-                            <option value="0.8">0.8 — Нахождение лица в розыске</option>
-                            <option value="0.9">0.9 — Иная причина, требующая вмешательства полиции</option>
+                        <select class="form-control" id="stop-reason" required>
+                            <option value="0.1">0.1 — Проверка документов</option>
+                            <option value="0.2">0.2 — Нарушение ПДД</option>
+                            <option value="0.3">0.3 — Ориентировка</option>
+                            <option value="0.4">0.4 — Спец. мероприятия</option>
+                            <option value="0.5">0.5 — Тех. состояние</option>
+                            <option value="0.6">0.6 — ДТП / Свидетель</option>
+                            <option value="0.7">0.7 — Подозрение</option>
+                            <option value="0.8">0.8 — В розыске</option>
+                            <option value="0.9">0.9 — Иная</option>
                         </select>
                     </div>
-                    <!-- Примечания и даты -->
                     <div class="form-group">
-                        <label>Примечание / Результат</label>
-                        <textarea class="form-control" id="stop-note" rows="2" placeholder="Проверен, нарушений не выявлено..."></textarea>
+                        <label>Примечание (до закрытия)</label>
+                        <textarea class="form-control" id="stop-note" rows="2" placeholder="Введите примечание..."></textarea>
                     </div>
                     <div class="row">
-                        <div class="form-group">
-                            <label>Реальная дата</label>
-                            <input type="date" class="form-control" id="stop-date" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Игровой день</label>
-                            <input type="number" class="form-control" id="stop-game-day" required>
-                        </div>
+                        <div class="form-group"><label>Реальная дата</label><input type="date" class="form-control" id="stop-date" required></div>
+                        <div class="form-group"><label>Игровой день</label><input type="number" class="form-control" id="stop-game-day" required></div>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Создать запись</button>
+                    <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;">Зафиксировать остановку</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛКА: КАРТОЧКА ОСТАНОВКИ -->
+    <!-- КАРТОЧКА ОСТАНОВКИ -->
     <div class="modal" id="detail-stop-modal">
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header"><h2>Карточка остановки</h2><button class="modal-close" onclick="closeModal('detail-stop-modal')">&times;</button></div>
-            <div class="modal-body"><div id="detail-stop-content"></div></div>
+            <div class="modal-body" id="detail-stop-content"></div>
         </div>
     </div>
 
-    <!-- МОДАЛКА: КАРТОЧКА ДЕЙСТВИЯ (ПРОСМОТР ДОКУМЕНТА) -->
+    <!-- КАРТОЧКА ДЕЙСТВИЯ -->
     <div class="modal" id="action-detail-modal">
         <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header"><h2>Информация о действии</h2><button class="modal-close" onclick="closeModal('action-detail-modal')">&times;</button></div>
-            <div class="modal-body">
-                <div id="action-detail-content"></div>
-            </div>
+            <div class="modal-header"><h2>Детали действия</h2><button class="modal-close" onclick="closeModal('action-detail-modal')">&times;</button></div>
+            <div class="modal-body" id="action-detail-content"></div>
         </div>
     </div>
 
-    <!-- МОДАЛКА: ПРОСМОТР PDF -->
+    <!-- PDF VIEWER -->
     <div class="modal" id="pdf-viewer-modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>Просмотр документа</h2>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <a id="pdf-download-btn" href="#" class="btn btn-primary" download>Скачать</a>
-                    <button class="modal-close" onclick="closeModal('pdf-viewer-modal')" style="margin-top:-5px;">&times;</button>
-                </div>
-            </div>
+            <div class="modal-header"><h2>Просмотр PDF</h2><div style="display:flex; gap:10px;"><a id="pdf-dl" class="btn btn-gold" download>Скачать</a><button class="modal-close" onclick="closeModal('pdf-viewer-modal')">&times;</button></div></div>
             <div id="pdf-container"></div>
         </div>
     </div>
 
-    <div class="toast" id="toast">Успешно</div>
+    <div class="toast" id="toast"></div>
 
 <script>
     const SUPABASE_URL = 'https://omnrekfdjurrfzrwfzzn.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_v0z_8kT0ZmFH1uPiamR60w_vDNsIfKg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-    let allCitizens = [], allVehicles = [], allStops = [];
-    let currentDay = 1, currentStopId = null;
+    let allCitizens = [], allVehicles = [], allStops = [], allDocs = [];
+    let currentStopId = null;
 
-    const REASON_MAP = {
-        '0.1': 'Проверка документов', '0.2': 'Нарушение ПДД', '0.3': 'Ориентировка',
-        '0.4': 'Спец. мероприятия', '0.5': 'Тех. состояние', '0.6': 'ДТП / Свидетель',
-        '0.7': 'Подозрение', '0.8': 'В розыске', '0.9': 'Иная причина'
-    };
-
-    function showToast(msg, isError = false) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.className = 'toast show ' + (isError ? 'error' : '');
-        setTimeout(() => t.classList.remove('show'), 3000);
-    }
-
+    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    // --- ФОРМА СОЗДАНИЯ ---
+    async function init() {
+        // Граждане
+        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
+        allCitizens = citizens || [];
+        const sel = document.getElementById('stop-patient');
+        allCitizens.forEach(c => sel.add(new Option(`${c.last_name} ${c.first_name} ${c.patronymic || ''}`.trim(), c.id)));
+
+        // ТС
+        const { data: vehicles } = await supabaseClient.from('documents').select('*, profiles(last_name)').in('document_type', ['Договор аренды ТС', 'Паспорт ТС']).eq('status', 'active');
+        allVehicles = vehicles || [];
+
+        // Документы (действия)
+        const { data: docs } = await supabaseClient.from('documents').select('*').not('stop_id', 'is', null);
+        allDocs = docs || [];
+
+        await loadStops();
+        window.addEventListener('focus', () => loadStops());
+    }
+
+    async function loadStops() {
+        const { data } = await supabaseClient.from('mvd_stops').select('*, profiles(*)').order('created_at', { ascending: false });
+        allStops = data || [];
+        renderStops();
+        updateStats();
+    }
+
+    function renderStops(searchQuery = '') {
+        const tbody = document.getElementById('stops-table-body');
+        const reasonFilter = document.getElementById('filter-reason').value;
+        const actionFilter = document.getElementById('filter-action').value;
+        
+        let filtered = allStops.filter(s => {
+            const p = s.profiles || {};
+            const fio = `${p.last_name || ''} ${p.first_name || ''}`.toLowerCase();
+            const q = searchQuery.toLowerCase();
+            const matchSearch = fio.includes(q) || s.vehicle_plate.toLowerCase().includes(q) || s.doc_number.toLowerCase().includes(q);
+            const matchReason = reasonFilter ? s.reason_code === reasonFilter : true;
+            
+            let matchAction = true;
+            if (actionFilter) {
+                const docs = allDocs.filter(d => d.stop_id === s.id);
+                matchAction = docs.some(d => d.document_type.includes(actionFilter));
+            }
+            return matchSearch && matchReason && matchAction;
+        });
+
+        tbody.innerHTML = '';
+        if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Нет записей</td></tr>'; return; }
+
+        filtered.forEach(s => {
+            const p = s.profiles || {};
+            const fio = `${p.last_name || ''} ${p.first_name || ''}`.trim();
+            const stopDocs = allDocs.filter(d => d.stop_id === s.id);
+            const actionCount = stopDocs.filter(d => d.document_type !== 'Протокол об остановке ТС').length;
+            
+            tbody.innerHTML += `
+                <tr onclick="openStopDetails(${s.id})">
+                    <td><b>${s.doc_number}</b><br><small style="color:var(--muted);">${new Date(s.created_at).toLocaleDateString()}</small></td>
+                    <td>${s.reason_code}</td>
+                    <td><b>${s.vehicle_model}</b><br><span class="plate">${s.vehicle_plate}</span></td>
+                    <td>${fio}</td>
+                    <td><span style="font-weight:bold; color:var(--primary-dark);">${actionCount}</span></td>
+                    <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${s.note || ''}">${s.note || '—'}</td>
+                    <td>${s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>'}</td>
+                </tr>`;
+        });
+    }
+
+    function updateStats() {
+        document.getElementById('stat-stops').textContent = allStops.length;
+        let f = 0, w = 0, a = 0;
+        allDocs.forEach(d => {
+            if (d.document_type.includes('Постановление')) f++;
+            if (d.document_type.includes('Предупреждение')) w++; // Условно
+            if (d.document_type.includes('Задержание')) a++;
+        });
+        document.getElementById('stat-actions').textContent = allDocs.filter(d => d.document_type !== 'Протокол об остановке ТС').length;
+        document.getElementById('stat-fines').textContent = f;
+        document.getElementById('stat-warnings').textContent = w;
+        document.getElementById('stat-arrests').textContent = a;
+    }
+
+    // --- СОЗДАНИЕ ---
     function openStopModal() {
         document.getElementById('create-stop-form').reset();
-        document.getElementById('stop-game-day').value = currentDay;
+        document.getElementById('stop-game-day').value = 1;
         document.getElementById('stop-date').value = new Date().toISOString().split('T')[0];
-        document.getElementById('stop-vehicle-doc').innerHTML = '<option value="">-- Сначала выберите водителя --</option>';
-        document.getElementById('stop-vehicle-doc-num').value = '';
-        document.getElementById('stop-plate').value = '';
-        document.getElementById('stop-color').value = '';
+        document.getElementById('stop-vehicle-doc').innerHTML = '<option value="">-- Выберите ТС --</option>';
         openModal('create-stop-modal');
     }
 
     function onPatientSelect() {
         const pid = document.getElementById('stop-patient').value;
-        const vehicleSelect = document.getElementById('stop-vehicle-doc');
-        vehicleSelect.innerHTML = '<option value="">-- Выберите ТС --</option>';
-        document.getElementById('stop-vehicle-doc-num').value = '';
-        document.getElementById('stop-plate').value = '';
-        document.getElementById('stop-color').value = '';
-        
+        const sel = document.getElementById('stop-vehicle-doc');
+        sel.innerHTML = '<option value="">-- Выберите ТС --</option>';
         if (!pid) return;
-        const vehicles = allVehicles.filter(v => v.patient_id === pid);
-        if (!vehicles.length) { vehicleSelect.innerHTML = '<option value="">Нет активных ТС</option>'; return; }
-        vehicles.forEach(v => vehicleSelect.add(new Option(`${v.metadata?.vehicle_name || 'ТС'} (${v.metadata?.plate || 'Б/Н'})`, v.id)));
+        const v = allVehicles.filter(x => x.patient_id === pid);
+        v.forEach(x => sel.add(new Option(`${x.metadata?.vehicle_name || 'ТС'} (${x.metadata?.plate || ''})`, x.id)));
     }
 
     function onVehicleSelect() {
         const v = allVehicles.find(x => x.id == document.getElementById('stop-vehicle-doc').value);
         if (!v) return;
         document.getElementById('stop-vehicle-doc-num').value = v.doc_number;
-        document.getElementById('stop-plate').value = v.metadata?.plate || '';
         document.getElementById('stop-color').value = v.metadata?.color || '';
+        document.getElementById('stop-vehicle-model').value = v.metadata?.vehicle_name || '';
     }
 
     document.getElementById('create-stop-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = e.target.querySelector('button[type="submit"]');
-        btn.disabled = true; btn.textContent = 'Создание...';
         const v = allVehicles.find(x => x.id == document.getElementById('stop-vehicle-doc').value);
-        
         const payload = {
             doc_number: `0154${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`,
             patient_id: document.getElementById('stop-patient').value,
-            inspector_position: 'Инспектор ДПС', // По умолчанию
-            inspector_name: 'Иванов И.И.', // По умолчанию
-            vehicle_model: v.metadata?.vehicle_name || 'Неизвестно',
-            vehicle_plate: document.getElementById('stop-plate').value,
-            vehicle_color: document.getElementById('stop-color').value,
-            vehicle_doc_number: document.getElementById('stop-vehicle-doc-num').value,
+            vehicle_model: v.metadata?.vehicle_name,
+            vehicle_plate: v.metadata?.plate,
+            vehicle_color: v.metadata?.color,
+            vehicle_doc_number: v.doc_number,
             reason_code: document.getElementById('stop-reason').value,
-            result: document.getElementById('stop-note').value,
+            note: document.getElementById('stop-note').value,
             real_date: document.getElementById('stop-date').value,
             game_day: parseInt(document.getElementById('stop-game-day').value),
-            status: 'open'
+            status: 'open',
+            inspector_position: 'Инспектор ДПС',
+            inspector_name: 'Иванов И.И.',
+            actual_address: 'Не имеет'
         };
-
         const { error } = await supabaseClient.from('mvd_stops').insert(payload);
-        btn.disabled = false; btn.textContent = 'Создать запись';
-        
-        if (error) return showToast(error.message, true);
-        
-        showToast('Остановка создана');
+        if (error) return alert(error.message);
         closeModal('create-stop-modal');
         loadStops();
     });
 
-    // --- ЗАГРУЗКА ДАННЫХ ---
-    async function init() {
-        const { data: settings } = await supabaseClient.from('app_settings').select('current_day').eq('id', 1).maybeSingle();
-        if (settings) currentDay = settings.current_day;
-        
-        const { data: citizens } = await supabaseClient.from('profiles').select('*').eq('role', 'patient').order('last_name');
-        allCitizens = citizens || [];
-        const select = document.getElementById('stop-patient');
-        allCitizens.forEach(c => select.add(new Option(`${c.last_name} ${c.first_name} ${c.patronymic || ''}`.trim(), c.id)));
-
-        const { data: vehicles } = await supabaseClient.from('documents').select('*, profiles(last_name, first_name)').in('document_type', ['Договор аренды ТС', 'Паспорт ТС']).eq('status', 'active');
-        allVehicles = vehicles || [];
-        
-        await loadStops();
-        window.addEventListener('focus', () => loadStops()); // Автообновление при возврате
-    }
-
-    async function loadStops() {
-        const { data, error } = await supabaseClient.from('mvd_stops').select('*, profiles(*)').order('created_at', { ascending: false });
-        if (error) return showToast(error.message, true);
-        allStops = data || [];
-        
-        // Считаем действия
-        const { data: docs } = await supabaseClient.from('documents').select('stop_id').not('stop_id', 'is', null);
-        const actionCounts = {};
-        if (docs) docs.forEach(d => actionCounts[d.stop_id] = (actionCounts[d.stop_id] || 0) + 1);
-        allStops.forEach(s => s.actions_count = actionCounts[s.id] || 0);
-        
-        renderStops();
-        renderVehicles();
-    }
-
-    function renderStops() {
-        const tbody = document.getElementById('stops-table-body');
-        tbody.innerHTML = '';
-        if (!allStops.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Журнал пуст</td></tr>'; return; }
-        allStops.forEach(s => {
-            const p = s.profiles || {};
-            const fio = `${p.last_name || ''} ${p.first_name || ''}`.trim() || 'Неизвестен';
-            const statusBadge = s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>';
-            tbody.innerHTML += `
-                <tr onclick="openStopDetails(${s.id})">
-                    <td><div style="font-weight:bold; color:var(--primary);">${s.doc_number}</div><div style="font-size:11px; color:var(--muted);">${new Date(s.created_at).toLocaleDateString()}</div></td>
-                    <td>${fio}</td>
-                    <td><div>${s.vehicle_model}</div><div style="font-size:11px; color:var(--warning);">${s.vehicle_plate}</div></td>
-                    <td><div>${s.reason_code}</div></td>
-                    <td><span style="color:var(--primary); font-weight:bold;">${s.actions_count}</span></td>
-                    <td>${statusBadge}</td>
-                </tr>`;
-        });
-    }
-
-    function renderVehicles() {
-        const tbody = document.getElementById('vehicles-table-body');
-        tbody.innerHTML = '';
-        if (!allVehicles.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Нет ТС</td></tr>'; return; }
-        allVehicles.forEach(v => {
-            const owner = v.profiles ? `${v.profiles.last_name} ${v.profiles.first_name}` : 'В архиве';
-            tbody.innerHTML += `
-                <tr>
-                    <td><b>${v.doc_number}</b></td><td>${owner}</td>
-                    <td>${v.metadata?.vehicle_name || '—'}</td>
-                    <td>${v.metadata?.plate || '—'}</td>
-                    <td>${v.metadata?.color || '—'}</td>
-                    <td><button class="btn btn-sm btn-secondary" onclick="previewDocByNumber('${v.doc_number}')">Документ</button></td>
-                </tr>`;
-        });
-    }
-
     // --- КАРТОЧКА ОСТАНОВКИ ---
     async function openStopDetails(id) {
         currentStopId = id;
-        const stop = allStops.find(s => s.id === id);
-        if (!stop) return;
-
-        const p = stop.profiles || {};
-        const fio = `${p.last_name || ''} ${p.first_name || ''} ${p.patronymic || ''}`.trim();
+        const s = allStops.find(x => x.id === id);
+        const p = s.profiles || {};
         
-        // Загружаем действия (документы)
-        const { data: actions } = await supabaseClient.from('documents').select('*').eq('stop_id', id).order('created_at', { ascending: false });
-        const isClosed = stop.status === 'closed';
+        // Обновляем доки на случай изменений
+        const { data: docs } = await supabaseClient.from('documents').select('*').eq('stop_id', id);
+        const actions = docs.filter(d => d.document_type !== 'Протокол об остановке ТС');
+        const protocol = docs.find(d => d.document_type === 'Протокол об остановке ТС');
 
         let html = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
                 <div>
-                    <h3 style="color:var(--primary); font-size:20px;">Остановка № ${stop.doc_number}</h3>
-                    <p style="color:var(--muted); font-size:12px; margin-top:5px;">Дата: ${new Date(stop.created_at).toLocaleString()} (День ${stop.game_day})</p>
+                    <h3 style="font-size:20px;">Остановка № ${s.doc_number}</h3>
+                    <p style="color:var(--muted); font-size:13px;">Дата: ${new Date(s.created_at).toLocaleString()}</p>
                 </div>
-                <div>${isClosed ? '<span class="badge badge-closed" style="font-size:14px; padding:8px 12px;">Закрыта</span>' : '<span class="badge badge-open" style="font-size:14px; padding:8px 12px;">Открыта</span>'}</div>
+                <div>${s.status === 'open' ? '<span class="badge badge-open">Открыта</span>' : '<span class="badge badge-closed">Закрыта</span>'}</div>
             </div>
 
             <div class="info-grid">
-                <div class="info-item"><label>Водитель</label><div>${fio}</div></div>
-                <div class="info-item"><label>Паспорт / ВУ</label><div>${p.pass_series || ''} ${p.pass_number || ''} / ${p.driver_license || '—'}</div></div>
-                <div class="info-item"><label>ТС</label><div>${stop.vehicle_model} / ${stop.vehicle_color}</div></div>
-                <div class="info-item"><label>Госномер</label><div style="color:var(--warning); font-weight:bold;">${stop.vehicle_plate}</div></div>
-                <div class="info-item"><label>Документ на ТС</label><div>${stop.vehicle_doc_number}</div></div>
-                <div class="info-item"><label>Причина</label><div>${stop.reason_code} — ${REASON_MAP[stop.reason_code]}</div></div>
-                <div class="info-item" style="grid-column:1/-1"><label>Результат / Примечание</label><div>${stop.result || '—'}</div></div>
+                <div class="info-block">
+                    <h4><i class="fa-solid fa-user"></i> Водитель</h4>
+                    <p><b>ФИО:</b> ${p.last_name} ${p.first_name} ${p.patronymic || ''}</p>
+                    <p><b>ДР:</b> ${p.dob ? new Date(p.dob).toLocaleDateString() : '—'}</p>
+                    <p><b>Паспорт:</b> ${p.pass_series || ''} ${p.pass_number || ''}</p>
+                    <p><b>ВУ:</b> ${p.driver_license || '—'}</p>
+                </div>
+                <div class="info-block">
+                    <h4><i class="fa-solid fa-car"></i> Транспорт</h4>
+                    <p><b>Модель:</b> ${s.vehicle_model}</p>
+                    <p><b>Цвет:</b> ${s.vehicle_color}</p>
+                    <p><b>Госномер:</b> ${s.vehicle_plate}</p>
+                    <p><b>Документ:</b> ${s.vehicle_doc_number}</p>
+                </div>
+            </div>
+
+            <div class="info-block" style="margin-bottom:20px;">
+                <h4>Примечание к остановке</h4>
+                <p>${s.note || '—'}</p>
             </div>
         `;
 
-        // Кнопки (скрываем "Добавить", если закрыто)
-        if (!isClosed) {
+        if (s.status === 'open') {
             html += `
-                <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="addAction('generator-admin-order.html')"><i class="fa-solid fa-file-contract"></i> Постановление</button>
-                    <button class="btn btn-primary" onclick="addAction('generator-detention.html')"><i class="fa-solid fa-handcuffs"></i> Задержание</button>
-                    <button class="btn btn-primary" onclick="addAction('generator-protocol-search.html')"><i class="fa-solid fa-magnifying-glass"></i> Обыск</button>
-                    <button class="btn btn-danger" style="margin-left:auto;" onclick="closeStop(${stop.id})"><i class="fa-solid fa-lock"></i> Закрыть остановку</button>
+                <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                    <button class="btn btn-gold" onclick="addAction('generator-admin-order.html')"><i class="fa-solid fa-file-contract"></i> Постановление</button>
+                    <button class="btn btn-gold" onclick="addAction('generator-detention.html')"><i class="fa-solid fa-handcuffs"></i> Задержание</button>
+                    <button class="btn btn-gold" onclick="addAction('generator-protocol-search.html')"><i class="fa-solid fa-magnifying-glass"></i> Обыск</button>
+                    <button class="btn btn-primary" style="margin-left:auto;" onclick="closeStop(${s.id})"><i class="fa-solid fa-lock"></i> Закрыть остановку</button>
                 </div>
             `;
         }
 
-        // Список действий
-        html += `<h3 style="margin-bottom:10px; font-size:16px;">Процессуальные действия (${actions ? actions.length : 0})</h3>`;
-        
-        if (!actions || !actions.length) {
-            html += `<div class="empty">Действий нет</div>`;
+        html += `<h3 style="font-size:16px; margin-bottom:10px;">Процессуальные действия (${actions.length})</h3>`;
+        if (!actions.length) {
+            html += `<p style="color:var(--muted); margin-bottom:20px;">Нет действий</p>`;
         } else {
-            html += `<div class="action-list">`;
             actions.forEach(a => {
                 html += `
                     <div class="action-card" onclick="openActionDetail(${a.id})">
-                        <div class="action-info">
-                            <h4>${a.document_type} № ${a.doc_number}</h4>
-                            <p>Дата: ${new Date(a.created_at).toLocaleDateString()} | Статус: <b>${a.status === 'active' ? 'Активен' : 'Аннулирован'}</b></p>
+                        <div>
+                            <b style="color:var(--primary-dark);">${a.document_type} № ${a.doc_number}</b>
+                            <div style="font-size:12px; color:var(--muted);">Статус: ${a.status === 'active' ? 'Действителен' : 'Аннулирован'}</div>
                         </div>
-                        <div style="color:var(--primary);"><i class="fa-solid fa-eye"></i> Открыть</div>
+                        <i class="fa-solid fa-eye" style="color:var(--muted);"></i>
                     </div>
                 `;
             });
-            html += `</div>`;
+        }
+
+        if (protocol) {
+            html += `
+                <h3 style="font-size:16px; margin-top:20px; margin-bottom:10px;">Протокол об остановке</h3>
+                <div class="action-card" onclick="openActionDetail(${protocol.id})" style="border-color:var(--success);">
+                    <div>
+                        <b style="color:var(--success);">${protocol.document_type} № ${protocol.doc_number}</b>
+                        <div style="font-size:12px; color:var(--muted);">Создан автоматически при закрытии</div>
+                    </div>
+                    <i class="fa-solid fa-file-pdf" style="color:var(--success); font-size:18px;"></i>
+                </div>
+            `;
         }
 
         document.getElementById('detail-stop-content').innerHTML = html;
@@ -460,33 +479,31 @@
 
     // --- ДЕЙСТВИЯ ---
     function addAction(url) {
-        const stop = allStops.find(s => s.id === currentStopId);
-        if (!stop) return;
-        // Открываем генератор и передаем stop_id и patient_id
-        window.open(`${url}?org=2&stop_id=${stop.id}&patient_id=${stop.patient_id}&t=${Date.now()}`, '_blank');
+        const s = allStops.find(x => x.id === currentStopId);
+        // Открываем в этой же вкладке
+        window.location.href = `${url}?org=2&stop_id=${s.id}&patient_id=${s.patient_id}`;
     }
 
     function closeStop(id) {
-        if (!confirm('Открыть генератор протокола? После генерации остановка закроется.')) return;
-        window.open(`generator-stop-protocol.html?stop_id=${id}&t=${Date.now()}`, '_blank');
+        if (!confirm('Открыть генератор протокола? Остановка закроется после генерации.')) return;
+        window.location.href = `generator-stop-protocol.html?stop_id=${id}`;
     }
 
-    // --- КАРТОЧКА ДЕЙСТВИЯ (ПРОСМОТР) ---
     async function openActionDetail(docId) {
-        const { data: doc, error } = await supabaseClient.from('documents').select('*').eq('id', docId).single();
-        if (error || !doc) return showToast('Документ не найден', true);
-
+        const { data: doc } = await supabaseClient.from('documents').select('*').eq('id', docId).single();
+        if (!doc) return;
         const { data: { publicUrl } } = supabaseClient.storage.from('documents').getPublicUrl(doc.file_path);
-        
+
         let html = `
-            <div class="info-grid">
-                <div class="info-item"><label>Тип документа</label><div>${doc.document_type}</div></div>
-                <div class="info-item"><label>Номер</label><div>${doc.doc_number}</div></div>
-                <div class="info-item"><label>Дата создания</label><div>${new Date(doc.created_at).toLocaleString()}</div></div>
-                <div class="info-item"><label>Статус</label><div style="color:${doc.status === 'active' ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${doc.status === 'active' ? 'Действителен' : 'Аннулирован'}</div></div>
+            <div class="info-block">
+                <h4>Информация о документе</h4>
+                <p><b>Тип:</b> ${doc.document_type}</p>
+                <p><b>Номер:</b> ${doc.doc_number}</p>
+                <p><b>Дата создания:</b> ${new Date(doc.created_at).toLocaleString()}</p>
+                <p><b>Статус:</b> ${doc.status === 'active' ? '<span style="color:var(--success); font-weight:bold;">Действителен</span>' : '<span style="color:var(--danger); font-weight:bold;">Аннулирован</span>'}</p>
             </div>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn btn-primary" style="flex:1;" onclick="viewPDF('${publicUrl}')"><i class="fa-solid fa-file-pdf"></i> Просмотр PDF</button>
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button class="btn btn-gold" style="flex:1; justify-content:center;" onclick="viewPDF('${publicUrl}')"><i class="fa-solid fa-file-pdf"></i> Просмотр PDF</button>
                 <a href="${publicUrl}" download class="btn btn-secondary" style="flex:1; justify-content:center;"><i class="fa-solid fa-download"></i> Скачать</a>
             </div>
         `;
@@ -494,51 +511,28 @@
         openModal('action-detail-modal');
     }
 
-    // --- ПРОСМОТР PDF ---
+    // --- PDF VIEWER ---
     async function viewPDF(url) {
-        document.getElementById('pdf-download-btn').href = url;
-        const container = document.getElementById('pdf-container');
-        container.innerHTML = '<p style="color:white;">Загрузка...</p>';
-        closeModal('action-detail-modal'); // Закрываем карточку действия
+        document.getElementById('pdf-dl').href = url;
+        closeModal('action-detail-modal');
         openModal('pdf-viewer-modal');
-
+        const c = document.getElementById('pdf-container');
+        c.innerHTML = '<p style="color:white;">Загрузка...</p>';
         try {
             const pdf = await pdfjsLib.getDocument(url).promise;
-            container.innerHTML = '';
-            const containerWidth = container.clientWidth;
-            const pixelRatio = window.devicePixelRatio || 1;
-
+            c.innerHTML = '';
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: 1 });
-                const scale = (containerWidth / viewport.width) * pixelRatio * 1.2;
-                const scaledViewport = page.getViewport({ scale: scale });
+                const viewport = page.getViewport({ scale: 1.5 });
                 const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = scaledViewport.height;
-                canvas.width = scaledViewport.width;
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
                 canvas.style.width = '100%';
-                canvas.style.height = 'auto';
                 canvas.style.marginBottom = '10px';
-                canvas.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
-                container.appendChild(canvas);
-                await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                c.appendChild(canvas);
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             }
-        } catch (err) {
-            container.innerHTML = '<p style="color:white;">Ошибка загрузки PDF: ' + err.message + '</p>';
-        }
-    }
-
-    async function previewDocByNumber(docNum) {
-        const { data } = await supabaseClient.from('documents').select('id').eq('doc_number', docNum).maybeSingle();
-        if (data) openActionDetail(data.id);
-    }
-
-    function switchTab(tab, el) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
-        document.getElementById('tab-stops').style.display = tab === 'stops' ? 'block' : 'none';
-        document.getElementById('tab-vehicles').style.display = tab === 'vehicles' ? 'block' : 'none';
+        } catch (e) { c.innerHTML = '<p style="color:white;">Ошибка загрузки</p>'; }
     }
 
     init();
