@@ -288,7 +288,7 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
         document.getElementById('filter-status').value = '';
         renderStops('');
     }
-    function renderStops(searchQuery = '') {
+    function renderStops(searchQuery = (document.getElementById('stop-search') || {}).value || '') {
         const tbody = document.getElementById('stops-table-body');
         const reasonFilter = document.getElementById('filter-reason').value;
         const statusFilter = document.getElementById('filter-status').value;
@@ -297,7 +297,7 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
             const p = s.profiles || {};
             const fio = `${p.last_name || ''} ${p.first_name || ''}`.toLowerCase();
             const q = searchQuery.toLowerCase();
-            const matchSearch = fio.includes(q) || s.vehicle_plate.toLowerCase().includes(q) || s.doc_number.toLowerCase().includes(q);
+            const matchSearch = fio.includes(q) || String(s.vehicle_plate || '').toLowerCase().includes(q) || String(s.doc_number || '').toLowerCase().includes(q);
             const matchReason = reasonFilter ? s.reason_code === reasonFilter : true;
             const matchStatus = statusFilter ? s.status === statusFilter : true;
             return matchSearch && matchReason && matchStatus;
@@ -333,6 +333,9 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
 
     function updateStats() {
         document.getElementById('stat-stops').textContent = allStops.length;
+        document.getElementById('stat-open').textContent = allStops.filter(x => x.status === 'open').length;
+        document.getElementById('stat-closed').textContent = allStops.filter(x => x.status !== 'open').length;
+        document.getElementById('last-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
         document.getElementById('stat-open').textContent = allStops.filter(x => x.status === 'open').length;
         document.getElementById('stat-closed').textContent = allStops.filter(x => x.status !== 'open').length;
         document.getElementById('last-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
