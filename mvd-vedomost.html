@@ -135,7 +135,7 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
                 <option value="0.8">0.8 — В розыске</option>
                 <option value="0.9">0.9 — Иная</option>
             </select>
-            <button class="btn btn-secondary" onclick="document.getElementById('filter-reason').value=''; renderStops();">Сбросить</button>
+            <select id="filter-status" onchange="renderStops()"><option value="">Все статусы</option><option value="open">На контроле</option><option value="closed">Завершённые</option></select><button class="btn btn-secondary" onclick="resetStopFilters()">Сбросить фильтры</button>
         </div>
         <table>
             <thead><tr>
