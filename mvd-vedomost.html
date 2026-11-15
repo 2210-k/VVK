@@ -135,7 +135,7 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
                 <option value="0.8">0.8 — В розыске</option>
                 <option value="0.9">0.9 — Иная</option>
             </select>
-            <select id="filter-status" onchange="renderStops()"><option value="">Все статусы</option><option value="open">На контроле</option><option value="closed">Завершённые</option></select><button class="btn btn-secondary" onclick="resetStopFilters()">Сбросить фильтры</button>
+            <select id="filter-status" onchange="renderStops()"><option value="">Все статусы</option><option value="open">На контроле</option><option value="closed">Завершённые</option></select><button class="btn btn-secondary" onclick="resetStopFilters()">Сбросить фильтры</button><span class="result-count" id="result-count" style="margin-left:auto;">0 записей</span>
         </div>
         <table>
             <thead><tr>
@@ -270,6 +270,18 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
         updateStats();
     }
 
+    function exportStopsCSV() {
+        const rows = [['Номер','Дата','Игровой день','ФИО','Госномер','Модель','Причина','Статус','Примечание']];
+        allStops.forEach(s => {
+            const p = s.profiles || {};
+            rows.push([s.doc_number,s.real_date,s.game_day,[p.last_name,p.first_name,p.patronymic].filter(Boolean).join(' '),s.vehicle_plate,s.vehicle_model,s.reason_code,s.status === 'open' ? 'Открыта' : 'Закрыта',s.note]);
+        });
+        const csv = '\\uFEFF' + rows.map(row => row.map(v => '"' + String(v ?? '').replace(/"/g,'""') + '"').join(';')).join('\\r\\n');
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'vedomost-mvd.csv'; a.click(); URL.revokeObjectURL(url);
+        showToast('Ведомость экспортирована в CSV');
+    }
     function resetStopFilters() {
         document.getElementById('stop-search').value = '';
         document.getElementById('filter-reason').value = '';
