@@ -120,7 +120,7 @@ body{background:radial-gradient(ellipse at 12% 0%,#e8eef8 0,transparent 34%),#f2
     <div class="panel">
         <div class="panel-header">
             <div class="panel-title"><i class="fa-solid fa-list-ul"></i> Журнал остановок</div>
-            <input type="text" class="form-control" style="width:300px;" placeholder="Поиск по ФИО, паспорту, номеру..." oninput="renderStops(this.value)">
+            <input type="text" class="form-control" style="width:300px;" id="stop-search" placeholder="Поиск: гражданин, госномер, № дела…" oninput="renderStops(this.value)">
         </div>
         <div class="filters">
             <select id="filter-reason" onchange="renderStops()">
